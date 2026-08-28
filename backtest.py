@@ -11,22 +11,15 @@ Usage:
     python backtest.py --trend 200     # only BUY when price > 200-SMA (trend filter)
     python backtest.py --buffer 0.001  # require fast SMA to beat slow by 0.1%
 
-Public market data only — no API keys needed.
+Data comes from whichever broker BROKER points at, so the bars are the same
+ones the live bot would trade on. Alpaca requires API keys even for market data.
 """
 import argparse
 import statistics
 
-from binance.client import Client
-
 import config
+from broker import get_broker
 from strategy import sma, generate_signal
-
-
-def fetch_history(client, symbol, interval, candles):
-    """Last `candles` CLOSED candles as (close, high, low) tuples."""
-    raw = client.get_klines(symbol=symbol, interval=interval, limit=candles + 1)
-    raw = raw[:-1]  # drop the still-forming candle
-    return [(float(k[4]), float(k[2]), float(k[3])) for k in raw]
 
 
 def backtest(bars, fast, slow, sl_pct, tp_pct, trend=0, buffer=0.0):
@@ -120,20 +113,23 @@ def report(symbol, bars, interval, trades, curve):
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--candles", type=int, default=1000)
+    p.add_argument("--candles", type=int, default=1000,
+               help="how many historical bars (Alpaca allows up to 10000)")
     p.add_argument("--trend", type=int, default=0, help="long-SMA trend filter period")
     p.add_argument("--buffer", type=float, default=0.0, help="min crossover margin, e.g. 0.001")
     args = p.parse_args()
 
-    client = Client()  # public data, real market (not testnet)
+    config.validate()
+    broker = get_broker()
+    symbols = broker.prepare(config.SYMBOLS)
 
-    print(f"Strategy: SMA {config.FAST_SMA}/{config.SLOW_SMA} | "
+    print(f"Data: {broker.name} | Strategy: SMA {config.FAST_SMA}/{config.SLOW_SMA} | "
           f"SL {config.STOP_LOSS_PCT*100:.0f}% TP {config.TAKE_PROFIT_PCT*100:.0f}%"
           + (f" | trend>{args.trend}SMA" if args.trend else "")
           + (f" | buffer {args.buffer*100:.2f}%" if args.buffer else ""))
 
-    for symbol in config.SYMBOLS:
-        bars = fetch_history(client, symbol, config.INTERVAL, args.candles)
+    for symbol in symbols:
+        bars = broker.history(symbol, config.INTERVAL, args.candles)
         if len(bars) < config.SLOW_SMA + 2:
             print(f"\n{symbol}: not enough data."); continue
         trades, curve = backtest(

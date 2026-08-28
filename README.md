@@ -5,8 +5,8 @@ strategy. It runs against either broker, selected with `BROKER` in `.env`:
 
 | `BROKER` | Market | Endpoint |
 |---|---|---|
-| `binance` (default) | Spot crypto | Binance / Binance Testnet |
-| `alpaca` | US stocks **and** crypto | `paper-api.alpaca.markets` / `api.alpaca.markets` |
+| `alpaca` (default) | US stocks **and** crypto | `paper-api.alpaca.markets` / `api.alpaca.markets` |
+| `binance` | Spot crypto | Binance / Binance Testnet |
 
 `strategy.py` is shared — only the execution layer (`broker.py`) differs.
 
@@ -33,6 +33,52 @@ strategy. It runs against either broker, selected with `BROKER` in `.env`:
 | `false` | `true` | `false` | Place **real** orders on your live account. |
 
 For Alpaca the fake-money switch is `ALPACA_PAPER` rather than `USE_TESTNET`.
+
+## Risk controls
+
+Position sizing, account rails and the exit mechanism are separate from the
+strategy — `strategy.py` decides *whether* to trade, `risk.py` decides *how
+much* and *whether it's allowed*.
+
+**Sizing.** With `RISK_PCT` set, each trade is sized so that being stopped out
+costs exactly that fraction of equity:
+
+```
+notional = equity * RISK_PCT / STOP_LOSS_PCT
+```
+
+So 1% risk on a 2% stop deploys 50% of equity — which is why the result is then
+capped by `MAX_POSITION_PCT` and by available cash. Leave `RISK_PCT=0` to keep
+the fixed `TRADE_QUOTE_AMOUNT`.
+
+**How a position is protected.** Two mechanisms, best first:
+
+| Protection | When | Behaviour |
+|---|---|---|
+| `bracket` | Alpaca **stocks**, whole shares, `USE_BRACKET_ORDERS=true` | Stop-loss + take-profit live on Alpaca's side as an OCO pair. Active between polls, and even if this bot dies. |
+| `poll` | crypto, or when the order is smaller than one share | The loop checks stop/target every `POLL_SECONDS`. A gap between polls is not covered. |
+
+Alpaca does not support bracket orders for crypto, and brackets are
+incompatible with fractional shares — so a $15 order on a $230 stock
+automatically falls back to `poll`. The active mode is logged and journaled.
+
+**Account rails**, checked before every new entry (exits are never blocked):
+
+- `MAX_DAILY_LOSS_PCT` — pause new entries once the day is down this much,
+  measured against Alpaca's `last_equity` (previous close).
+- `MAX_OPEN_POSITIONS` — cap on concurrent positions.
+- **PDT guard** — accounts under $25k are limited to 3 day trades per 5
+  sessions; a 4th flags the account for 90 days. The bot refuses that trade
+  unless `ALLOW_PDT=true`.
+- Broker-side `trading_blocked` / non-`ACTIVE` status.
+
+**Reconciliation.** The broker is the source of truth, not `state.json`. Each
+cycle the bot compares them: a filled bracket or a manual close is detected and
+journaled as an exit, and a position opened outside the bot is adopted rather
+than ignored.
+
+**Journal.** Every entry and exit appends a row to `TRADE_LOG` (`trades.csv`)
+with price, qty, notional, P/L, mode and protection type.
 
 ### Notifications
 - **Telegram:** create a bot via [@BotFather](https://t.me/BotFather) for the
@@ -126,11 +172,28 @@ The bot starts in the **safest** mode:
 | `ALPACA_API_KEY` / `ALPACA_API_SECRET` | Alpaca credentials |
 | `ALPACA_PAPER` | `true` = paper account (fake money), `false` = real money |
 | `ALPACA_FEED` | `iex` (free) or `sip` (paid) |
+| `RISK_PCT` | Risk per trade as a fraction of equity (`0` = fixed amount) |
+| `MAX_POSITION_PCT` | Ceiling on one position, as a fraction of equity |
+| `MAX_DAILY_LOSS_PCT` | Pause new entries after this daily drawdown |
+| `MAX_OPEN_POSITIONS` | Max concurrent positions |
+| `USE_BRACKET_ORDERS` | Broker-side stop/target when possible |
+| `ALLOW_PDT` | `false` = refuse trades that could flag pattern-day-trader |
+| `TRADE_LOG` | CSV journal path |
 
 ## Customizing the strategy
 
 Edit `strategy.py`. As long as `generate_signal()` returns `"BUY"`, `"SELL"`,
 or `"HOLD"`, the rest of the bot works unchanged.
+
+Test a change before trading it:
+
+```bash
+python backtest.py --candles 1000 --trend 200 --buffer 0.001
+```
+
+The backtester replays the same bars the live bot would trade on, checks
+stop-loss/take-profit against each bar's high/low, and compares the result
+against buy & hold.
 
 ## Disclaimer
 

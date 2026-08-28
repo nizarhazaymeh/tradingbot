@@ -15,8 +15,8 @@ def _get_bool(name: str, default: bool) -> bool:
 API_KEY = os.getenv("BINANCE_API_KEY", "").strip()
 API_SECRET = os.getenv("BINANCE_API_SECRET", "").strip()
 
-# --- Broker selection: "binance" (crypto) or "alpaca" (US stocks + crypto) ---
-BROKER = os.getenv("BROKER", "binance").strip().lower()
+# --- Broker selection: "alpaca" (US stocks + crypto) or "binance" (crypto) ---
+BROKER = os.getenv("BROKER", "alpaca").strip().lower()
 
 # --- Alpaca credentials (https://app.alpaca.markets -> Home -> API Keys) ---
 # Paper and live keys are separate accounts; ALPACA_PAPER picks the endpoint.
@@ -51,6 +51,28 @@ SIGNAL_ONLY = _get_bool("SIGNAL_ONLY", True)
 # --- Risk management (fractions: 0.02 = 2%) ---
 STOP_LOSS_PCT = float(os.getenv("STOP_LOSS_PCT", "0.02"))
 TAKE_PROFIT_PCT = float(os.getenv("TAKE_PROFIT_PCT", "0.04"))
+
+# --- Position sizing ---
+# RISK_PCT > 0 sizes each trade so that hitting the stop-loss costs this
+# fraction of account equity (e.g. 0.01 = risk 1% per trade). It overrides
+# the fixed TRADE_QUOTE_AMOUNT. 0 = keep using the fixed amount.
+RISK_PCT = float(os.getenv("RISK_PCT", "0"))
+# Hard ceiling on a single position, as a fraction of equity.
+MAX_POSITION_PCT = float(os.getenv("MAX_POSITION_PCT", "0.25"))
+
+# --- Account-level safety rails ---
+# Stop opening new trades once the day is down this fraction of equity.
+MAX_DAILY_LOSS_PCT = float(os.getenv("MAX_DAILY_LOSS_PCT", "0.05"))
+MAX_OPEN_POSITIONS = int(os.getenv("MAX_OPEN_POSITIONS", "5"))
+# Attach broker-side stop-loss/take-profit legs (Alpaca stocks only, whole
+# shares only). Protects the position between polls, even if the bot dies.
+USE_BRACKET_ORDERS = _get_bool("USE_BRACKET_ORDERS", True)
+# Accounts under $25k are capped at 3 day trades per 5 sessions (FINRA PDT).
+# False = refuse a trade that would trip the rule.
+ALLOW_PDT = _get_bool("ALLOW_PDT", False)
+
+# --- Trade journal ---
+TRADE_LOG = os.getenv("TRADE_LOG", "trades.csv").strip()
 
 # --- Telegram notifications ---
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
@@ -93,3 +115,11 @@ def validate() -> None:
         raise SystemExit("FAST_SMA must be smaller than SLOW_SMA.")
     if TRADE_QUOTE_AMOUNT <= 0:
         raise SystemExit("TRADE_QUOTE_AMOUNT must be positive.")
+    if RISK_PCT and not 0 < RISK_PCT < 1:
+        raise SystemExit("RISK_PCT must be between 0 and 1 (e.g. 0.01 = 1%).")
+    if RISK_PCT and STOP_LOSS_PCT <= 0:
+        raise SystemExit("RISK_PCT sizing needs STOP_LOSS_PCT > 0 to size against.")
+    if not 0 < MAX_POSITION_PCT <= 1:
+        raise SystemExit("MAX_POSITION_PCT must be between 0 and 1.")
+    if MAX_DAILY_LOSS_PCT and not 0 < MAX_DAILY_LOSS_PCT < 1:
+        raise SystemExit("MAX_DAILY_LOSS_PCT must be between 0 and 1.")

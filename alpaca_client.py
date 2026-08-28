@@ -265,8 +265,66 @@ class AlpacaClient:
             body["qty"] = str(qty)
         return self._request("POST", "/v2/orders", body=body)
 
+    def submit_bracket_order(
+        self,
+        symbol: str,
+        side: str,
+        qty: int,
+        take_profit_price: float,
+        stop_loss_price: float,
+    ) -> dict:
+        """Market entry with broker-side take-profit and stop-loss legs.
+
+        The exit legs live on Alpaca's side as an OCO pair, so the position stays
+        protected between polls — and even if this bot stops running.
+
+        Constraints (Alpaca): stocks only (crypto has no bracket support) and
+        WHOLE shares only (bracket is incompatible with fractional trading).
+        """
+        if is_crypto(symbol):
+            raise AlpacaError(422, "Alpaca does not support bracket orders for crypto.")
+        body = {
+            "symbol": symbol,
+            "side": side,
+            "type": "market",
+            "time_in_force": "day",
+            "order_class": "bracket",
+            "qty": str(int(qty)),
+            "take_profit": {"limit_price": f"{take_profit_price:.2f}"},
+            "stop_loss": {"stop_price": f"{stop_loss_price:.2f}"},
+        }
+        return self._request("POST", "/v2/orders", body=body)
+
+    def list_orders(self, status: str = "open", symbols: Optional[str] = None) -> List[dict]:
+        """Orders by status ("open", "closed", "all")."""
+        return self._request("GET", "/v2/orders",
+                             params={"status": status, "symbols": symbols})
+
+    def cancel_order(self, order_id: str) -> None:
+        self._request("DELETE", f"/v2/orders/{order_id}")
+
+    def cancel_orders_for(self, symbol: str) -> int:
+        """Cancel every open order on `symbol`; returns how many were cancelled.
+
+        Needed before a manual exit, otherwise a leftover bracket leg would sit
+        there trying to sell shares the position no longer has.
+        """
+        cancelled = 0
+        for order in self.list_orders(status="open") or []:
+            if order.get("symbol") not in (symbol, self._position_symbol(symbol)):
+                continue
+            try:
+                self.cancel_order(order["id"])
+                cancelled += 1
+            except AlpacaError as e:
+                # 422 = already filled or cancelled; nothing to do.
+                if e.status != 422:
+                    raise
+        return cancelled
+
     def close_position(self, symbol: str) -> dict:
         """Liquidate the whole position (simpler than computing a sell qty)."""
+        self.cancel_orders_for(symbol)  # clear any resting bracket legs first
         return self._request(
             "DELETE", "/v2/positions/" + urllib.parse.quote(
                 self._position_symbol(symbol), safe=""),
