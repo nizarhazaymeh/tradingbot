@@ -1,143 +1,198 @@
-"""Backtester — replays real historical candles through the bot's strategy.
+"""Backtester — replays real bars through the live bot's decision logic.
 
-It mirrors the LIVE bot's decision logic (SMA crossover entry, fixed
-stop-loss / take-profit, sell-signal exit) so the results reflect what the
-bot would actually have done. Stop-loss and take-profit are checked against
-each candle's HIGH/LOW (intra-candle), like a real fill — not just closes.
+It calls the SAME `strategy.analyze()` the bot calls, on an expanding window,
+so a result here reflects what the bot would actually have done. Higher-timeframe
+bars are sliced by timestamp, so at any moment the strategy only sees HTF bars
+that had already closed — no lookahead.
 
 Usage:
-    python backtest.py                 # uses SYMBOL + params from .env
-    python backtest.py --candles 1000  # how many historical candles (max 1000)
-    python backtest.py --trend 200     # only BUY when price > 200-SMA (trend filter)
-    python backtest.py --buffer 0.001  # require fast SMA to beat slow by 0.1%
+    python backtest.py                      # every WATCHLIST symbol, its own timeframes
+    python backtest.py --bars 1500          # how much history per symbol
+    python backtest.py --compare            # new strategy vs the old SMA/fixed-% one
+    python backtest.py --slippage 0.0005    # per-side cost assumption
 
-Data comes from whichever broker BROKER points at, so the bars are the same
-ones the live bot would trade on. Alpaca requires API keys even for market data.
+Stops and targets are checked against each bar's HIGH/LOW, like a real fill.
+When both are touched inside one bar, the stop is assumed to fill first.
 """
 import argparse
 import statistics
+from typing import List, Optional
 
 import config
+import strategy
 from broker import get_broker
-from strategy import sma, generate_signal
+from strategy import Bar
 
 
-def backtest(bars, fast, slow, sl_pct, tp_pct, trend=0, buffer=0.0):
-    """Replay the strategy over `bars` = [(close, high, low), ...].
+# --------------------------------------------------------------------------- #
+# Engines
+# --------------------------------------------------------------------------- #
+def run_new(bars: List[Bar], htf: Optional[List[Bar]], params, slippage: float):
+    """Replay the multi-timeframe ATR strategy."""
+    warmup = max(params.slow + 2, params.trend_ma,
+                 params.atr_period * 2, params.adx_period * 3) + 2
+    trades, equity, curve = [], 1.0, [1.0]
+    in_pos = False
+    entry = stop = target = 0.0
 
-    Returns (trades, equity_curve). Each trade is a dict with entry/exit/pnl.
-    """
-    closes = [b[0] for b in bars]
-    trades = []
-    equity = 1.0
-    equity_curve = [1.0]
+    for i in range(warmup, len(bars)):
+        bar = bars[i]
+        window = bars[:i + 1]
+        htf_window = strategy.htf_at(htf, bar.t) if htf else None
+        d = strategy.analyze(window, htf_window, params)
 
-    in_position = False
-    entry_price = 0.0
-    need = max(slow + 1, trend)
-
-    for i in range(need, len(bars)):
-        window = closes[: i + 1]
-        close, high, low = bars[i]
-        signal = generate_signal(window, fast, slow)
-
-        # Optional confirmation filters applied to the BUY signal.
-        if signal == "BUY":
-            if trend and close <= sma(window, trend):
-                signal = "HOLD"  # below long-term trend -> skip
-            elif buffer and sma(window, fast) <= sma(window, slow) * (1 + buffer):
-                signal = "HOLD"  # crossover too weak
-
-        if in_position:
-            sl_price = entry_price * (1 - sl_pct)
-            tp_price = entry_price * (1 + tp_pct)
-            exit_price = exit_reason = None
-
-            # Intra-candle: if both touched, assume the stop fills first.
-            if sl_pct > 0 and low <= sl_price:
-                exit_price, exit_reason = sl_price, "stop-loss"
-            elif tp_pct > 0 and high >= tp_price:
-                exit_price, exit_reason = tp_price, "take-profit"
-            elif signal == "SELL":
-                exit_price, exit_reason = close, "sell-signal"
+        if in_pos:
+            exit_price = reason = None
+            if stop and bar.l <= stop:            # stop first if both are touched
+                exit_price, reason = stop, "stop-loss"
+            elif target and bar.h >= target:
+                exit_price, reason = target, "take-profit"
+            elif d.signal == "SELL":
+                exit_price, reason = bar.c, "sell-signal"
 
             if exit_price is not None:
-                pnl = (exit_price - entry_price) / entry_price
+                fill = exit_price * (1 - slippage)
+                pnl = (fill - entry) / entry
                 equity *= 1 + pnl
-                trades.append({
-                    "entry": entry_price, "exit": exit_price,
-                    "pnl": pnl, "reason": exit_reason,
-                })
-                in_position = False
+                trades.append({"entry": entry, "exit": fill, "pnl": pnl, "reason": reason})
+                in_pos = False
 
-        elif signal == "BUY":
-            in_position = True
-            entry_price = close
+        elif d.signal == "BUY":
+            entry = bar.c * (1 + slippage)
+            stop, target = d.stop, d.target
+            in_pos = True
 
-        equity_curve.append(equity)
-
-    return trades, equity_curve
+        curve.append(equity)
+    return trades, curve
 
 
+def run_old(bars: List[Bar], slippage: float):
+    """The previous behaviour: SMA crossover, fixed 2% stop / 4% target."""
+    closes = [b.c for b in bars]
+    fast, slow = config.FAST_SMA, config.SLOW_SMA
+    sl, tp = config.STOP_LOSS_PCT, config.TAKE_PROFIT_PCT
+    warmup = max(slow + 2, config.TREND_SMA) + 2
+    trades, equity, curve = [], 1.0, [1.0]
+    in_pos, entry = False, 0.0
+
+    for i in range(warmup, len(bars)):
+        bar = bars[i]
+        sig = strategy.generate_signal(closes[:i + 1], fast, slow,
+                                       trend=config.TREND_SMA, buffer=config.CROSS_BUFFER)
+        if in_pos:
+            stop, target = entry * (1 - sl), entry * (1 + tp)
+            exit_price = reason = None
+            if sl and bar.l <= stop:
+                exit_price, reason = stop, "stop-loss"
+            elif tp and bar.h >= target:
+                exit_price, reason = target, "take-profit"
+            elif sig == "SELL":
+                exit_price, reason = bar.c, "sell-signal"
+            if exit_price is not None:
+                fill = exit_price * (1 - slippage)
+                pnl = (fill - entry) / entry
+                equity *= 1 + pnl
+                trades.append({"entry": entry, "exit": fill, "pnl": pnl, "reason": reason})
+                in_pos = False
+        elif sig == "BUY":
+            entry, in_pos = bar.c * (1 + slippage), True
+        curve.append(equity)
+    return trades, curve
+
+
+# --------------------------------------------------------------------------- #
+# Stats
+# --------------------------------------------------------------------------- #
 def max_drawdown(curve):
-    peak = curve[0]
-    worst = 0.0
+    peak, worst = curve[0], 0.0
     for v in curve:
         peak = max(peak, v)
         worst = min(worst, (v - peak) / peak)
     return worst
 
 
-def report(symbol, bars, interval, trades, curve):
-    n = len(trades)
-    wins = [t for t in trades if t["pnl"] > 0]
-    losses = [t for t in trades if t["pnl"] <= 0]
-    total_return = (curve[-1] - 1) * 100
-    buy_hold = (bars[-1][0] - bars[0][0]) / bars[0][0] * 100
-
-    print(f"\n=== {symbol}  ({len(bars)} x {interval} candles) ===")
-    print(f"  Trades:        {n}")
-    if n:
-        win_rate = len(wins) / n * 100
-        avg_win = statistics.mean([t['pnl'] for t in wins]) * 100 if wins else 0
-        avg_loss = statistics.mean([t['pnl'] for t in losses]) * 100 if losses else 0
-        print(f"  Win rate:      {win_rate:.1f}%  ({len(wins)}W / {len(losses)}L)")
-        print(f"  Avg win:       {avg_win:+.2f}%   Avg loss: {avg_loss:+.2f}%")
-    print(f"  Strategy P/L:  {total_return:+.2f}%")
-    print(f"  Buy & hold:    {buy_hold:+.2f}%   <- doing nothing")
-    print(f"  Max drawdown:  {max_drawdown(curve) * 100:.2f}%")
-    edge = total_return - buy_hold
-    verdict = "BEATS" if edge > 0 else "LOSES TO"
-    print(f"  => Strategy {verdict} buy & hold by {abs(edge):.2f} pts")
+def stats(bars, trades, curve):
+    wins = [t["pnl"] for t in trades if t["pnl"] > 0]
+    losses = [t["pnl"] for t in trades if t["pnl"] <= 0]
+    gross_win = sum(wins)
+    gross_loss = abs(sum(losses))
+    return {
+        "trades": len(trades),
+        "win_rate": (len(wins) / len(trades) * 100) if trades else 0.0,
+        "avg_win": statistics.mean(wins) * 100 if wins else 0.0,
+        "avg_loss": statistics.mean(losses) * 100 if losses else 0.0,
+        "ret": (curve[-1] - 1) * 100,
+        "buy_hold": (bars[-1].c - bars[0].c) / bars[0].c * 100,
+        "dd": max_drawdown(curve) * 100,
+        "pf": (gross_win / gross_loss) if gross_loss else float("inf") if gross_win else 0.0,
+        "expectancy": (statistics.mean([t["pnl"] for t in trades]) * 100) if trades else 0.0,
+    }
 
 
+def show(label, s):
+    pf = "inf" if s["pf"] == float("inf") else f"{s['pf']:.2f}"
+    print(f"  {label:<12} {s['trades']:>4}  {s['win_rate']:>5.1f}%  "
+          f"{s['ret']:>+8.2f}%  {s['dd']:>7.2f}%  {pf:>6}  {s['expectancy']:>+7.2f}%")
+
+
+# --------------------------------------------------------------------------- #
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--candles", type=int, default=1000,
-               help="how many historical bars (Alpaca allows up to 10000)")
-    p.add_argument("--trend", type=int, default=0, help="long-SMA trend filter period")
-    p.add_argument("--buffer", type=float, default=0.0, help="min crossover margin, e.g. 0.001")
+    p.add_argument("--bars", type=int, default=1000,
+                   help="history per symbol (Alpaca allows up to 10000)")
+    p.add_argument("--compare", action="store_true",
+                   help="also run the old SMA + fixed-%% strategy for reference")
+    p.add_argument("--slippage", type=float, default=0.0002,
+                   help="per-side cost as a fraction (0.0002 = 2bps)")
     args = p.parse_args()
 
     config.validate()
+    params = config.strategy_params()
     broker = get_broker()
-    symbols = broker.prepare(config.SYMBOLS)
+    resolved = broker.prepare([w["symbol"] for w in config.WATCHLIST])
+    watch = [dict(w, symbol=s) for w, s in zip(config.WATCHLIST, resolved)]
 
-    print(f"Data: {broker.name} | Strategy: SMA {config.FAST_SMA}/{config.SLOW_SMA} | "
-          f"SL {config.STOP_LOSS_PCT*100:.0f}% TP {config.TAKE_PROFIT_PCT*100:.0f}%"
-          + (f" | trend>{args.trend}SMA" if args.trend else "")
-          + (f" | buffer {args.buffer*100:.2f}%" if args.buffer else ""))
+    print(f"Data: {broker.name} | {params.ma_type.upper()} {params.fast}/{params.slow} "
+          f"| ADX>={params.adx_min:.0f} | stop {params.atr_stop_mult}xATR({params.atr_period}) "
+          f"| R:R 1:{params.reward_risk} | slippage {args.slippage*100:.3f}%/side")
 
-    for symbol in symbols:
-        bars = broker.history(symbol, config.INTERVAL, args.candles)
-        if len(bars) < config.SLOW_SMA + 2:
-            print(f"\n{symbol}: not enough data."); continue
-        trades, curve = backtest(
-            bars, config.FAST_SMA, config.SLOW_SMA,
-            config.STOP_LOSS_PCT, config.TAKE_PROFIT_PCT,
-            trend=args.trend, buffer=args.buffer,
-        )
-        report(symbol, bars, config.INTERVAL, trades, curve)
+    totals = {"new": [], "old": []}
+    for w in watch:
+        sym, tf, htf_tf = w["symbol"], w["entry_tf"], w["htf_tf"]
+        bars = broker.history(sym, tf, args.bars)
+        htf = broker.history(sym, htf_tf, max(args.bars // 3, 120)) if htf_tf else None
+
+        need = max(params.slow + 2, params.trend_ma) + 10
+        if len(bars) < need:
+            print(f"\n{sym}: only {len(bars)} {tf} bars, need {need} — skipping.")
+            continue
+
+        label = f"{sym} {tf}" + (f" (trend {htf_tf})" if htf_tf else "")
+        print(f"\n=== {label}  —  {len(bars)} bars"
+              + (f", {len(htf)} HTF bars" if htf else "") + " ===")
+        print(f"  {'strategy':<12} {'trades':>4}  {'win':>6}  {'return':>9}  "
+              f"{'maxDD':>8}  {'PF':>6}  {'expect':>8}")
+
+        t_new, c_new = run_new(bars, htf, params, args.slippage)
+        s_new = stats(bars, t_new, c_new)
+        show("new (MTF)", s_new)
+        totals["new"].append(s_new)
+
+        if args.compare:
+            t_old, c_old = run_old(bars, args.slippage)
+            s_old = stats(bars, t_old, c_old)
+            show("old (SMA)", s_old)
+            totals["old"].append(s_old)
+
+        print(f"  {'buy & hold':<12} {'-':>4}  {'-':>6}  {s_new['buy_hold']:>+8.2f}%")
+
+    for name in ("new", "old"):
+        rows = totals[name]
+        if len(rows) > 1:
+            print(f"\n{name.upper()} across {len(rows)} symbols: "
+                  f"total trades {sum(r['trades'] for r in rows)}, "
+                  f"mean return {statistics.mean(r['ret'] for r in rows):+.2f}%, "
+                  f"mean maxDD {statistics.mean(r['dd'] for r in rows):.2f}%")
 
 
 if __name__ == "__main__":

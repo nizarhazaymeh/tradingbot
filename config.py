@@ -44,6 +44,81 @@ CROSS_BUFFER = float(os.getenv("CROSS_BUFFER", "0.001"))  # min crossover margin
 
 POLL_SECONDS = int(os.getenv("POLL_SECONDS", "60"))
 
+
+# --------------------------------------------------------------------------- #
+# Watchlist — per-symbol timeframes
+# --------------------------------------------------------------------------- #
+# Format:  SYMBOL@ENTRY_TF[:HIGHER_TF], comma separated.
+#   GLD@15m        -> gold, 15-minute bars, single timeframe
+#   FXE@1h:4h      -> euro, entries on 1h, trend bias taken from 4h
+# Leave WATCHLIST empty to fall back to SYMBOL + INTERVAL above.
+WATCHLIST_RAW = os.getenv("WATCHLIST", "").strip()
+
+
+def _parse_watchlist(raw: str):
+    entries = []
+    for item in raw.split(","):
+        item = item.strip()
+        if not item:
+            continue
+        htf = ""
+        if "@" in item:
+            sym, tf = item.split("@", 1)
+            if ":" in tf:
+                tf, htf = tf.split(":", 1)
+        else:
+            sym, tf = item, INTERVAL
+        entries.append({
+            "symbol": sym.strip().upper(),
+            "entry_tf": tf.strip() or INTERVAL,
+            "htf_tf": htf.strip(),
+        })
+    return entries
+
+
+WATCHLIST = _parse_watchlist(WATCHLIST_RAW) or [
+    {"symbol": s, "entry_tf": INTERVAL, "htf_tf": ""} for s in SYMBOLS
+]
+# Keep SYMBOLS in step so validation and logging see the real universe.
+SYMBOLS = [w["symbol"] for w in WATCHLIST]
+SYMBOL = SYMBOLS[0] if SYMBOLS else "GLD"
+
+
+# --------------------------------------------------------------------------- #
+# Strategy tuning (see strategy.py for what each filter is defending against)
+# --------------------------------------------------------------------------- #
+MA_TYPE = os.getenv("MA_TYPE", "ema").strip().lower()   # "ema" or "sma"
+# Trend filter on the HIGHER timeframe (0 = off).
+HTF_TREND_MA = int(os.getenv("HTF_TREND_MA", "50"))
+# Trend strength gate: below ADX_MIN the market is ranging and crossovers whipsaw.
+ADX_PERIOD = int(os.getenv("ADX_PERIOD", "14"))
+ADX_MIN = float(os.getenv("ADX_MIN", "20"))
+# ATR-based risk: stop = entry - ATR_STOP_MULT*ATR, target = entry + REWARD_RISK*risk.
+USE_ATR_STOPS = _get_bool("USE_ATR_STOPS", True)
+ATR_PERIOD = int(os.getenv("ATR_PERIOD", "14"))
+ATR_STOP_MULT = float(os.getenv("ATR_STOP_MULT", "1.5"))
+REWARD_RISK = float(os.getenv("REWARD_RISK", "2.0"))
+# A crossover only counts if the MAs separate by this fraction of ATR.
+CROSS_ATR_FRAC = float(os.getenv("CROSS_ATR_FRAC", "0.10"))
+# Refuse to buy above this RSI (0 = off).
+RSI_MAX = float(os.getenv("RSI_MAX", "75"))
+# Ratchet the stop up by ATR as price advances (poll-protected positions only).
+TRAIL_ATR = _get_bool("TRAIL_ATR", False)
+
+
+def strategy_params():
+    """Build the strategy Params from this config (imported lazily to avoid a cycle)."""
+    from strategy import Params
+    return Params(
+        fast=FAST_SMA, slow=SLOW_SMA, ma_type=MA_TYPE,
+        trend_ma=TREND_SMA, htf_trend_ma=HTF_TREND_MA,
+        adx_period=ADX_PERIOD, adx_min=ADX_MIN,
+        atr_period=ATR_PERIOD, atr_stop_mult=ATR_STOP_MULT,
+        reward_risk=REWARD_RISK, cross_atr_frac=CROSS_ATR_FRAC,
+        rsi_max=RSI_MAX, use_atr_stops=USE_ATR_STOPS,
+        stop_loss_pct=STOP_LOSS_PCT, take_profit_pct=TAKE_PROFIT_PCT,
+    )
+
 # Signal-only mode: compute & notify signals using PUBLIC data, never trade.
 # Works even with no API keys. Safest mode.
 SIGNAL_ONLY = _get_bool("SIGNAL_ONLY", True)
@@ -113,6 +188,14 @@ def validate() -> None:
             )
     if FAST_SMA >= SLOW_SMA:
         raise SystemExit("FAST_SMA must be smaller than SLOW_SMA.")
+    if MA_TYPE not in ("ema", "sma"):
+        raise SystemExit(f'MA_TYPE must be "ema" or "sma", got "{MA_TYPE}".')
+    if USE_ATR_STOPS and ATR_STOP_MULT <= 0:
+        raise SystemExit("ATR_STOP_MULT must be positive when USE_ATR_STOPS=true.")
+    if REWARD_RISK <= 0:
+        raise SystemExit("REWARD_RISK must be positive.")
+    if not WATCHLIST:
+        raise SystemExit("WATCHLIST (or SYMBOL) is empty — nothing to trade.")
     if TRADE_QUOTE_AMOUNT <= 0:
         raise SystemExit("TRADE_QUOTE_AMOUNT must be positive.")
     if RISK_PCT and not 0 < RISK_PCT < 1:

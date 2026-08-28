@@ -1,10 +1,13 @@
-"""SMA crossover trading bot with risk management — Alpaca (default) or Binance.
+"""Multi-timeframe trading bot — Alpaca (default) or Binance.
 
 Run:  python bot.py
 
-Broker (set BROKER in .env):
-  BROKER=alpaca   -> Alpaca US stocks + crypto, paper or live (default)
-  BROKER=binance  -> Binance Spot crypto
+Each symbol carries its own timeframes, set in WATCHLIST:
+
+    WATCHLIST=GLD@15m, FXE@1h:4h, FXB@1h:4h, UUP@1h:4h
+
+    GLD@15m     gold on 15-minute bars, single timeframe
+    FXE@1h:4h   euro: entries timed on 1h, trend bias taken from 4h
 
 Modes (set in .env), safest first:
   SIGNAL_ONLY=true      -> compute signals + notify, place NO orders (default)
@@ -12,11 +15,11 @@ Modes (set in .env), safest first:
   ALPACA_PAPER=true     -> real orders against Alpaca's paper account (fake money)
   ALPACA_PAPER=false    -> real orders with real money
 
-Protection on an open position, in order of preference:
-  bracket -> broker-side stop-loss + take-profit, live between polls and even
-             if this process dies. Alpaca stocks, whole shares only.
-  poll    -> this loop checks stop-loss/take-profit every POLL_SECONDS.
-             The fallback for crypto and fractional share sizes.
+Protection on an open position:
+  bracket -> broker-side stop + target, live between polls and after a crash.
+             Alpaca stocks, whole shares only.
+  poll    -> this loop checks the stop/target every POLL_SECONDS. Used for
+             crypto and fractional sizes, and the only mode that can trail.
 """
 import json
 import logging
@@ -26,10 +29,10 @@ from typing import Optional
 
 import config
 import risk
+import strategy
 import tradelog
 from broker import get_broker
 from notifier import notify
-from strategy import generate_signal
 
 logging.basicConfig(
     level=logging.INFO,
@@ -42,25 +45,24 @@ STATE_FILE = os.path.join(os.path.dirname(__file__), "state.json")
 
 
 # --------------------------------------------------------------------------- #
-# Position state (persisted so a restart doesn't forget the entry price)
+# Position state (persisted so a restart doesn't forget the entry or the stop)
 # --------------------------------------------------------------------------- #
 def _fresh_symbol_state() -> dict:
-    return {"in_position": False, "entry_price": None, "qty": 0.0, "protection": "poll"}
+    return {"in_position": False, "entry_price": None, "qty": 0.0,
+            "protection": "poll", "stop": None, "target": None}
 
 
 def load_state() -> dict:
-    """State is keyed by symbol: {symbol: {in_position, entry_price, qty, protection}}."""
     data = {}
     if os.path.exists(STATE_FILE):
         try:
             with open(STATE_FILE) as f:
                 data = json.load(f)
-            # Migrate the old single-symbol format ({in_position, entry_price}).
-            if "in_position" in data:
+            if "in_position" in data:  # migrate the old single-symbol format
                 data = {config.SYMBOL: data}
         except Exception:
             data = {}
-    for sym, ss in data.items():
+    for sym, ss in list(data.items()):
         merged = _fresh_symbol_state()
         merged.update(ss)
         data[sym] = merged
@@ -79,7 +81,6 @@ def save_state(state: dict) -> None:
 # Modes
 # --------------------------------------------------------------------------- #
 def live_trading() -> bool:
-    """True when orders actually reach the broker."""
     return not config.SIGNAL_ONLY and config.ENABLE_TRADING
 
 
@@ -104,13 +105,11 @@ def describe_mode() -> str:
 # --------------------------------------------------------------------------- #
 # Risk gates
 # --------------------------------------------------------------------------- #
-def risk_exit_reason(entry: float, price: float) -> Optional[str]:
-    """'stop-loss' / 'take-profit' if a threshold is hit, else None."""
-    if not entry:
-        return None
-    if config.STOP_LOSS_PCT > 0 and price <= entry * (1 - config.STOP_LOSS_PCT):
+def risk_exit_reason(ss: dict, price: float) -> Optional[str]:
+    """Stop/target are absolute prices set at entry from ATR, not percentages."""
+    if ss.get("stop") and price <= ss["stop"]:
         return "stop-loss"
-    if config.TAKE_PROFIT_PCT > 0 and price >= entry * (1 + config.TAKE_PROFIT_PCT):
+    if ss.get("target") and price >= ss["target"]:
         return "take-profit"
     return None
 
@@ -131,12 +130,6 @@ def entry_blocked(account: dict, open_count: int) -> Optional[str]:
 # Broker reconciliation — the broker is the source of truth, not state.json
 # --------------------------------------------------------------------------- #
 def reconcile(broker, symbol, ss, positions, price):
-    """Align local state with what the broker actually holds.
-
-    Two drift cases matter: a bracket order firing (or a manual close) leaves us
-    thinking we hold something we don't, and a partially-filled or manually
-    opened position leaves us blind to real exposure.
-    """
     pos = positions.get(symbol)
     held = pos and not broker.is_dust(symbol, pos["qty"], price)
 
@@ -145,8 +138,8 @@ def reconcile(broker, symbol, ss, positions, price):
         log.warning("[%s] Broker holds %.8f @ %.4f but local state was flat — "
                     "adopting the position.", symbol, pos["qty"], entry)
         ss.update(in_position=True, entry_price=entry, qty=pos["qty"],
-                  protection="poll")
-        return None
+                  protection="poll", stop=None, target=None)
+        return
 
     if ss["in_position"] and not held:
         entry = ss["entry_price"] or price
@@ -162,7 +155,6 @@ def reconcile(broker, symbol, ss, positions, price):
                f"Entry: {entry:.4f} | P/L: {pnl:+.2f}%",
                subject=f"EXIT ({why}) — {symbol}")
         ss.update(_fresh_symbol_state())
-    return None
 
 
 # --------------------------------------------------------------------------- #
@@ -170,16 +162,29 @@ def reconcile(broker, symbol, ss, positions, price):
 # --------------------------------------------------------------------------- #
 def run():
     config.validate()
+    params = config.strategy_params()
     mode = describe_mode()
     broker = get_broker()
-    symbols = broker.prepare(config.SYMBOLS)
     live = live_trading()
 
-    log.info("=" * 68)
-    log.info("SMA bot starting | Broker: %s | Mode: %s", broker.name, mode)
-    log.info("Symbols=%s Interval=%s SMA=%d/%d | SL=%.1f%% TP=%.1f%%",
-             ",".join(symbols), config.INTERVAL, config.FAST_SMA, config.SLOW_SMA,
-             config.STOP_LOSS_PCT * 100, config.TAKE_PROFIT_PCT * 100)
+    # prepare() may rewrite symbols (BTCUSDT -> BTC/USD); keep the watchlist aligned.
+    resolved = broker.prepare([w["symbol"] for w in config.WATCHLIST])
+    watch = [dict(w, symbol=s) for w, s in zip(config.WATCHLIST, resolved)]
+    symbols = [w["symbol"] for w in watch]
+
+    entry_bars = max(params.slow + 2, params.trend_ma,
+                     params.atr_period * 2, params.adx_period * 3) + 5
+    htf_bars_needed = max(params.htf_trend_ma + 5, 60)
+
+    log.info("=" * 72)
+    log.info("Bot starting | Broker: %s | Mode: %s", broker.name, mode)
+    for w in watch:
+        log.info("  %-9s entry=%-5s trend=%-5s", w["symbol"], w["entry_tf"],
+                 w["htf_tf"] or f'{params.trend_ma}{params.ma_type.upper()} (same tf)')
+    log.info("Strategy: %s %d/%d | ADX>=%.0f | stop %.1fxATR(%d) | R:R 1:%.1f%s",
+             params.ma_type.upper(), params.fast, params.slow, params.adx_min,
+             params.atr_stop_mult, params.atr_period, params.reward_risk,
+             " | trailing" if config.TRAIL_ATR else "")
     if config.RISK_PCT:
         log.info("Sizing: risk %.2f%% of equity per trade (cap %.0f%% of equity)",
                  config.RISK_PCT * 100, config.MAX_POSITION_PCT * 100)
@@ -191,12 +196,11 @@ def run():
              not config.ALLOW_PDT)
     if real_money():
         log.warning("!! LIVE TRADING WITH REAL MONEY IS ACTIVE !!")
-    log.info("=" * 68)
+    log.info("=" * 72)
 
     state = load_state()
     for sym in symbols:
         state.setdefault(sym, _fresh_symbol_state())
-    needed = max(config.SLOW_SMA, config.TREND_SMA) + 2
     halted = None
 
     while True:
@@ -218,42 +222,51 @@ def run():
                 log.info("Entry conditions cleared — trading resumed.")
             halted = block
 
-        for sym in symbols:
+        for w in watch:
+            sym = w["symbol"]
             try:
                 ss = state[sym]
-                closes = broker.closes(sym, config.INTERVAL, needed)
-                if len(closes) < 2:
-                    log.warning("[%s] Not enough bars returned yet (%d).", sym, len(closes))
+                bars = broker.history(sym, w["entry_tf"], entry_bars)
+                if len(bars) < 2:
+                    log.warning("[%s] Not enough %s bars yet (%d).",
+                                sym, w["entry_tf"], len(bars))
                     continue
-                price = closes[-1]
+                htf = broker.history(sym, w["htf_tf"], htf_bars_needed) if w["htf_tf"] else None
+                price = bars[-1].c
 
                 if live:
                     reconcile(broker, sym, ss, positions, price)
 
-                signal = generate_signal(
-                    closes, config.FAST_SMA, config.SLOW_SMA,
-                    trend=config.TREND_SMA, buffer=config.CROSS_BUFFER,
-                )
+                d = strategy.analyze(bars, htf, params)
 
                 # Broker-side brackets own the stop/target; polling them here
                 # too would race the broker and double-exit.
                 exit_reason = None
                 if ss["in_position"]:
                     if ss["protection"] != "bracket":
-                        exit_reason = risk_exit_reason(ss["entry_price"], price)
-                    if not exit_reason and signal == "SELL":
+                        if config.TRAIL_ATR:
+                            new_stop = strategy.trail_stop(ss["stop"], price, d.atr, params)
+                            if new_stop and new_stop != ss["stop"]:
+                                log.info("[%s] Trailing stop %.4f -> %.4f",
+                                         sym, ss["stop"] or 0.0, new_stop)
+                                ss["stop"] = new_stop
+                        exit_reason = risk_exit_reason(ss, price)
+                    if not exit_reason and d.signal == "SELL":
                         exit_reason = "sell-signal"
 
-                log.info("%-9s price=%.4f signal=%s pos=%s entry=%s prot=%s%s",
-                         sym, price, signal, ss["in_position"], ss["entry_price"],
-                         ss["protection"] if ss["in_position"] else "-",
-                         f" exit={exit_reason}" if exit_reason else "")
+                log.info("%-9s %-4s %.4f sig=%-4s adx=%s atr=%s pos=%s%s%s",
+                         sym, w["entry_tf"], price, d.signal,
+                         f"{d.adx:.0f}" if d.adx is not None else "--",
+                         f"{d.atr:.4f}" if d.atr else "--",
+                         ss["in_position"],
+                         f" exit={exit_reason}" if exit_reason else "",
+                         f" | held: {d.blocked_by}" if d.reasons and d.signal == "HOLD" else "")
 
-                if signal == "BUY" and not ss["in_position"]:
+                if d.signal == "BUY" and not ss["in_position"]:
                     if live and halted:
                         log.info("[%s] BUY signal ignored — %s", sym, halted)
                     else:
-                        handle_entry(broker, sym, price, ss, account)
+                        handle_entry(broker, sym, price, d, ss, account)
                 elif exit_reason and ss["in_position"]:
                     handle_exit(broker, sym, price, ss, exit_reason)
 
@@ -267,11 +280,13 @@ def run():
         time.sleep(config.POLL_SECONDS)
 
 
-def handle_entry(broker, symbol, price, ss, account):
-    stop_price = price * (1 - config.STOP_LOSS_PCT)
-    target_price = price * (1 + config.TAKE_PROFIT_PCT)
-    msg = (f"📈 BUY signal on {symbol} @ {price:.4f}\n"
-           f"Stop-loss: {stop_price:.4f} | Take-profit: {target_price:.4f}")
+def handle_entry(broker, symbol, price, d, ss, account):
+    stop, target = d.stop, d.target
+    risk_pct = (price - stop) / price * 100 if stop else 0.0
+    msg = (f"📈 BUY {symbol} @ {price:.4f}\n"
+           f"Stop: {stop:.4f} (-{risk_pct:.2f}%) | Target: {target:.4f}\n"
+           f"ADX {d.adx:.0f} | ATR {d.atr:.4f}" if stop and target else
+           f"📈 BUY {symbol} @ {price:.4f}")
 
     if not live_trading():
         tag = "signal-only" if config.SIGNAL_ONLY else "paper"
@@ -279,23 +294,25 @@ def handle_entry(broker, symbol, price, ss, account):
             log.info("[PAPER] Would BUY %s of %s.", config.TRADE_QUOTE_AMOUNT, symbol)
             msg += "\n(paper mode — no order placed)"
         notify(msg, subject=f"BUY signal — {symbol}")
-        tradelog.record(config.TRADE_LOG, symbol=symbol, action="ENTRY", reason="sma-cross",
+        tradelog.record(config.TRADE_LOG, symbol=symbol, action="ENTRY", reason="mtf-cross",
                         price=f"{price:.6f}", notional=config.TRADE_QUOTE_AMOUNT,
                         mode=tag, protection="poll")
         ss.update(in_position=True, entry_price=price,
                   qty=config.TRADE_QUOTE_AMOUNT / price if price else 0.0,
-                  protection="poll")
+                  protection="poll", stop=stop, target=target)
         return
 
-    # Orders can't fill outside US market hours (crypto is always open).
     if not broker.market_open(symbol):
         log.info("[%s] BUY signal but the market is closed — skipping entry.", symbol)
         return
 
     equity = float(account.get("equity") or 0)
     cash = float(account.get("cash") or 0)
+    # Size against the ACTUAL stop distance, not a nominal percentage — that is
+    # what makes "risk 1% of equity" mean the same thing on gold and on FXE.
+    stop_distance_pct = ((price - stop) / price) if stop else config.STOP_LOSS_PCT
     notional = risk.size_notional(
-        equity=equity, cash=cash, stop_loss_pct=config.STOP_LOSS_PCT,
+        equity=equity, cash=cash, stop_loss_pct=stop_distance_pct,
         risk_pct=config.RISK_PCT, fixed_amount=config.TRADE_QUOTE_AMOUNT,
         max_position_pct=config.MAX_POSITION_PCT,
     )
@@ -304,18 +321,18 @@ def handle_entry(broker, symbol, price, ss, account):
                     "(cash $%.2f, equity $%.2f).", symbol, notional, cash, equity)
         return
 
-    result = broker.buy(symbol, notional, price,
-                        stop_price=stop_price, target_price=target_price)
+    result = broker.buy(symbol, notional, price, stop_price=stop, target_price=target)
     entry = result["fill"] or price
     prot = result["protection"]
     detail = ("broker-side stop/target attached" if prot == "bracket"
               else "bot-side stop/target (checked each poll)")
     notify(msg + f"\n✅ Bought {result['qty']:.6f} @ {entry:.4f} — {detail}",
            subject=f"BUY executed — {symbol}")
-    tradelog.record(config.TRADE_LOG, symbol=symbol, action="ENTRY", reason="sma-cross",
+    tradelog.record(config.TRADE_LOG, symbol=symbol, action="ENTRY", reason="mtf-cross",
                     price=f"{entry:.6f}", qty=f"{result['qty']:.8f}",
                     notional=f"{notional:.2f}", mode=describe_mode(), protection=prot)
-    ss.update(in_position=True, entry_price=entry, qty=result["qty"], protection=prot)
+    ss.update(in_position=True, entry_price=entry, qty=result["qty"],
+              protection=prot, stop=stop, target=target)
 
 
 def handle_exit(broker, symbol, price, ss, reason):

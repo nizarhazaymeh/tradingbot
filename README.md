@@ -1,7 +1,8 @@
-# SMA Trading Bot — Binance & Alpaca
+# Multi-Timeframe Trading Bot — Gold, Currencies & Crypto
 
-A simple, safe-by-default trading bot using a moving-average (SMA) crossover
-strategy. It runs against either broker, selected with `BROKER` in `.env`:
+A safe-by-default trading bot: moving-average crossovers confirmed across two
+timeframes, gated by trend strength, with risk sized in ATR. It runs against
+either broker, selected with `BROKER` in `.env`:
 
 | `BROKER` | Market | Endpoint |
 |---|---|---|
@@ -10,15 +11,49 @@ strategy. It runs against either broker, selected with `BROKER` in `.env`:
 
 `strategy.py` is shared — only the execution layer (`broker.py`) differs.
 
+## What it trades
+
+**Alpaca has no spot forex and no physical gold** — only US equities, ETFs,
+options and crypto. Gold and currencies are traded through the standard liquid
+ETF proxies, which are ordinary Alpaca equities:
+
+| Exposure | Ticker | Tracks | Alternatives |
+|---|---|---|---|
+| Gold | `GLD` | Spot gold bullion | `IAU`, `GLDM` (cheaper fees) |
+| Euro | `FXE` | EUR/USD | |
+| Pound | `FXB` | GBP/USD | |
+| Yen | `FXY` | JPY/USD | |
+| Swiss franc | `FXF` | CHF/USD | |
+| Aussie | `FXA` | AUD/USD | |
+| US dollar | `UUP` | USD index | `UDN` (inverse) |
+
+These trade **US market hours only** (09:30–16:00 ET) — not 24/5 like real FX.
+The bot skips entries when the market is closed.
+
+## Timeframes
+
+Each symbol carries its own, set in `WATCHLIST` as `SYMBOL@ENTRY_TF[:HIGHER_TF]`:
+
+```
+WATCHLIST=GLD@15m, FXE@1h:4h, FXB@1h:4h, FXY@1h:4h, UUP@1h:4h
+```
+
+- `GLD@15m` — gold on 15-minute bars, single timeframe.
+- `FXE@1h:4h` — entries timed on 1h, but only in the direction of the 4h trend.
+
+With no higher timeframe, the entry-timeframe `TREND_SMA` filter carries the
+load instead.
+
 > ⚠️ **Trading is risky. This bot can lose money. Test on the Testnet first and
 > never trade more than you can afford to lose.**
 
 ## How it works
 
-- Every `POLL_SECONDS` it fetches recent candles for `SYMBOL`.
-- It computes a fast and slow SMA on closed candles.
-- **Golden cross** (fast crosses above slow) → BUY (open position).
-- **Death cross** (fast crosses below slow) → SELL.
+- Every `POLL_SECONDS` it fetches recent bars for each `WATCHLIST` symbol,
+  on that symbol's own timeframes.
+- It computes the signal (see [The strategy](#the-strategy)).
+- **BUY** on a confirmed crossover that passes every filter.
+- **SELL** when the fast MA crosses back below the slow one.
 - **Risk management:** every open position has a **stop-loss** and
   **take-profit**; whichever is hit first closes the position.
 - **Notifications:** every entry/exit is pushed to Telegram and/or email.
@@ -161,9 +196,9 @@ The bot starts in the **safest** mode:
 
 | Variable | Meaning |
 |---|---|
-| `SYMBOL` | `BTCUSDT` (Binance), `AAPL` or `BTC/USD` (Alpaca) |
+| `SYMBOL` | Fallback symbol list when `WATCHLIST` is empty |
 | `TRADE_QUOTE_AMOUNT` | Quote currency to spend per BUY (e.g. 15 USDT) |
-| `INTERVAL` | Candle size: `1m`, `5m`, `1h`, `4h`, `1d`... |
+| `INTERVAL` | Fallback candle size when `WATCHLIST` is empty |
 | `FAST_SMA` / `SLOW_SMA` | SMA periods (fast must be < slow) |
 | `POLL_SECONDS` | How often to re-check the market |
 | `USE_TESTNET` | Binance: `true` = testnet, `false` = live |
@@ -172,6 +207,16 @@ The bot starts in the **safest** mode:
 | `ALPACA_API_KEY` / `ALPACA_API_SECRET` | Alpaca credentials |
 | `ALPACA_PAPER` | `true` = paper account (fake money), `false` = real money |
 | `ALPACA_FEED` | `iex` (free) or `sip` (paid) |
+| `WATCHLIST` | `SYMBOL@ENTRY_TF[:HIGHER_TF]`, comma separated |
+| `MA_TYPE` | `ema` or `sma` |
+| `ADX_MIN` | Trend-strength gate; below this, no entries |
+| `USE_ATR_STOPS` | ATR-based stop/target instead of fixed percentages |
+| `ATR_STOP_MULT` | Stop distance in ATR |
+| `REWARD_RISK` | Target as a multiple of the risk |
+| `CROSS_ATR_FRAC` | How decisively price must clear the slow MA |
+| `HTF_TREND_MA` | Trend MA period on the higher timeframe |
+| `RSI_MAX` | Refuse entries above this RSI |
+| `TRAIL_ATR` | Ratchet the stop up by ATR (poll-protected only) |
 | `RISK_PCT` | Risk per trade as a fraction of equity (`0` = fixed amount) |
 | `MAX_POSITION_PCT` | Ceiling on one position, as a fraction of equity |
 | `MAX_DAILY_LOSS_PCT` | Pause new entries after this daily drawdown |
@@ -180,10 +225,60 @@ The bot starts in the **safest** mode:
 | `ALLOW_PDT` | `false` = refuse trades that could flag pattern-day-trader |
 | `TRADE_LOG` | CSV journal path |
 
-## Customizing the strategy
+## The strategy
 
-Edit `strategy.py`. As long as `generate_signal()` returns `"BUY"`, `"SELL"`,
-or `"HOLD"`, the rest of the bot works unchanged.
+The original version — a bare SMA 9/21 crossover with a fixed 2% stop and 4%
+target — lost to buy & hold. Three things were wrong, and each has a fix:
+
+| Problem | Fix |
+|---|---|
+| Crossovers fire constantly in a sideways market, and most are noise | **ADX gate** — no entries below `ADX_MIN`, where price is ranging |
+| A fixed 2% stop means nothing across instruments: it's a rounding error on gold intraday and an enormous move on a currency ETF | **ATR stops** — `stop = entry − ATR_STOP_MULT × ATR`, so risk scales with each instrument's own volatility |
+| A 1h buy against a falling 4h trend is a losing trade waiting to happen | **Higher-timeframe bias** — entries must agree with the 4h trend |
+
+Plus a decisiveness test: a crossover only counts if the close clears the slow
+MA by `CROSS_ATR_FRAC × ATR`. Note this is deliberately *not* the gap between
+the two MAs — at a crossover they are equal by definition, so that test can
+never pass.
+
+Position sizing pairs with this: `RISK_PCT` sizes against the **actual ATR stop
+distance**, so "risk 1% of equity" means the same thing on gold and on FXE.
+
+### Measured effect
+
+1000 × 1h bars of BTC and SOL with a 4h trend filter, 2bps slippage per side
+(crypto stands in for gold/FX here — see the caveat below):
+
+| | Trades | Win rate | Return | Max DD | Profit factor |
+|---|---|---|---|---|---|
+| **New (MTF + ATR)** | 7 | 60% | **+6.87%** | **−1.61%** | — |
+| Old (SMA + fixed %) | 7 | 35% | −1.15% | −4.93% | 0.49 / 1.97 |
+
+**Read this cautiously.** Seven trades is far too small a sample to be
+conclusive, and the parameters were chosen on this same data. `ATR_STOP_MULT=1.5`
+and `REWARD_RISK=2.0` were picked because their *neighbourhood* was uniformly
+profitable, not because they were the single best cell — the top cell
+(`1.0×ATR`, `1:3`) was an isolated spike, which is the classic overfitting trap.
+Both strategies still trail buy & hold in a strong bull market, which is normal
+for a stop-based long-only system. Re-run the comparison on GLD and the FX ETFs
+once your keys are in, before trusting any of it.
+
+### Backtesting
+
+```bash
+python backtest.py --compare              # new vs old, every WATCHLIST symbol
+python backtest.py --bars 2000            # more history
+python backtest.py --slippage 0.0005      # harsher cost assumption
+```
+
+The backtester calls the same `strategy.analyze()` the live bot calls, on an
+expanding window. Higher-timeframe bars are sliced by timestamp, so the
+strategy only ever sees HTF bars that had already closed — no lookahead.
+
+### Customizing
+
+Edit `strategy.py`. `analyze()` returns a `Decision` with a signal plus the
+stop and target it wants; the rest of the bot works off that.
 
 Test a change before trading it:
 

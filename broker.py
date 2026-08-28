@@ -7,7 +7,7 @@ strategy.py stays venue-agnostic:
     supports_brackets           broker-side stop-loss/take-profit available?
     prepare(symbols)            resolve + validate symbols, return the usable list
     closes(symbol, iv, n)       last n CLOSED bar closes, oldest first
-    history(symbol, iv, n)      last n CLOSED bars as (close, high, low)
+    history(symbol, iv, n)      last n CLOSED bars as Bar(t, c, h, l)
     account()                   {equity, cash, last_equity, daytrade_count, ...}
     positions(symbols)          {symbol: {qty, avg_entry_price}} for open positions
     is_dust(symbol, qty, price) is this residue too small to count as a position?
@@ -24,8 +24,20 @@ from typing import Dict, List, Optional
 
 import config
 import risk
+from strategy import Bar
 
 log = logging.getLogger("broker")
+
+
+def _epoch(value) -> float:
+    """RFC-3339 string or epoch-ms int -> epoch seconds."""
+    if isinstance(value, (int, float)):
+        return float(value) / 1000.0 if value > 1e11 else float(value)
+    try:
+        from datetime import datetime
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00")).timestamp()
+    except Exception:
+        return 0.0
 
 
 # --------------------------------------------------------------------------- #
@@ -77,11 +89,12 @@ class AlpacaBroker:
         return self.client.get_closes(symbol, interval, limit)
 
     def history(self, symbol: str, interval: str, limit: int):
-        """(close, high, low) per CLOSED bar, oldest first — for backtesting."""
+        """Last `limit` CLOSED bars, oldest first."""
         bars = self.client.get_bars(symbol, interval, limit + 1)
         if len(bars) > limit:
             bars = bars[:-1]  # drop the still-forming bar
-        return [(float(b["c"]), float(b["h"]), float(b["l"])) for b in bars]
+        return [Bar(_epoch(b["t"]), float(b["c"]), float(b["h"]), float(b["l"]))
+                for b in bars]
 
     def account(self) -> dict:
         return self.client.get_account()
@@ -182,9 +195,10 @@ class BinanceBroker:
         return [float(k[4]) for k in klines[:-1]]  # drop the forming candle
 
     def history(self, symbol: str, interval: str, limit: int):
-        """(close, high, low) per CLOSED candle, oldest first — for backtesting."""
+        """Last `limit` CLOSED candles, oldest first."""
         raw = self.client.get_klines(symbol=symbol, interval=interval, limit=limit + 1)
-        return [(float(k[4]), float(k[2]), float(k[3])) for k in raw[:-1]]
+        return [Bar(_epoch(k[0]), float(k[4]), float(k[2]), float(k[3]))
+                for k in raw[:-1]]
 
     def _balance(self, asset: str) -> float:
         bal = self.client.get_asset_balance(asset=asset)
