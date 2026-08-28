@@ -1,7 +1,14 @@
-# Binance SMA Trading Bot
+# SMA Trading Bot — Binance & Alpaca
 
-A simple, safe-by-default Binance **Spot** trading bot using a moving-average
-(SMA) crossover strategy.
+A simple, safe-by-default trading bot using a moving-average (SMA) crossover
+strategy. It runs against either broker, selected with `BROKER` in `.env`:
+
+| `BROKER` | Market | Endpoint |
+|---|---|---|
+| `binance` (default) | Spot crypto | Binance / Binance Testnet |
+| `alpaca` | US stocks **and** crypto | `paper-api.alpaca.markets` / `api.alpaca.markets` |
+
+`strategy.py` is shared — only the execution layer (`broker.py`) differs.
 
 > ⚠️ **Trading is risky. This bot can lose money. Test on the Testnet first and
 > never trade more than you can afford to lose.**
@@ -22,8 +29,10 @@ A simple, safe-by-default Binance **Spot** trading bot using a moving-average
 |---|---|---|---|
 | `true` | — | — | **Default.** Notify signals only. No orders. No API key needed. |
 | `false` | `false` | — | Paper: track positions + notify, send no orders. |
-| `false` | `true` | `true` | Place **real** orders on Testnet (fake money). |
+| `false` | `true` | `true` | Place **real** orders on Testnet / Alpaca paper (fake money). |
 | `false` | `true` | `false` | Place **real** orders on your live account. |
+
+For Alpaca the fake-money switch is `ALPACA_PAPER` rather than `USE_TESTNET`.
 
 ### Notifications
 - **Telegram:** create a bot via [@BotFather](https://t.me/BotFather) for the
@@ -48,7 +57,35 @@ cp .env.example .env       # then edit .env with your keys
 
 ## Getting API keys
 
-### Testnet (recommended first)
+### Alpaca (stocks + crypto)
+1. Sign up at [app.alpaca.markets](https://app.alpaca.markets) — a paper account
+   is created for you automatically, no funding or approval needed.
+2. **Home → API Keys → Generate New Key.** The secret is shown **once**.
+3. Put them in `.env`:
+   ```
+   BROKER=alpaca
+   ALPACA_API_KEY=your_key_id
+   ALPACA_API_SECRET=your_secret_key
+   ALPACA_PAPER=true
+   SYMBOL=AAPL,TSLA        # or BTC/USD for crypto
+   ```
+4. Verify the connection (places no orders):
+   ```bash
+   python test_alpaca.py
+   ```
+
+Notes:
+- Paper and live keys are **separate accounts** and are not interchangeable —
+  `ALPACA_PAPER` must match where the key was generated.
+- Alpaca authenticates its **market data** endpoints too, so keys are required
+  even with `SIGNAL_ONLY=true`.
+- `ALPACA_FEED=iex` is the free real-time feed; `sip` needs a paid data plan.
+- Binance-style crypto tickers are auto-converted (`BTCUSDT` → `BTC/USD`),
+  since Alpaca settles crypto in USD.
+- US stocks only trade during market hours; the bot skips entries when the
+  market is closed. Crypto trades 24/7.
+
+### Binance Testnet (recommended first)
 1. Go to https://testnet.binance.vision/ and log in with GitHub.
 2. Generate an HMAC API key + secret.
 3. Put them in `.env` and keep `USE_TESTNET=true`.
@@ -78,13 +115,17 @@ The bot starts in the **safest** mode:
 
 | Variable | Meaning |
 |---|---|
-| `SYMBOL` | Trading pair, e.g. `BTCUSDT` |
+| `SYMBOL` | `BTCUSDT` (Binance), `AAPL` or `BTC/USD` (Alpaca) |
 | `TRADE_QUOTE_AMOUNT` | Quote currency to spend per BUY (e.g. 15 USDT) |
 | `INTERVAL` | Candle size: `1m`, `5m`, `1h`, `4h`, `1d`... |
 | `FAST_SMA` / `SLOW_SMA` | SMA periods (fast must be < slow) |
 | `POLL_SECONDS` | How often to re-check the market |
-| `USE_TESTNET` | `true` = testnet, `false` = live |
+| `USE_TESTNET` | Binance: `true` = testnet, `false` = live |
 | `ENABLE_TRADING` | `false` = paper, `true` = send real orders |
+| `BROKER` | `binance` or `alpaca` |
+| `ALPACA_API_KEY` / `ALPACA_API_SECRET` | Alpaca credentials |
+| `ALPACA_PAPER` | `true` = paper account (fake money), `false` = real money |
+| `ALPACA_FEED` | `iex` (free) or `sip` (paid) |
 
 ## Customizing the strategy
 
