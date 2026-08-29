@@ -17,6 +17,7 @@ Standard library only (urllib), matching notifier.py — no new dependencies.
 import json
 import logging
 import time
+import uuid
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -162,6 +163,23 @@ class AlpacaClient:
             return True
         return bool(self.get_clock().get("is_open"))
 
+    def minutes_to_close(self) -> Optional[float]:
+        """Minutes until the US session closes, or None if shut / unknown.
+
+        Reads `next_close` off the clock, so early-close days (13:00 half days)
+        are handled without a separate calendar call.
+        """
+        clock = self.get_clock()
+        if not clock.get("is_open"):
+            return None
+        try:
+            from datetime import datetime
+            now = datetime.fromisoformat(str(clock["timestamp"]).replace("Z", "+00:00"))
+            close = datetime.fromisoformat(str(clock["next_close"]).replace("Z", "+00:00"))
+            return (close - now).total_seconds() / 60.0
+        except Exception:
+            return None
+
     def get_asset(self, symbol: str) -> dict:
         """Asset metadata — tradability, fractionability, min order size."""
         return self._request("GET", "/v2/assets/" + urllib.parse.quote(symbol, safe=""))
@@ -169,23 +187,43 @@ class AlpacaClient:
     # ------------------------------------------------------------------ #
     # Market data
     # ------------------------------------------------------------------ #
-    def get_bars(self, symbol: str, interval: str, limit: int) -> List[dict]:
-        """The most recent `limit` bars, oldest first.
+    def get_bars_multi(self, symbols: List[str], interval: str,
+                       limit: int) -> Dict[str, List[dict]]:
+        """Bars for MANY symbols, oldest first, keyed by symbol.
 
-        Sorted descending server-side (so we get the LATEST bars rather than
-        the oldest available) and reversed here.
+        The bars endpoints take a comma-separated `symbols` list, so one request
+        covers the whole watchlist instead of one per symbol — on a 5-symbol,
+        2-timeframe watchlist that is 2 requests per cycle rather than 10, which
+        matters against the 200/min limit.
+
+        Sorted descending server-side (so we get the LATEST bars rather than the
+        oldest available) and reversed here. Crypto and stocks live on different
+        endpoints, so a mixed list is split into two calls.
         """
         timeframe = to_timeframe(interval)
-        if is_crypto(symbol):
-            path, params = "/v1beta3/crypto/us/bars", {}
-        else:
-            path, params = "/v2/stocks/bars", {"feed": self.feed, "adjustment": "raw"}
-        params.update({"symbols": symbol, "timeframe": timeframe,
-                       "limit": limit, "sort": "desc"})
+        out: Dict[str, List[dict]] = {}
+        crypto = [s for s in symbols if is_crypto(s)]
+        stocks = [s for s in symbols if not is_crypto(s)]
 
-        payload = self._request("GET", path, base=DATA, params=params)
-        bars = (payload.get("bars") or {}).get(symbol) or []
-        return list(reversed(bars))  # oldest -> newest
+        for group, path, extra in (
+            (stocks, "/v2/stocks/bars", {"feed": self.feed, "adjustment": "raw"}),
+            (crypto, "/v1beta3/crypto/us/bars", {}),
+        ):
+            if not group:
+                continue
+            params = dict(extra)
+            params.update({"symbols": ",".join(group), "timeframe": timeframe,
+                           "limit": limit, "sort": "desc"})
+            payload = self._request("GET", path, base=DATA, params=params)
+            for sym, bars in (payload.get("bars") or {}).items():
+                out[sym] = list(reversed(bars or []))  # oldest -> newest
+            for sym in group:
+                out.setdefault(sym, [])
+        return out
+
+    def get_bars(self, symbol: str, interval: str, limit: int) -> List[dict]:
+        """The most recent `limit` bars for one symbol, oldest first."""
+        return self.get_bars_multi([symbol], interval, limit).get(symbol, [])
 
     def get_closes(self, symbol: str, interval: str, limit: int) -> List[float]:
         """Closing prices of the last `limit` CLOSED bars.
@@ -242,12 +280,36 @@ class AlpacaClient:
     # ------------------------------------------------------------------ #
     # Orders
     # ------------------------------------------------------------------ #
+    def _submit(self, body: dict) -> dict:
+        """POST an order exactly once, tagged with a unique client_order_id.
+
+        Order submission is deliberately NOT retried. A retry after a lost
+        response would place a SECOND position — far worse than a failed order.
+        The client_order_id makes the attempt traceable, so a caller that loses
+        the response can ask `get_order_by_client_id` what actually happened
+        (and the bot's reconciliation pass catches an orphan either way).
+        """
+        body = dict(body)
+        body.setdefault("client_order_id", "bot-" + uuid.uuid4().hex[:24])
+        return self._request("POST", "/v2/orders", body=body, retries=1)
+
+    def get_order_by_client_id(self, client_order_id: str) -> Optional[dict]:
+        """Look an order up by the id we generated — for resolving a lost POST."""
+        try:
+            return self._request("GET", "/v2/orders:by_client_order_id",
+                                 params={"client_order_id": client_order_id})
+        except AlpacaError as e:
+            if e.status == 404:
+                return None
+            raise
+
     def submit_market_order(
         self,
         symbol: str,
         side: str,
         notional: Optional[float] = None,
         qty: Optional[float] = None,
+        client_order_id: Optional[str] = None,
     ) -> dict:
         """Place a market order by dollar amount (`notional`) or units (`qty`)."""
         if (notional is None) == (qty is None):
@@ -259,11 +321,13 @@ class AlpacaClient:
             # Crypto rejects "day"; stocks reject "gtc" on market orders.
             "time_in_force": "gtc" if is_crypto(symbol) else "day",
         }
+        if client_order_id:
+            body["client_order_id"] = client_order_id
         if notional is not None:
             body["notional"] = str(round(notional, 2))
         else:
             body["qty"] = str(qty)
-        return self._request("POST", "/v2/orders", body=body)
+        return self._submit(body)
 
     def submit_bracket_order(
         self,
@@ -272,6 +336,7 @@ class AlpacaClient:
         qty: int,
         take_profit_price: float,
         stop_loss_price: float,
+        client_order_id: Optional[str] = None,
     ) -> dict:
         """Market entry with broker-side take-profit and stop-loss legs.
 
@@ -293,7 +358,9 @@ class AlpacaClient:
             "take_profit": {"limit_price": f"{take_profit_price:.2f}"},
             "stop_loss": {"stop_price": f"{stop_loss_price:.2f}"},
         }
-        return self._request("POST", "/v2/orders", body=body)
+        if client_order_id:
+            body["client_order_id"] = client_order_id
+        return self._submit(body)
 
     def list_orders(self, status: str = "open", symbols: Optional[str] = None) -> List[dict]:
         """Orders by status ("open", "closed", "all")."""

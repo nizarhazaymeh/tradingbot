@@ -8,6 +8,8 @@ strategy.py stays venue-agnostic:
     prepare(symbols)            resolve + validate symbols, return the usable list
     closes(symbol, iv, n)       last n CLOSED bar closes, oldest first
     history(symbol, iv, n)      last n CLOSED bars as Bar(t, c, h, l)
+    history_many(syms, iv, n)   same for many symbols, batched into one request
+    entry_window_ok(sym, mins)  reason to skip an entry near the bell, else None
     account()                   {equity, cash, last_equity, daytrade_count, ...}
     positions(symbols)          {symbol: {qty, avg_entry_price}} for open positions
     is_dust(symbol, qty, price) is this residue too small to count as a position?
@@ -19,6 +21,7 @@ Alpaca is the default (BROKER=alpaca). Binance remains available for crypto,
 but has no equity/PDT/bracket concepts, so those rails simply don't engage.
 """
 import logging
+import uuid
 from decimal import Decimal
 from typing import Dict, List, Optional
 
@@ -88,13 +91,34 @@ class AlpacaBroker:
     def closes(self, symbol: str, interval: str, limit: int) -> List[float]:
         return self.client.get_closes(symbol, interval, limit)
 
+    def history_many(self, symbols: List[str], interval: str, limit: int):
+        """Last `limit` CLOSED bars for every symbol, in ONE request."""
+        raw = self.client.get_bars_multi(symbols, interval, limit + 1)
+        out = {}
+        for sym, bars in raw.items():
+            if len(bars) > limit:
+                bars = bars[:-1]  # drop the still-forming bar
+            out[sym] = [Bar(_epoch(b["t"]), float(b["c"]), float(b["h"]), float(b["l"]))
+                        for b in bars]
+        return out
+
     def history(self, symbol: str, interval: str, limit: int):
-        """Last `limit` CLOSED bars, oldest first."""
-        bars = self.client.get_bars(symbol, interval, limit + 1)
-        if len(bars) > limit:
-            bars = bars[:-1]  # drop the still-forming bar
-        return [Bar(_epoch(b["t"]), float(b["c"]), float(b["h"]), float(b["l"]))
-                for b in bars]
+        return self.history_many([symbol], interval, limit).get(symbol, [])
+
+    def entry_window_ok(self, symbol: str, min_minutes: float) -> Optional[str]:
+        """Reason to skip a NEW entry near the bell, else None.
+
+        Opening a position minutes before the close means the stop and target
+        never get a chance to work — and on an early-close day the bell comes
+        three hours sooner than usual.
+        """
+        from alpaca_client import is_crypto
+        if is_crypto(symbol) or not min_minutes:
+            return None
+        left = self.client.minutes_to_close()
+        if left is not None and left < min_minutes:
+            return f"only {left:.0f} min to the close (need {min_minutes:.0f})"
+        return None
 
     def account(self) -> dict:
         return self.client.get_account()
@@ -129,13 +153,16 @@ class AlpacaBroker:
             config.USE_BRACKET_ORDERS and self.supports_brackets
             and not is_crypto(symbol) and stop_price and target_price
         )
+        cid = "bot-" + uuid.uuid4().hex[:24]
         if want_bracket:
             qty = risk.shares_for(notional, price)
             if qty >= 1:
                 log.info("Placing BRACKET BUY: %d share(s) of %s "
                          "(stop %.2f / target %.2f)", qty, symbol, stop_price, target_price)
-                order = self.client.submit_bracket_order(
-                    symbol, "buy", qty, target_price, stop_price)
+                order = self._place(lambda: self.client.submit_bracket_order(
+                    symbol, "buy", qty, target_price, stop_price, client_order_id=cid), cid)
+                if order is None:
+                    return {"fill": 0.0, "qty": 0.0, "protection": "none"}
                 return {"fill": self.client.fill_price(order),
                         "qty": float(qty), "protection": "bracket"}
             log.info("[%s] $%.2f buys less than one share at %.2f — using a "
@@ -143,10 +170,34 @@ class AlpacaBroker:
                      symbol, notional, price)
 
         log.info("Placing MARKET BUY: $%.2f notional on %s", notional, symbol)
-        order = self.client.submit_market_order(symbol, "buy", notional=notional)
+        order = self._place(lambda: self.client.submit_market_order(
+            symbol, "buy", notional=notional, client_order_id=cid), cid)
+        if order is None:
+            return {"fill": 0.0, "qty": 0.0, "protection": "none"}
         fill = self.client.fill_price(order)
         return {"fill": fill, "qty": (notional / fill) if fill else 0.0,
                 "protection": "poll"}
+
+    def _place(self, submit, client_order_id):
+        """Submit once; if the response is lost, find out what actually happened.
+
+        A network error after a successful POST is the dangerous case: blindly
+        retrying would open a second position. Instead we look the order up by
+        the id we sent, and only report failure if it truly never landed.
+        """
+        from alpaca_client import AlpacaError
+        try:
+            return submit()
+        except AlpacaError as e:
+            if e.status != 0:      # a real rejection — nothing was created
+                raise
+            log.warning("Order response lost (%s) — checking whether it landed.", e)
+            existing = self.client.get_order_by_client_id(client_order_id)
+            if existing:
+                log.warning("It did: order %s is live. Not resubmitting.", existing.get("id"))
+                return existing
+            log.error("Order never reached Alpaca; skipping this entry.")
+            return None
 
     def sell(self, symbol: str) -> float:
         qty = self.client.position_qty(symbol)
@@ -199,6 +250,13 @@ class BinanceBroker:
         raw = self.client.get_klines(symbol=symbol, interval=interval, limit=limit + 1)
         return [Bar(_epoch(k[0]), float(k[4]), float(k[2]), float(k[3]))
                 for k in raw[:-1]]
+
+    def history_many(self, symbols: List[str], interval: str, limit: int):
+        """Binance klines are single-symbol, so this is just a loop."""
+        return {s: self.history(s, interval, limit) for s in symbols}
+
+    def entry_window_ok(self, symbol: str, min_minutes: float) -> Optional[str]:
+        return None  # crypto never closes
 
     def _balance(self, asset: str) -> float:
         bal = self.client.get_asset_balance(asset=asset)

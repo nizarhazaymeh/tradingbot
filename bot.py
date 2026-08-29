@@ -175,6 +175,15 @@ def run():
     entry_bars = max(params.slow + 2, params.trend_ma,
                      params.atr_period * 2, params.adx_period * 3) + 5
     htf_bars_needed = max(params.htf_trend_ma + 5, 60)
+    bars_per_tf = max(entry_bars, htf_bars_needed)
+
+    # Which symbols need which timeframe — one batched request per timeframe.
+    tf_groups = {}
+    for w in watch:
+        tf_groups.setdefault(w["entry_tf"], []).append(w["symbol"])
+        if w["htf_tf"]:
+            tf_groups.setdefault(w["htf_tf"], []).append(w["symbol"])
+    tf_groups = {tf: sorted(set(s)) for tf, s in tf_groups.items()}
 
     log.info("=" * 72)
     log.info("Bot starting | Broker: %s | Mode: %s", broker.name, mode)
@@ -190,10 +199,11 @@ def run():
                  config.RISK_PCT * 100, config.MAX_POSITION_PCT * 100)
     else:
         log.info("Sizing: fixed %s per trade", config.TRADE_QUOTE_AMOUNT)
-    log.info("Rails: max daily loss %.1f%% | max %d open | brackets=%s | PDT guard=%s",
+    log.info("Rails: max daily loss %.1f%% | max %d open | brackets=%s | PDT guard=%s "
+             "| no entries within %.0f min of the close",
              config.MAX_DAILY_LOSS_PCT * 100, config.MAX_OPEN_POSITIONS,
              config.USE_BRACKET_ORDERS and broker.supports_brackets,
-             not config.ALLOW_PDT)
+             not config.ALLOW_PDT, config.MIN_MINUTES_TO_CLOSE)
     if real_money():
         log.warning("!! LIVE TRADING WITH REAL MONEY IS ACTIVE !!")
     log.info("=" * 72)
@@ -222,16 +232,26 @@ def run():
                 log.info("Entry conditions cleared — trading resumed.")
             halted = block
 
+        # One request per timeframe for the whole watchlist, not one per symbol:
+        # 5 symbols x 2 timeframes is 2 requests instead of 10.
+        cache = {}
+        for tf, syms in tf_groups.items():
+            try:
+                cache[tf] = broker.history_many(syms, tf, bars_per_tf)
+            except broker.ERRORS as e:
+                log.error("Could not fetch %s bars: %s", tf, e)
+                cache[tf] = {}
+
         for w in watch:
             sym = w["symbol"]
             try:
                 ss = state[sym]
-                bars = broker.history(sym, w["entry_tf"], entry_bars)
+                bars = cache.get(w["entry_tf"], {}).get(sym) or []
                 if len(bars) < 2:
                     log.warning("[%s] Not enough %s bars yet (%d).",
                                 sym, w["entry_tf"], len(bars))
                     continue
-                htf = broker.history(sym, w["htf_tf"], htf_bars_needed) if w["htf_tf"] else None
+                htf = cache.get(w["htf_tf"], {}).get(sym) if w["htf_tf"] else None
                 price = bars[-1].c
 
                 if live:
@@ -304,6 +324,10 @@ def handle_entry(broker, symbol, price, d, ss, account):
 
     if not broker.market_open(symbol):
         log.info("[%s] BUY signal but the market is closed — skipping entry.", symbol)
+        return
+    late = broker.entry_window_ok(symbol, config.MIN_MINUTES_TO_CLOSE)
+    if late:
+        log.info("[%s] BUY signal but %s — skipping entry.", symbol, late)
         return
 
     equity = float(account.get("equity") or 0)

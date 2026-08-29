@@ -21,7 +21,10 @@ BROKER = os.getenv("BROKER", "alpaca").strip().lower()
 # --- Alpaca credentials (https://app.alpaca.markets -> Home -> API Keys) ---
 # Paper and live keys are separate accounts; ALPACA_PAPER picks the endpoint.
 ALPACA_API_KEY = os.getenv("ALPACA_API_KEY", "").strip()
-ALPACA_API_SECRET = os.getenv("ALPACA_API_SECRET", "").strip()
+# ALPACA_SECRET_KEY is what the official `alpaca` CLI uses; accept either name
+# so one .env serves both the CLI and this bot.
+ALPACA_API_SECRET = (os.getenv("ALPACA_API_SECRET")
+                     or os.getenv("ALPACA_SECRET_KEY") or "").strip()
 ALPACA_PAPER = _get_bool("ALPACA_PAPER", True)
 # "iex" is included free; "sip" (full consolidated tape) needs a paid plan.
 ALPACA_FEED = os.getenv("ALPACA_FEED", "iex").strip().lower()
@@ -139,6 +142,9 @@ MAX_POSITION_PCT = float(os.getenv("MAX_POSITION_PCT", "0.25"))
 # Stop opening new trades once the day is down this fraction of equity.
 MAX_DAILY_LOSS_PCT = float(os.getenv("MAX_DAILY_LOSS_PCT", "0.05"))
 MAX_OPEN_POSITIONS = int(os.getenv("MAX_OPEN_POSITIONS", "5"))
+# Don't open a new position this close to the US closing bell — the stop and
+# target would never get a chance to work. Also covers early-close half days.
+MIN_MINUTES_TO_CLOSE = float(os.getenv("MIN_MINUTES_TO_CLOSE", "15"))
 # Attach broker-side stop-loss/take-profit legs (Alpaca stocks only, whole
 # shares only). Protects the position between polls, even if the bot dies.
 USE_BRACKET_ORDERS = _get_bool("USE_BRACKET_ORDERS", True)
