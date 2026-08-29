@@ -101,6 +101,30 @@ RSI_MAX = float(os.getenv("RSI_MAX", "75"))
 # Ratchet the stop up by ATR as price advances (poll-protected positions only).
 TRAIL_ATR = _get_bool("TRAIL_ATR", False)
 
+# --- Confluence: how many independent methods must agree before entering ---
+# Votes: MA cross (2), above trend MA (1), HTF trend (2), structure (1),
+# demand zone (2), fib golden pocket (2), ADX (1), RSI (1), volume (1) = 12.
+MIN_CONFLUENCE = int(os.getenv("MIN_CONFLUENCE", "6"))
+# How near a supply/demand zone still counts as "at" it, in ATR.
+ZONE_PAD_ATR = float(os.getenv("ZONE_PAD_ATR", "0.5"))
+# Require an MA crossover as the trigger (false = any high-scoring bar can enter).
+REQUIRE_TREND = _get_bool("REQUIRE_TREND", True)
+
+# --- Scaled exits: TP1 / TP2 / TP3 ---
+# Fraction of the position closed at each target; must sum to 1.0.
+TP1_PCT = float(os.getenv("TP1_PCT", "0.5"))
+TP2_PCT = float(os.getenv("TP2_PCT", "0.3"))
+TP3_PCT = float(os.getenv("TP3_PCT", "0.2"))
+# TP1 must pay at least this multiple of the risk, else the trade isn't worth it.
+MIN_TP1_R = float(os.getenv("MIN_TP1_R", "1.0"))
+# Stop distance bounds, in ATR: never wider than the first, never tighter than
+# the second (anything tighter is inside normal noise).
+MAX_STOP_ATR = float(os.getenv("MAX_STOP_ATR", "3.0"))
+MIN_STOP_ATR = float(os.getenv("MIN_STOP_ATR", "0.5"))
+# Move the stop to breakeven / start trailing once this many targets are hit.
+BREAKEVEN_AFTER = int(os.getenv("BREAKEVEN_AFTER", "1"))
+TRAIL_AFTER = int(os.getenv("TRAIL_AFTER", "2"))
+
 
 def strategy_params():
     """Build the strategy Params from this config (imported lazily to avoid a cycle)."""
@@ -113,6 +137,11 @@ def strategy_params():
         reward_risk=REWARD_RISK, cross_atr_frac=CROSS_ATR_FRAC,
         rsi_max=RSI_MAX, use_atr_stops=USE_ATR_STOPS,
         stop_loss_pct=STOP_LOSS_PCT, take_profit_pct=TAKE_PROFIT_PCT,
+        min_confluence=MIN_CONFLUENCE, zone_pad_atr=ZONE_PAD_ATR,
+        require_trend=REQUIRE_TREND,
+        tp_fractions=(TP1_PCT, TP2_PCT, TP3_PCT), min_tp1_r=MIN_TP1_R,
+        max_stop_atr=MAX_STOP_ATR, min_stop_atr=MIN_STOP_ATR,
+        breakeven_after=BREAKEVEN_AFTER, trail_after=TRAIL_AFTER,
     )
 
 # Signal-only mode: compute & notify signals using PUBLIC data, never trade.
@@ -138,6 +167,9 @@ MAX_OPEN_POSITIONS = int(os.getenv("MAX_OPEN_POSITIONS", "5"))
 # Don't open a new position this close to the US closing bell — the stop and
 # target would never get a chance to work. Also covers early-close half days.
 MIN_MINUTES_TO_CLOSE = float(os.getenv("MIN_MINUTES_TO_CLOSE", "15"))
+# Use only 09:30-16:00 ET bars. Extended-hours ETF bars are thin (hundreds of
+# shares) and carry bad prints that wreck ATR and swing detection.
+RTH_ONLY = _get_bool("RTH_ONLY", True)
 # Attach broker-side stop-loss/take-profit legs (Alpaca stocks only, whole
 # shares only). Protects the position between polls, even if the bot dies.
 USE_BRACKET_ORDERS = _get_bool("USE_BRACKET_ORDERS", True)
@@ -181,6 +213,14 @@ def validate() -> None:
         raise SystemExit("ATR_STOP_MULT must be positive when USE_ATR_STOPS=true.")
     if REWARD_RISK <= 0:
         raise SystemExit("REWARD_RISK must be positive.")
+    if abs(TP1_PCT + TP2_PCT + TP3_PCT - 1.0) > 1e-6:
+        raise SystemExit(
+            f"TP1_PCT + TP2_PCT + TP3_PCT must sum to 1.0, got "
+            f"{TP1_PCT + TP2_PCT + TP3_PCT:.3f}.")
+    if MIN_STOP_ATR >= MAX_STOP_ATR:
+        raise SystemExit("MIN_STOP_ATR must be smaller than MAX_STOP_ATR.")
+    if not 0 <= MIN_CONFLUENCE <= 12:
+        raise SystemExit("MIN_CONFLUENCE must be between 0 and 12.")
     if not WATCHLIST:
         raise SystemExit("WATCHLIST (or SYMBOL) is empty — nothing to trade.")
     if TRADE_QUOTE_AMOUNT <= 0:

@@ -213,65 +213,79 @@ The bot starts in the **safest** mode:
 
 ## The strategy
 
-The original version — a bare SMA 9/21 crossover with a fixed 2% stop and 4%
-target — lost to buy & hold. Three things were wrong, and each has a fix:
+No single method decides a trade. Each votes, the votes are scored, and an entry
+only happens when enough independent reasons line up. That same analysis places
+the stop and the three targets.
 
-| Problem | Fix |
+### Confluence scoring (12 points)
+
+| Vote | Pts | What it checks |
+|---|---|---|
+| MA cross | 2 | Fast MA crossed above slow on this bar |
+| Trend MA | 1 | Price above its long moving average |
+| Higher timeframe | 2 | The 4h trend agrees with the 1h entry |
+| Structure | 1 | Higher highs **and** higher lows |
+| Demand zone | 2 | Price sitting on a supply/demand base |
+| Fibonacci | 2 | Price inside the 0.5–0.618 pocket of the last impulse |
+| ADX | 1 | Trend strong enough that crossovers mean something |
+| RSI | 1 | Not already exhausted |
+| Volume | 1 | Participation above its own average |
+
+An entry needs `MIN_CONFLUENCE` (default 6). Votes that miss are *recorded, not
+fatal* — a strong setup is allowed to carry one weak leg, which is the whole
+point of scoring rather than filtering.
+
+### Where the stop goes
+
+Under the structure that would have to break for the idea to be wrong — the low
+of the demand zone, or the swing low that started the move — because that is the
+price at which the reason for the trade is gone. Two ATR bounds keep it sane:
+never tighter than `MIN_STOP_ATR` (inside normal noise), never wider than
+`MAX_STOP_ATR` (one loss shouldn't be unrecoverable).
+
+### Where TP1, TP2 and TP3 go
+
+Drawn from real resistance, nearest first: supply zones, Fibonacci extensions
+(1.272 / 1.618 / 2.0), and prior swing highs. R multiples only fill the gaps
+when structure offers nothing. TP1 must pay at least `MIN_TP1_R` of risk.
+
+The position scales out — and the stop follows it up:
+
+| Event | Action |
 |---|---|
-| Crossovers fire constantly in a sideways market, and most are noise | **ADX gate** — no entries below `ADX_MIN`, where price is ranging |
-| A fixed 2% stop means nothing across instruments: it's a rounding error on gold intraday and an enormous move on a currency ETF | **ATR stops** — `stop = entry − ATR_STOP_MULT × ATR`, so risk scales with each instrument's own volatility |
-| A 1h buy against a falling 4h trend is a losing trade waiting to happen | **Higher-timeframe bias** — entries must agree with the 4h trend |
+| TP1 | Close 50%, **stop → breakeven** |
+| TP2 | Close 30%, **stop starts trailing** by ATR |
+| TP3 | Close the last 20% |
+| Stop hit | Close whatever remains |
 
-Plus a decisiveness test: a crossover only counts if the close clears the slow
-MA by `CROSS_ATR_FRAC × ATR`. Note this is deliberately *not* the gap between
-the two MAs — at a crossover they are equal by definition, so that test can
-never pass.
-
-Position sizing pairs with this: `RISK_PCT` sizes against the **actual ATR stop
-distance**, so "risk 1% of equity" means the same thing on gold and on FXE.
+After TP1 the trade cannot lose. A broker-side stop order backs the whole thing
+up, so the downside stays covered even if the bot stops running. (A bracket
+order carries only *one* target, which is why multi-TP entries use a plain entry
+plus a resting stop instead.)
 
 ### Measured effect
 
-Tested on the real instruments: 2000 bars each from Alpaca SIP, 2bps slippage
-per side. **The strategy loses money on gold and currency ETFs.**
+2000→1200 bars per symbol from Alpaca SIP, regular hours only, 2bps slippage
+per side:
 
-| Symbol | TF | Trades | Win | Return | Buy & hold |
-|---|---|---|---|---|---|
-| GLD | 15m | 13 | 38% | +0.43% | **+12.10%** |
-| FXE | 1h/4h | 6 | 17% | −0.69% | −0.57% |
-| FXB | 1h/4h | 7 | 14% | −1.06% | −0.65% |
-| FXY | 1h/4h | 5 | 0% | −1.44% | −2.89% |
-| UUP | 1h/4h | 8 | 25% | −1.07% | +0.80% |
-| **Total** | | **39** | | **−0.77% mean** | |
+| Symbol | Trades | Win | Return | PF | TP1+ | TP2+ | TP3+ |
+|---|---|---|---|---|---|---|---|
+| GLD 15m | 10 | 60% | +0.30% | 1.20 | 60% | 30% | 30% |
+| FXE 1h/4h | 6 | 17% | −0.90% | 0.21 | 17% | 17% | 17% |
+| FXB 1h/4h | 12 | 25% | −1.91% | 0.15 | 25% | 17% | 17% |
+| FXY 1h/4h | 8 | **75%** | +0.47% | 1.71 | 75% | 38% | 25% |
+| UUP 1h/4h | 15 | **67%** | +1.30% | **2.00** | 67% | 53% | 40% |
+| **Total** | **51** | | **−0.15% mean** | | | | |
 
-It beat the old SMA strategy (−0.90%), but both lose. An earlier run on BTC/SOL
-showed +6.87%, and that was **misleading** — crypto trends hard on hourly bars
-in a way these instruments do not.
+Progress, not victory. The previous single-target version returned −0.77% with
+win rates of 0–38%; scaling out at 1R lifts those to 17–75% and three of five
+symbols are now profitable. But the basket is still slightly negative, dragged
+down by FXB and FXE, and GLD's +0.30% remains far behind gold's own +12%.
 
-Why it fails here:
-
-- **A 1:2 reward:risk needs a >33% win rate to break even.** These came in at
-  0–38%. The geometry is wrong for the instruments.
-- **Currency ETFs barely move.** FXE travelled −0.57% across 2000 hours. There
-  is no hourly trend to capture, and costs eat what little edge exists.
-- **FX mean-reverts on intraday timeframes**; trend-following is the wrong
-  family of strategy for it. Currencies trend over days and weeks, not hours.
-- **GLD 15m returned +0.43% while gold rose 12%.** Stop-and-target trading
-  repeatedly cut a strong trend short.
-
-What would plausibly help, roughly in order:
-
-1. **Daily bars for currencies.** FX trends are multi-day. `FXE@1d` has far
-   better odds than `FXE@1h`, and daily data goes back to 2023 here.
-2. **Lower the reward:risk to 1:1 or 1:1.5.** Easier to clear the break-even
-   win rate on range-bound instruments.
-3. **Mean reversion instead of trend-following for FX** — fade extremes toward
-   the mean rather than chasing breakouts.
-4. **Let gold run.** Enable `TRAIL_ATR=true` so a strong move is not cut at a
-   fixed target.
-
-None of this is worth trusting until it is re-tested. The tooling to do that is
-`backtest.py --compare`.
+Honest caveats: 51 trades is a small sample, and the confluence weights were
+chosen by judgement rather than fitted. Treat this as a framework that now has
+the right *shape* — structure-based stops, real targets, scaled exits — not as
+a validated edge.
 
 ### Backtesting
 

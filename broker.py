@@ -15,18 +15,69 @@ venue detail:
     is_dust(symbol, qty, price) is this residue too small to count as a position?
     market_open(symbol)         False when the venue is shut (US stock hours)
     buy(symbol, notional, ...)  -> {fill, qty, protection}
+    sell_qty(symbol, qty)       sell one take-profit tranche
+    protect(symbol, qty, stop)  park/replace a broker-side stop
     sell(symbol)                liquidate -> qty sold
 
 """
 import logging
 import uuid
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from typing import Dict, List, Optional
 
 import config
 import risk
+from alpaca_client import is_crypto
 from strategy import Bar
 
 log = logging.getLogger("broker")
+
+
+ET = ZoneInfo("America/New_York")
+RTH_OPEN = (9, 30)   # 09:30 ET
+RTH_CLOSE = (16, 0)  # 16:00 ET
+
+
+def _in_regular_hours(epoch_seconds: float) -> bool:
+    """Is this bar inside the 09:30-16:00 ET session?
+
+    Extended-hours bars for ETFs are thin — often a few hundred shares — and
+    routinely carry bad prints. One 419.70 wick on a 409 stock is enough to
+    wreck ATR, swing detection and every level derived from them.
+    """
+    t = datetime.fromtimestamp(epoch_seconds, timezone.utc).astimezone(ET)
+    if t.weekday() >= 5:
+        return False
+    return RTH_OPEN <= (t.hour, t.minute) < RTH_CLOSE
+
+
+def _drop_bad_prints(bars: List[Bar], max_range_mult: float = 5.0) -> List[Bar]:
+    """Clamp wicks that dwarf the recent typical range.
+
+    A print whose high/low is several times the median bar range is far more
+    likely to be a bad tick than a real move, and it would otherwise become a
+    swing pivot or blow out ATR. The bar is kept but its wick is trimmed, so
+    the series stays continuous.
+    """
+    if len(bars) < 20:
+        return bars
+    ranges = sorted(x.h - x.l for x in bars)
+    median = ranges[len(ranges) // 2]
+    if median <= 0:
+        return bars
+    cap = median * max_range_mult
+    out, fixed = [], 0
+    for x in bars:
+        if (x.h - x.l) > cap:
+            body_hi = max(x.c, x.l)
+            out.append(Bar(x.t, x.c, min(x.h, body_hi + cap), max(x.l, x.c - cap), x.v))
+            fixed += 1
+        else:
+            out.append(x)
+    if fixed:
+        log.debug("Trimmed %d outlier bar(s) exceeding %.4f range", fixed, cap)
+    return out
 
 
 def _epoch(value) -> float:
@@ -89,14 +140,26 @@ class AlpacaBroker:
         return self.client.get_closes(symbol, interval, limit)
 
     def history_many(self, symbols: List[str], interval: str, limit: int):
-        """Last `limit` CLOSED bars for every symbol, in ONE request."""
-        raw = self.client.get_bars_multi(symbols, interval, limit + 1)
+        """Last `limit` CLOSED bars for every symbol.
+
+        Over-fetches, because filtering to regular hours discards a large share
+        of the raw bars (a 24h day yields only 6.5h of real session).
+        """
+        raw = self.client.get_bars_multi(
+            symbols, interval,
+            int((limit + 1) * (3.5 if config.RTH_ONLY else 1.0)))
         out = {}
         for sym, bars in raw.items():
             if len(bars) > limit:
                 bars = bars[:-1]  # drop the still-forming bar
-            out[sym] = [Bar(_epoch(b["t"]), float(b["c"]), float(b["h"]), float(b["l"]))
-                        for b in bars]
+            series = [Bar(_epoch(b["t"]), float(b["c"]), float(b["h"]),
+                          float(b["l"]), float(b.get("v") or 0))
+                      for b in bars]
+            if config.RTH_ONLY and not is_crypto(sym):
+                series = [x for x in series if _in_regular_hours(x.t)]
+            # Trim back to what was asked for — the over-fetch above is only
+            # there to survive the session filter.
+            out[sym] = _drop_bad_prints(series)[-limit:]
         return out
 
     def history(self, symbol: str, interval: str, limit: int):
@@ -195,6 +258,45 @@ class AlpacaBroker:
                 return existing
             log.error("Order never reached Alpaca; skipping this entry.")
             return None
+
+    def sell_qty(self, symbol: str, qty: float) -> float:
+        """Sell part of a position (a take-profit tranche).
+
+        Any resting stop is cancelled first: it still covers the OLD size, and
+        leaving it would try to sell shares that are no longer there.
+        """
+        held = self.client.position_qty(symbol)
+        qty = min(qty, held)
+        if qty <= 0:
+            return 0.0
+        self.client.cancel_orders_for(symbol)
+        from alpaca_client import is_crypto
+        if not is_crypto(symbol):
+            qty = float(int(qty)) or 0.0   # equities: whole shares
+            if qty <= 0:
+                return 0.0
+        log.info("Selling %.8f of %s (partial)", qty, symbol)
+        self.client.submit_market_order(symbol, "sell", qty=qty,
+                                        client_order_id="bot-" + uuid.uuid4().hex[:24])
+        return qty
+
+    def protect(self, symbol: str, qty: float, stop_price: float) -> bool:
+        """Park a broker-side stop for `qty` at `stop_price`, replacing any old one."""
+        from alpaca_client import AlpacaError, is_crypto
+        if is_crypto(symbol):
+            return False  # Alpaca crypto has no stop orders; the loop covers it
+        try:
+            self.client.cancel_orders_for(symbol)
+            qty = float(int(qty))
+            if qty <= 0:
+                return False
+            self.client.submit_stop_order(symbol, qty, stop_price,
+                                          client_order_id="bot-" + uuid.uuid4().hex[:24])
+            log.info("[%s] Broker stop set: %.0f share(s) @ %.2f", symbol, qty, stop_price)
+            return True
+        except AlpacaError as e:
+            log.warning("[%s] Could not place protective stop: %s", symbol, e)
+            return False
 
     def sell(self, symbol: str) -> float:
         qty = self.client.position_qty(symbol)

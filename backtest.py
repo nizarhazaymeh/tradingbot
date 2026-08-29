@@ -28,39 +28,73 @@ from strategy import Bar
 # Engines
 # --------------------------------------------------------------------------- #
 def run_new(bars: List[Bar], htf: Optional[List[Bar]], params, slippage: float):
-    """Replay the multi-timeframe ATR strategy."""
+    """Replay the confluence strategy, including scaled TP1/TP2/TP3 exits.
+
+    Each target closes its own slice, so a trade's return is the weighted sum of
+    its tranches. The stop moves to breakeven and then trails exactly as the live
+    bot does. Within a bar the stop is assumed to fill before any target, which
+    keeps the result pessimistic rather than flattering.
+    """
     warmup = max(params.slow + 2, params.trend_ma,
                  params.atr_period * 2, params.adx_period * 3) + 2
     trades, equity, curve = [], 1.0, [1.0]
-    in_pos = False
-    entry = stop = target = 0.0
+    open_pos = None
 
     for i in range(warmup, len(bars)):
         bar = bars[i]
         window = bars[:i + 1]
         htf_window = strategy.htf_at(htf, bar.t) if htf else None
-        d = strategy.analyze(window, htf_window, params)
+        plan = strategy.analyze(window, htf_window, params)
 
-        if in_pos:
-            exit_price = reason = None
-            if stop and bar.l <= stop:            # stop first if both are touched
-                exit_price, reason = stop, "stop-loss"
-            elif target and bar.h >= target:
-                exit_price, reason = target, "take-profit"
-            elif d.signal == "SELL":
-                exit_price, reason = bar.c, "sell-signal"
+        if open_pos:
+            pos = open_pos
+            closed = False
 
-            if exit_price is not None:
-                fill = exit_price * (1 - slippage)
-                pnl = (fill - entry) / entry
-                equity *= 1 + pnl
-                trades.append({"entry": entry, "exit": fill, "pnl": pnl, "reason": reason})
-                in_pos = False
+            # Stop first: if both are touched in one bar, assume the worse fill.
+            if bar.l <= pos["stop"]:
+                fill = pos["stop"] * (1 - slippage)
+                pos["realized"] += pos["remaining"] * (fill - pos["entry"]) / pos["entry"]
+                pos["reason"] = "stop-loss" if pos["tps"] == 0 else f"stop after TP{pos['tps']}"
+                closed = True
+            else:
+                for t in pos["targets"]:
+                    if not t["hit"] and bar.h >= t["price"]:
+                        fill = t["price"] * (1 - slippage)
+                        pos["realized"] += t["fraction"] * (fill - pos["entry"]) / pos["entry"]
+                        pos["remaining"] -= t["fraction"]
+                        t["hit"] = True
+                        pos["tps"] += 1
+                if pos["remaining"] <= 1e-9:
+                    pos["reason"] = "all targets"
+                    closed = True
+                else:
+                    # Same stop management as the live bot.
+                    if pos["tps"] >= params.trail_after:
+                        pos["stop"] = strategy.trail_stop(
+                            pos["stop"], bar.c, plan.atr, params)
+                    elif pos["tps"] >= params.breakeven_after:
+                        pos["stop"] = max(pos["stop"], pos["entry"])
+                    if plan.signal == "SELL":
+                        fill = bar.c * (1 - slippage)
+                        pos["realized"] += pos["remaining"] * (fill - pos["entry"]) / pos["entry"]
+                        pos["reason"] = "sell-signal"
+                        closed = True
 
-        elif d.signal == "BUY":
-            entry = bar.c * (1 + slippage)
-            stop, target = d.stop, d.target
-            in_pos = True
+            if closed:
+                equity *= 1 + pos["realized"]
+                trades.append({"entry": pos["entry"], "exit": bar.c,
+                               "pnl": pos["realized"], "reason": pos["reason"],
+                               "tps": pos["tps"]})
+                open_pos = None
+
+        elif plan.signal == "BUY" and plan.stop and plan.targets:
+            entry = plan.entry * (1 + slippage)
+            open_pos = {
+                "entry": entry, "stop": plan.stop, "remaining": 1.0,
+                "realized": 0.0, "tps": 0, "reason": "",
+                "targets": [{"price": t.price, "fraction": t.fraction, "hit": False}
+                            for t in plan.targets],
+            }
 
         curve.append(equity)
     return trades, curve
@@ -135,6 +169,17 @@ def show(label, s):
           f"{s['ret']:>+8.2f}%  {s['dd']:>7.2f}%  {pf:>6}  {s['expectancy']:>+7.2f}%")
 
 
+def tp_breakdown(trades):
+    """How far through TP1/TP2/TP3 the average trade got."""
+    if not trades:
+        return ""
+    hits = [t.get("tps", 0) for t in trades]
+    n = len(hits)
+    return ("  targets reached: "
+            + "  ".join(f"TP{k}+ {sum(1 for h in hits if h >= k) / n * 100:.0f}%"
+                        for k in (1, 2, 3)))
+
+
 # --------------------------------------------------------------------------- #
 def main():
     p = argparse.ArgumentParser()
@@ -175,7 +220,9 @@ def main():
 
         t_new, c_new = run_new(bars, htf, params, args.slippage)
         s_new = stats(bars, t_new, c_new)
-        show("new (MTF)", s_new)
+        show("confluence", s_new)
+        if t_new:
+            print(tp_breakdown(t_new))
         totals["new"].append(s_new)
 
         if args.compare:

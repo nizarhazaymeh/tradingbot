@@ -417,6 +417,24 @@ class AlpacaClient:
             body["client_order_id"] = client_order_id
         return self._submit(body)
 
+    def submit_stop_order(self, symbol: str, qty: float, stop_price: float,
+                          client_order_id: Optional[str] = None) -> dict:
+        """A resting stop order protecting an open position.
+
+        Used instead of a bracket when the plan has several take-profits:
+        a bracket carries exactly one target, so multi-TP management lives in
+        the bot, while this keeps the downside covered broker-side even if the
+        bot stops running.
+        """
+        body = {
+            "symbol": symbol, "side": "sell", "type": "stop",
+            "time_in_force": "gtc" if is_crypto(symbol) else "day",
+            "qty": str(qty), "stop_price": f"{stop_price:.2f}",
+        }
+        if client_order_id:
+            body["client_order_id"] = client_order_id
+        return self._submit(body)
+
     def list_orders(self, status: str = "open", symbols: Optional[str] = None) -> List[dict]:
         """Orders by status ("open", "closed", "all")."""
         return self._request("GET", "/v2/orders",

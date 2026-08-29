@@ -49,7 +49,8 @@ STATE_FILE = os.path.join(os.path.dirname(__file__), "state.json")
 # --------------------------------------------------------------------------- #
 def _fresh_symbol_state() -> dict:
     return {"in_position": False, "entry_price": None, "qty": 0.0,
-            "protection": "poll", "stop": None, "target": None}
+            "qty_initial": 0.0, "protection": "poll", "stop": None,
+            "targets": [], "tps_hit": 0}
 
 
 def load_state() -> dict:
@@ -101,12 +102,72 @@ def describe_mode() -> str:
 # Risk gates
 # --------------------------------------------------------------------------- #
 def risk_exit_reason(ss: dict, price: float) -> Optional[str]:
-    """Stop/target are absolute prices set at entry from ATR, not percentages."""
+    """Only the stop closes the WHOLE position; targets scale out instead."""
     if ss.get("stop") and price <= ss["stop"]:
         return "stop-loss"
-    if ss.get("target") and price >= ss["target"]:
-        return "take-profit"
     return None
+
+
+def next_target(ss: dict, price: float) -> Optional[dict]:
+    """The lowest unhit target price has now reached, if any."""
+    for t in ss.get("targets", []):
+        if not t.get("hit") and price >= t["price"]:
+            return t
+    return None
+
+
+def manage_position(broker, symbol, price, plan, ss, params) -> None:
+    """Scale out through TP1/TP2/TP3, then tighten the stop behind them.
+
+    Each target closes its own slice. After `breakeven_after` targets the stop
+    moves to entry, so the rest of the trade cannot lose; after `trail_after` it
+    ratchets up with ATR, so a strong move is not capped by the last target.
+    """
+    tgt = next_target(ss, price)
+    if tgt:
+        frac = tgt["fraction"]
+        want = ss["qty_initial"] * frac
+        sold = 0.0
+        if live_trading():
+            remaining_targets = [t for t in ss["targets"] if not t.get("hit")]
+            if len(remaining_targets) == 1:      # last one closes the remainder
+                sold = broker.sell(symbol)
+            else:
+                sold = broker.sell_qty(symbol, want)
+        else:
+            sold = want
+        tgt["hit"] = True
+        ss["tps_hit"] += 1
+        ss["qty"] = max(0.0, ss["qty"] - (sold or want))
+
+        entry = ss["entry_price"] or price
+        pnl = (price - entry) / entry * 100 if entry else 0.0
+        log.info("[%s] %s hit @ %.4f — closed %.0f%% (%.8f), P/L %+.2f%%",
+                 symbol, tgt["label"], price, frac * 100, sold or want, pnl)
+        tradelog.record(config.TRADE_LOG, symbol=symbol, action=tgt["label"],
+                        reason=tgt.get("basis", ""), price=f"{price:.6f}",
+                        qty=f"{sold or want:.8f}", pnl_pct=f"{pnl:+.4f}",
+                        mode=describe_mode(), protection=ss["protection"])
+        notify(f"🎯 {tgt['label']} hit on {symbol} @ {price:.4f}\n"
+               f"Closed {frac*100:.0f}% | Entry {entry:.4f} | P/L {pnl:+.2f}%",
+               subject=f"{tgt['label']} — {symbol}")
+
+        if ss["qty"] <= 0 or all(t.get("hit") for t in ss["targets"]):
+            ss.update(_fresh_symbol_state())
+            return
+
+    # Tighten the stop behind whatever has already been banked.
+    old_stop = ss.get("stop")
+    if ss["tps_hit"] >= params.trail_after:
+        ss["stop"] = strategy.trail_stop(ss["stop"], price, plan.atr, params)
+    elif ss["tps_hit"] >= params.breakeven_after and ss.get("entry_price"):
+        ss["stop"] = max(ss["stop"] or 0.0, ss["entry_price"])
+
+    if ss.get("stop") and old_stop and ss["stop"] > old_stop:
+        why = "trailing" if ss["tps_hit"] >= params.trail_after else "breakeven"
+        log.info("[%s] Stop %.4f -> %.4f (%s)", symbol, old_stop, ss["stop"], why)
+        if live_trading() and ss["qty"] > 0:
+            broker.protect(symbol, ss["qty"], ss["stop"])
 
 
 def entry_blocked(account: dict, open_count: int) -> Optional[str]:
@@ -185,10 +246,14 @@ def run():
     for w in watch:
         log.info("  %-9s entry=%-5s trend=%-5s", w["symbol"], w["entry_tf"],
                  w["htf_tf"] or f'{params.trend_ma}{params.ma_type.upper()} (same tf)')
-    log.info("Strategy: %s %d/%d | ADX>=%.0f | stop %.1fxATR(%d) | R:R 1:%.1f%s",
-             params.ma_type.upper(), params.fast, params.slow, params.adx_min,
-             params.atr_stop_mult, params.atr_period, params.reward_risk,
-             " | trailing" if config.TRAIL_ATR else "")
+    log.info("Strategy: %s %d/%d + zones + fib | confluence >=%d/%d | ADX>=%.0f",
+             params.ma_type.upper(), params.fast, params.slow,
+             params.min_confluence, strategy.MAX_SCORE, params.adx_min)
+    log.info("Exits: TP1/TP2/TP3 %.0f/%.0f/%.0f%% | stop %.1f-%.1f ATR | "
+             "breakeven after TP%d, trail after TP%d",
+             *[f * 100 for f in params.tp_fractions],
+             params.min_stop_atr, params.max_stop_atr,
+             params.breakeven_after, params.trail_after)
     if config.RISK_PCT:
         log.info("Sizing: risk %.2f%% of equity per trade (cap %.0f%% of equity)",
                  config.RISK_PCT * 100, config.MAX_POSITION_PCT * 100)
@@ -252,38 +317,38 @@ def run():
                 if live:
                     reconcile(broker, sym, ss, positions, price)
 
-                d = strategy.analyze(bars, htf, params)
+                plan = strategy.analyze(bars, htf, params)
 
-                # Broker-side brackets own the stop/target; polling them here
-                # too would race the broker and double-exit.
+                # Only the stop closes everything; targets scale out in
+                # manage_position() below.
                 exit_reason = None
                 if ss["in_position"]:
-                    if ss["protection"] != "bracket":
-                        if config.TRAIL_ATR:
-                            new_stop = strategy.trail_stop(ss["stop"], price, d.atr, params)
-                            if new_stop and new_stop != ss["stop"]:
-                                log.info("[%s] Trailing stop %.4f -> %.4f",
-                                         sym, ss["stop"] or 0.0, new_stop)
-                                ss["stop"] = new_stop
-                        exit_reason = risk_exit_reason(ss, price)
-                    if not exit_reason and d.signal == "SELL":
+                    exit_reason = risk_exit_reason(ss, price)
+                    if not exit_reason and plan.signal == "SELL":
                         exit_reason = "sell-signal"
 
-                log.info("%-9s %-4s %.4f sig=%-4s adx=%s atr=%s pos=%s%s%s",
-                         sym, w["entry_tf"], price, d.signal,
-                         f"{d.adx:.0f}" if d.adx is not None else "--",
-                         f"{d.atr:.4f}" if d.atr else "--",
-                         ss["in_position"],
+                held = (f" pos {ss['qty']:.4f} stop {ss['stop']:.4f} "
+                        f"tp {ss['tps_hit']}/{len(ss['targets'])}"
+                        if ss["in_position"] else "")
+                log.info("%-9s %-4s %.4f %-4s score=%d/%d adx=%s%s%s%s",
+                         sym, w["entry_tf"], price, plan.signal,
+                         plan.score, strategy.MAX_SCORE,
+                         f"{plan.adx:.0f}" if plan.adx is not None else "--",
+                         held,
                          f" exit={exit_reason}" if exit_reason else "",
-                         f" | held: {d.blocked_by}" if d.reasons and d.signal == "HOLD" else "")
+                         f" | {plan.blocked_by}" if plan.signal == "HOLD"
+                         and not ss["in_position"] else "")
 
-                if d.signal == "BUY" and not ss["in_position"]:
+                if plan.signal == "BUY" and not ss["in_position"]:
                     if live and halted:
                         log.info("[%s] BUY signal ignored — %s", sym, halted)
                     else:
-                        handle_entry(broker, sym, price, d, ss, account)
-                elif exit_reason and ss["in_position"]:
-                    handle_exit(broker, sym, price, ss, exit_reason)
+                        handle_entry(broker, sym, price, plan, ss, account)
+                elif ss["in_position"]:
+                    if exit_reason:
+                        handle_exit(broker, sym, price, ss, exit_reason)
+                    else:
+                        manage_position(broker, sym, price, plan, ss, params)
 
                 save_state(state)
 
@@ -295,13 +360,18 @@ def run():
         time.sleep(config.POLL_SECONDS)
 
 
-def handle_entry(broker, symbol, price, d, ss, account):
-    stop, target = d.stop, d.target
+def handle_entry(broker, symbol, price, plan, ss, account):
+    """Open a position and record the plan that will manage it."""
+    stop = plan.stop
+    targets = [{"price": t.price, "fraction": t.fraction, "label": t.label,
+                "basis": t.basis, "hit": False} for t in plan.targets]
     risk_pct = (price - stop) / price * 100 if stop else 0.0
-    msg = (f"📈 BUY {symbol} @ {price:.4f}\n"
-           f"Stop: {stop:.4f} (-{risk_pct:.2f}%) | Target: {target:.4f}\n"
-           f"ADX {d.adx:.0f} | ATR {d.atr:.4f}" if stop and target else
-           f"📈 BUY {symbol} @ {price:.4f}")
+    tp_txt = "\n".join(
+        f"{t.label}: {t.price:.4f} ({(t.price - price) / (price - stop):.1f}R, "
+        f"close {t.fraction * 100:.0f}%) — {t.basis}" for t in plan.targets) if stop else ""
+    msg = (f"📈 BUY {symbol} @ {price:.4f}   [score {plan.score}/{strategy.MAX_SCORE}]\n"
+           f"SL: {stop:.4f} (-{risk_pct:.2f}%)\n{tp_txt}\n"
+           f"Why: {', '.join(plan.reasons)}")
 
     if not live_trading():
         tag = "signal-only" if config.SIGNAL_ONLY else "paper"
@@ -309,12 +379,12 @@ def handle_entry(broker, symbol, price, d, ss, account):
             log.info("[PAPER] Would BUY %s of %s.", config.TRADE_QUOTE_AMOUNT, symbol)
             msg += "\n(paper mode — no order placed)"
         notify(msg, subject=f"BUY signal — {symbol}")
-        tradelog.record(config.TRADE_LOG, symbol=symbol, action="ENTRY", reason="mtf-cross",
-                        price=f"{price:.6f}", notional=config.TRADE_QUOTE_AMOUNT,
-                        mode=tag, protection="poll")
-        ss.update(in_position=True, entry_price=price,
-                  qty=config.TRADE_QUOTE_AMOUNT / price if price else 0.0,
-                  protection="poll", stop=stop, target=target)
+        qty = config.TRADE_QUOTE_AMOUNT / price if price else 0.0
+        tradelog.record(config.TRADE_LOG, symbol=symbol, action="ENTRY",
+                        reason=f"score {plan.score}", price=f"{price:.6f}",
+                        notional=config.TRADE_QUOTE_AMOUNT, mode=tag, protection="poll")
+        ss.update(in_position=True, entry_price=price, qty=qty, qty_initial=qty,
+                  protection="poll", stop=stop, targets=targets, tps_hit=0)
         return
 
     if not broker.market_open(symbol):
@@ -340,18 +410,31 @@ def handle_entry(broker, symbol, price, d, ss, account):
                     "(cash $%.2f, equity $%.2f).", symbol, notional, cash, equity)
         return
 
-    result = broker.buy(symbol, notional, price, stop_price=stop, target_price=target)
+    # A bracket carries ONE target, so multi-TP entries go in flat and get a
+    # separate resting stop instead.
+    result = broker.buy(symbol, notional, price,
+                        stop_price=None if len(targets) > 1 else stop,
+                        target_price=None if len(targets) > 1 else
+                        (targets[0]["price"] if targets else None))
     entry = result["fill"] or price
-    prot = result["protection"]
-    detail = ("broker-side stop/target attached" if prot == "bracket"
-              else "bot-side stop/target (checked each poll)")
-    notify(msg + f"\n✅ Bought {result['qty']:.6f} @ {entry:.4f} — {detail}",
+    qty = result["qty"]
+    if qty <= 0:
+        log.error("[%s] Entry did not fill — nothing opened.", symbol)
+        return
+
+    protection = result["protection"]
+    if protection != "bracket" and stop:
+        if broker.protect(symbol, qty, stop):
+            protection = "broker-stop"
+
+    notify(msg + f"\n✅ Bought {qty:.6f} @ {entry:.4f} ({protection})",
            subject=f"BUY executed — {symbol}")
-    tradelog.record(config.TRADE_LOG, symbol=symbol, action="ENTRY", reason="mtf-cross",
-                    price=f"{entry:.6f}", qty=f"{result['qty']:.8f}",
-                    notional=f"{notional:.2f}", mode=describe_mode(), protection=prot)
-    ss.update(in_position=True, entry_price=entry, qty=result["qty"],
-              protection=prot, stop=stop, target=target)
+    tradelog.record(config.TRADE_LOG, symbol=symbol, action="ENTRY",
+                    reason=f"score {plan.score}", price=f"{entry:.6f}",
+                    qty=f"{qty:.8f}", notional=f"{notional:.2f}",
+                    mode=describe_mode(), protection=protection)
+    ss.update(in_position=True, entry_price=entry, qty=qty, qty_initial=qty,
+              protection=protection, stop=stop, targets=targets, tps_hit=0)
 
 
 def handle_exit(broker, symbol, price, ss, reason):
