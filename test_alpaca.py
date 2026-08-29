@@ -65,19 +65,20 @@ def main() -> int:
 
     # ---- 3. data + positions per symbol ------------------------------ #
     ok = True
-    for raw in config.SYMBOLS:
-        sym = normalize_symbol(raw)
-        label = f"{raw} -> {sym}" if sym != raw else sym
-        print(f"\n--- {label} ---")
+    for w in config.WATCHLIST:
+        sym = normalize_symbol(w["symbol"])
+        tfs = [w["entry_tf"]] + ([w["htf_tf"]] if w["htf_tf"] else [])
+        label = f"{w['symbol']} -> {sym}" if sym != w["symbol"] else sym
+        print(f"\n--- {label}  ({' + '.join(tfs)}) ---")
         try:
-            closes = client.get_closes(sym, config.INTERVAL, 5)
-            if not closes:
-                print(f"  ⚠ no bars returned for timeframe {to_timeframe(config.INTERVAL)}")
-                print("    (free IEX feed has thin history outside market hours)")
-                ok = False
-                continue
-            print(f"  bars ({to_timeframe(config.INTERVAL)}): "
-                  + ", ".join(f"{c:,.2f}" for c in closes))
+            for tf in tfs:
+                closes = client.get_closes(sym, tf, 5)
+                if not closes:
+                    print(f"  ⚠ no bars returned for {to_timeframe(tf)}")
+                    ok = False
+                    continue
+                print(f"  {to_timeframe(tf):>7}: "
+                      + ", ".join(f"{c:,.2f}" for c in closes))
             print(f"  latest price: {client.get_latest_price(sym):,.2f}")
             pos = client.get_position(sym)
             print(f"  position: {pos['qty']} @ {float(pos['avg_entry_price']):,.2f} "

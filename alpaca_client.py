@@ -45,6 +45,33 @@ def to_timeframe(interval: str) -> str:
     return _TIMEFRAMES.get(interval, interval)
 
 
+_TF_MINUTES = {"Min": 1, "T": 1, "Hour": 60, "H": 60,
+               "Day": 1440, "D": 1440, "Week": 10080, "W": 10080,
+               "Month": 43200, "M": 43200}
+
+
+def timeframe_minutes(timeframe: str) -> int:
+    """"15Min" -> 15, "4Hour" -> 240, "1Day" -> 1440."""
+    num = "".join(c for c in timeframe if c.isdigit()) or "1"
+    unit = "".join(c for c in timeframe if c.isalpha())
+    return int(num) * _TF_MINUTES.get(unit, 60)
+
+
+def lookback_start(timeframe: str, limit: int, crypto: bool = False) -> str:
+    """A `start` date far enough back to contain `limit` bars.
+
+    Alpaca REQUIRES an explicit start: without one the bars endpoints default to
+    a window that is empty outside market hours, so every request comes back
+    with nothing. Stocks only print bars ~6.5h a day, 5 days a week, so the
+    calendar span needed is roughly 5x the raw bar time — doubled here for
+    holidays, with a floor for short requests.
+    """
+    from datetime import datetime, timedelta, timezone
+    span = timeframe_minutes(timeframe) * max(limit, 1) * (1.0 if crypto else 5.0)
+    days = min((span / 1440.0) * 2 + 5, 365 * 5)
+    return (datetime.now(timezone.utc) - timedelta(days=days)).date().isoformat()
+
+
 def is_crypto(symbol: str) -> bool:
     """Alpaca crypto pairs carry a slash (BTC/USD); stocks do not (AAPL)."""
     return "/" in symbol
@@ -187,38 +214,61 @@ class AlpacaClient:
     # ------------------------------------------------------------------ #
     # Market data
     # ------------------------------------------------------------------ #
+    PAGE_MAX = 10000  # data points per response
+
+    def _bars_request(self, path, params, what=""):
+        """One bars call, with a SIP -> IEX fallback if the feed is refused."""
+        try:
+            return self._request("GET", path, base=DATA, params=params)
+        except AlpacaError as e:
+            # SIP needs a data subscription; drop to the free IEX feed rather
+            # than leaving the bot blind. IEX is thinner (it sees only IEX's own
+            # volume), which hurts low-volume ETFs like FXB.
+            if e.status == 403 and params.get("feed") == "sip":
+                log.warning("SIP feed refused%s (%s) — falling back to IEX.",
+                            what, e.message[:80])
+                params["feed"] = "iex"
+                return self._request("GET", path, base=DATA, params=params)
+            raise
+
     def get_bars_multi(self, symbols: List[str], interval: str,
-                       limit: int) -> Dict[str, List[dict]]:
-        """Bars for MANY symbols, oldest first, keyed by symbol.
+                       limit: int, max_pages: int = 40) -> Dict[str, List[dict]]:
+        """Bars for several symbols, oldest first, keyed by symbol.
 
-        The bars endpoints take a comma-separated `symbols` list, so one request
-        covers the whole watchlist instead of one per symbol — on a 5-symbol,
-        2-timeframe watchlist that is 2 requests per cycle rather than 10, which
-        matters against the 200/min limit.
-
-        Sorted descending server-side (so we get the LATEST bars rather than the
-        oldest available) and reversed here. Crypto and stocks live on different
-        endpoints, so a mixed list is split into two calls.
+        Fetched ONE SYMBOL AT A TIME, deliberately. The endpoint does accept a
+        comma-separated list, but multi-symbol responses fill symbol-by-symbol:
+        with `limit` set you get the whole first symbol and nothing else, and
+        without it you must merge many pages (11 requests for a 4h batch of 4
+        symbols — worse than 4 single-symbol calls). Per-symbol is both simpler
+        and cheaper here, and a full watchlist costs ~10 requests per cycle
+        against a 200/min budget.
         """
         timeframe = to_timeframe(interval)
         out: Dict[str, List[dict]] = {}
-        crypto = [s for s in symbols if is_crypto(s)]
-        stocks = [s for s in symbols if not is_crypto(s)]
+        for sym in symbols:
+            crypto = is_crypto(sym)
+            path = "/v1beta3/crypto/us/bars" if crypto else "/v2/stocks/bars"
+            params = {"symbols": sym, "timeframe": timeframe, "sort": "desc",
+                      "limit": min(self.PAGE_MAX, max(limit, 1)),
+                      # Alpaca REQUIRES an explicit start: without one the window
+                      # is empty outside market hours and nothing comes back.
+                      "start": lookback_start(timeframe, limit, crypto=crypto)}
+            if not crypto:
+                params.update({"feed": self.feed, "adjustment": "raw"})
 
-        for group, path, extra in (
-            (stocks, "/v2/stocks/bars", {"feed": self.feed, "adjustment": "raw"}),
-            (crypto, "/v1beta3/crypto/us/bars", {}),
-        ):
-            if not group:
-                continue
-            params = dict(extra)
-            params.update({"symbols": ",".join(group), "timeframe": timeframe,
-                           "limit": limit, "sort": "desc"})
-            payload = self._request("GET", path, base=DATA, params=params)
-            for sym, bars in (payload.get("bars") or {}).items():
-                out[sym] = list(reversed(bars or []))  # oldest -> newest
-            for sym in group:
-                out.setdefault(sym, [])
+            collected, token, pages = [], None, 0
+            while pages < max_pages and len(collected) < limit:
+                if token:
+                    params["page_token"] = token
+                payload = self._bars_request(path, params, f" for {sym}")
+                collected.extend((payload.get("bars") or {}).get(sym) or [])
+                pages += 1
+                token = payload.get("next_page_token")
+                if not token:
+                    break
+            # Newest-first from the API -> trim, then flip to oldest-first,
+            # which is what every indicator expects.
+            out[sym] = list(reversed(collected[:limit]))
         return out
 
     def get_bars(self, symbol: str, interval: str, limit: int) -> List[dict]:

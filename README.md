@@ -246,22 +246,46 @@ distance**, so "risk 1% of equity" means the same thing on gold and on FXE.
 
 ### Measured effect
 
-1000 × 1h bars of BTC and SOL with a 4h trend filter, 2bps slippage per side
-(crypto stands in for gold/FX here — see the caveat below):
+Tested on the real instruments: 2000 bars each from Alpaca SIP, 2bps slippage
+per side. **The strategy loses money on gold and currency ETFs.**
 
-| | Trades | Win rate | Return | Max DD | Profit factor |
+| Symbol | TF | Trades | Win | Return | Buy & hold |
 |---|---|---|---|---|---|
-| **New (MTF + ATR)** | 7 | 60% | **+6.87%** | **−1.61%** | — |
-| Old (SMA + fixed %) | 7 | 35% | −1.15% | −4.93% | 0.49 / 1.97 |
+| GLD | 15m | 13 | 38% | +0.43% | **+12.10%** |
+| FXE | 1h/4h | 6 | 17% | −0.69% | −0.57% |
+| FXB | 1h/4h | 7 | 14% | −1.06% | −0.65% |
+| FXY | 1h/4h | 5 | 0% | −1.44% | −2.89% |
+| UUP | 1h/4h | 8 | 25% | −1.07% | +0.80% |
+| **Total** | | **39** | | **−0.77% mean** | |
 
-**Read this cautiously.** Seven trades is far too small a sample to be
-conclusive, and the parameters were chosen on this same data. `ATR_STOP_MULT=1.5`
-and `REWARD_RISK=2.0` were picked because their *neighbourhood* was uniformly
-profitable, not because they were the single best cell — the top cell
-(`1.0×ATR`, `1:3`) was an isolated spike, which is the classic overfitting trap.
-Both strategies still trail buy & hold in a strong bull market, which is normal
-for a stop-based long-only system. Re-run the comparison on GLD and the FX ETFs
-once your keys are in, before trusting any of it.
+It beat the old SMA strategy (−0.90%), but both lose. An earlier run on BTC/SOL
+showed +6.87%, and that was **misleading** — crypto trends hard on hourly bars
+in a way these instruments do not.
+
+Why it fails here:
+
+- **A 1:2 reward:risk needs a >33% win rate to break even.** These came in at
+  0–38%. The geometry is wrong for the instruments.
+- **Currency ETFs barely move.** FXE travelled −0.57% across 2000 hours. There
+  is no hourly trend to capture, and costs eat what little edge exists.
+- **FX mean-reverts on intraday timeframes**; trend-following is the wrong
+  family of strategy for it. Currencies trend over days and weeks, not hours.
+- **GLD 15m returned +0.43% while gold rose 12%.** Stop-and-target trading
+  repeatedly cut a strong trend short.
+
+What would plausibly help, roughly in order:
+
+1. **Daily bars for currencies.** FX trends are multi-day. `FXE@1d` has far
+   better odds than `FXE@1h`, and daily data goes back to 2023 here.
+2. **Lower the reward:risk to 1:1 or 1:1.5.** Easier to clear the break-even
+   win rate on range-bound instruments.
+3. **Mean reversion instead of trend-following for FX** — fade extremes toward
+   the mean rather than chasing breakouts.
+4. **Let gold run.** Enable `TRAIL_ATR=true` so a strong move is not cut at a
+   fixed target.
+
+None of this is worth trusting until it is re-tested. The tooling to do that is
+`backtest.py --compare`.
 
 ### Backtesting
 
