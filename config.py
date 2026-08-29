@@ -12,12 +12,6 @@ def _get_bool(name: str, default: bool) -> bool:
     return val.strip().lower() in ("1", "true", "yes", "on")
 
 
-API_KEY = os.getenv("BINANCE_API_KEY", "").strip()
-API_SECRET = os.getenv("BINANCE_API_SECRET", "").strip()
-
-# --- Broker selection: "alpaca" (US stocks + crypto) or "binance" (crypto) ---
-BROKER = os.getenv("BROKER", "alpaca").strip().lower()
-
 # --- Alpaca credentials (https://app.alpaca.markets -> Home -> API Keys) ---
 # Paper and live keys are separate accounts; ALPACA_PAPER picks the endpoint.
 ALPACA_API_KEY = os.getenv("ALPACA_API_KEY", "").strip()
@@ -29,7 +23,6 @@ ALPACA_PAPER = _get_bool("ALPACA_PAPER", True)
 # "iex" is included free; "sip" (full consolidated tape) needs a paid plan.
 ALPACA_FEED = os.getenv("ALPACA_FEED", "iex").strip().lower()
 
-USE_TESTNET = _get_bool("USE_TESTNET", True)
 ENABLE_TRADING = _get_bool("ENABLE_TRADING", False)
 
 # One or more symbols, comma-separated, e.g. "BTCUSDT,SOLUSDT".
@@ -170,28 +163,16 @@ EMAIL_TO = os.getenv("EMAIL_TO", "").strip()
 
 def validate() -> None:
     """Fail fast with a clear message if config is wrong."""
-    if BROKER not in ("binance", "alpaca"):
-        raise SystemExit(f'BROKER must be "binance" or "alpaca", got "{BROKER}".')
-
-    if BROKER == "alpaca":
-        # Alpaca authenticates its MARKET DATA endpoints too, so keys are
-        # required even in signal-only mode.
-        if not ALPACA_API_KEY or not ALPACA_API_SECRET:
-            raise SystemExit(
-                "Missing ALPACA_API_KEY / ALPACA_API_SECRET. Generate them at "
-                "https://app.alpaca.markets (Home -> API Keys) and put them in .env. "
-                "Alpaca requires keys even for market data."
-            )
-        if ALPACA_FEED not in ("iex", "sip", "otc", "boats"):
-            raise SystemExit(f'ALPACA_FEED must be iex/sip/otc/boats, got "{ALPACA_FEED}".')
-    else:
-        # Keys are only required when we actually touch the account (trading or
-        # reading balances). Signal-only mode uses public data and needs nothing.
-        if not SIGNAL_ONLY and (not API_KEY or not API_SECRET):
-            raise SystemExit(
-                "Missing BINANCE_API_KEY / BINANCE_API_SECRET. "
-                "Copy .env.example to .env and fill them in (or set SIGNAL_ONLY=true)."
-            )
+    # Alpaca authenticates its MARKET DATA endpoints too, so keys are required
+    # even in signal-only mode.
+    if not ALPACA_API_KEY or not ALPACA_API_SECRET:
+        raise SystemExit(
+            "Missing ALPACA_API_KEY / ALPACA_API_SECRET. Generate them at "
+            "https://app.alpaca.markets (Home -> API Keys) and put them in .env. "
+            "Alpaca requires keys even for market data."
+        )
+    if ALPACA_FEED not in ("iex", "sip", "otc", "boats"):
+        raise SystemExit(f'ALPACA_FEED must be iex/sip/otc/boats, got "{ALPACA_FEED}".')
     if FAST_SMA >= SLOW_SMA:
         raise SystemExit("FAST_SMA must be smaller than SLOW_SMA.")
     if MA_TYPE not in ("ema", "sma"):

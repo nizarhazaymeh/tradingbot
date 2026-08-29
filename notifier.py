@@ -75,7 +75,7 @@ def _send_email(subject: str, body: str) -> bool:
     return False
 
 
-def notify(text: str, subject: str = "Binance Bot Signal") -> None:
+def notify(text: str, subject: str = "Trading Bot Signal") -> None:
     """Send a notification through every configured channel."""
     log.info("NOTIFY: %s", text.replace("\n", " | "))
     _send_telegram(text)

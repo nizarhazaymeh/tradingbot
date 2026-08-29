@@ -1,4 +1,4 @@
-"""Multi-timeframe trading bot — Alpaca (default) or Binance.
+"""Multi-timeframe trading bot for Alpaca — US stocks, ETFs and crypto.
 
 Run:  python bot.py
 
@@ -13,11 +13,11 @@ Modes (set in .env), safest first:
   SIGNAL_ONLY=true      -> compute signals + notify, place NO orders (default)
   ENABLE_TRADING=false  -> paper: track simulated positions, send no orders
   ALPACA_PAPER=true     -> real orders against Alpaca's paper account (fake money)
-  ALPACA_PAPER=false    -> real orders with real money
+  ALPACA_PAPER=false    -> real orders with REAL money
 
 Protection on an open position:
   bracket -> broker-side stop + target, live between polls and after a crash.
-             Alpaca stocks, whole shares only.
+             Stocks and ETFs, whole shares only.
   poll    -> this loop checks the stop/target every POLL_SECONDS. Used for
              crypto and fractional sizes, and the only mode that can trail.
 """
@@ -85,9 +85,7 @@ def live_trading() -> bool:
 
 
 def real_money() -> bool:
-    if not live_trading():
-        return False
-    return not (config.ALPACA_PAPER if config.BROKER == "alpaca" else config.USE_TESTNET)
+    return live_trading() and not config.ALPACA_PAPER
 
 
 def describe_mode() -> str:
@@ -95,11 +93,8 @@ def describe_mode() -> str:
         return "SIGNAL-ONLY (no orders, notifications only)"
     if not config.ENABLE_TRADING:
         return "PAPER (no orders sent)"
-    if config.BROKER == "alpaca":
-        return ("LIVE on Alpaca PAPER account (fake money)" if config.ALPACA_PAPER
-                else "LIVE on Alpaca REAL ACCOUNT (real money)")
-    return ("LIVE on Binance TESTNET (fake money)" if config.USE_TESTNET
-            else "LIVE on Binance REAL ACCOUNT (real money)")
+    return ("LIVE on Alpaca PAPER account (fake money)" if config.ALPACA_PAPER
+            else "LIVE on Alpaca REAL ACCOUNT (real money)")
 
 
 # --------------------------------------------------------------------------- #

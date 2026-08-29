@@ -24,7 +24,6 @@ def main() -> int:
         print("  1. Sign up / log in at https://app.alpaca.markets")
         print("  2. Home -> API Keys -> Generate New Key (the secret shows ONCE)")
         print("  3. Add to .env:")
-        print("       BROKER=alpaca")
         print("       ALPACA_API_KEY=your_key_id")
         print("       ALPACA_API_SECRET=your_secret_key")
         print("       ALPACA_PAPER=true")
@@ -89,7 +88,7 @@ def main() -> int:
 
     print("\n" + "=" * 62)
     print("✓ All checks passed." if ok else "⚠ Connected, but some data checks failed.")
-    print("Next: set BROKER=alpaca in .env, then run  python bot.py")
+    print("Next: run  python bot.py")
     return 0 if ok else 1
 
 

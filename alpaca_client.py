@@ -1,6 +1,6 @@
 """Minimal Alpaca REST client — US stocks and crypto, paper or live.
 
-Auth is just two headers (no request signing, unlike Binance):
+Auth is just two headers — no request signing:
     APCA-API-KEY-ID / APCA-API-SECRET-KEY
 
 Endpoints:
@@ -29,7 +29,7 @@ TRADE_PAPER = "https://paper-api.alpaca.markets"
 TRADE_LIVE = "https://api.alpaca.markets"
 DATA = "https://data.alpaca.markets"
 
-# Binance-style interval -> Alpaca timeframe, so .env INTERVAL keeps working.
+# Short interval -> Alpaca timeframe, so "1h" in .env keeps working.
 _TIMEFRAMES = {
     "1m": "1Min", "3m": "3Min", "5m": "5Min", "15m": "15Min", "30m": "30Min",
     "1h": "1Hour", "2h": "2Hour", "4h": "4Hour", "6h": "6Hour", "12h": "12Hour",
@@ -38,7 +38,7 @@ _TIMEFRAMES = {
 
 
 def to_timeframe(interval: str) -> str:
-    """Map a Binance-style interval ("1h") to an Alpaca timeframe ("1Hour").
+    """Map a short interval ("1h") to an Alpaca timeframe ("1Hour").
 
     Already-Alpaca values ("15Min", "1Day") pass through untouched.
     """
@@ -78,7 +78,7 @@ def is_crypto(symbol: str) -> bool:
 
 
 def normalize_symbol(symbol: str) -> str:
-    """Accept Binance-style crypto tickers and convert them to Alpaca pairs.
+    """Accept exchange-style crypto tickers and convert them to Alpaca pairs.
 
     BTCUSDT -> BTC/USD, ETHUSD -> ETH/USD, AAPL -> AAPL (unchanged).
     Alpaca settles crypto in USD, so a USDT pair maps onto the USD pair.
@@ -95,7 +95,7 @@ def normalize_symbol(symbol: str) -> str:
 
 
 class AlpacaError(RuntimeError):
-    """An error response from the Alpaca API (mirrors BinanceAPIException)."""
+    """An error response from the Alpaca API."""
 
     def __init__(self, status: int, message: str):
         super().__init__(f"HTTP {status}: {message}")
@@ -216,8 +216,13 @@ class AlpacaClient:
     # ------------------------------------------------------------------ #
     PAGE_MAX = 10000  # data points per response
 
-    def _bars_request(self, path, params, what=""):
-        """One bars call, with a SIP -> IEX fallback if the feed is refused."""
+    def _data_request(self, path, params, what=""):
+        """A market-data call, with a SIP -> IEX fallback if the feed is refused.
+
+        The free plan serves SIP history but NOT recent SIP data, so a latest
+        trade/quote returns 403 while the same symbol's bars succeed. Both paths
+        need this, which is why it lives here rather than in the bars helper.
+        """
         try:
             return self._request("GET", path, base=DATA, params=params)
         except AlpacaError as e:
@@ -260,7 +265,7 @@ class AlpacaClient:
             while pages < max_pages and len(collected) < limit:
                 if token:
                     params["page_token"] = token
-                payload = self._bars_request(path, params, f" for {sym}")
+                payload = self._data_request(path, params, f" for {sym}")
                 collected.extend((payload.get("bars") or {}).get(sym) or [])
                 pages += 1
                 token = payload.get("next_page_token")
@@ -279,7 +284,7 @@ class AlpacaClient:
         """Closing prices of the last `limit` CLOSED bars.
 
         Fetches one extra bar and drops the newest, which is still forming —
-        same convention as the Binance path in bot.py.
+        so the strategy only ever sees completed bars.
         """
         bars = self.get_bars(symbol, interval, limit + 1)
         if len(bars) > limit:
@@ -289,12 +294,12 @@ class AlpacaClient:
     def get_latest_price(self, symbol: str) -> float:
         """Latest trade price."""
         if is_crypto(symbol):
-            payload = self._request("GET", "/v1beta3/crypto/us/latest/trades",
-                                    base=DATA, params={"symbols": symbol})
+            payload = self._data_request("/v1beta3/crypto/us/latest/trades",
+                                         {"symbols": symbol}, f" for {symbol}")
             trade = (payload.get("trades") or {}).get(symbol) or {}
         else:
             path = f"/v2/stocks/{urllib.parse.quote(symbol)}/trades/latest"
-            payload = self._request("GET", path, base=DATA, params={"feed": self.feed})
+            payload = self._data_request(path, {"feed": self.feed}, f" for {symbol}")
             trade = payload.get("trade") or {}
         if "p" not in trade:
             raise AlpacaError(404, f"No recent trade for {symbol}")

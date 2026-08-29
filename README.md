@@ -1,15 +1,13 @@
 # Multi-Timeframe Trading Bot — Gold, Currencies & Crypto
 
-A safe-by-default trading bot: moving-average crossovers confirmed across two
-timeframes, gated by trend strength, with risk sized in ATR. It runs against
-either broker, selected with `BROKER` in `.env`:
+A safe-by-default trading bot for **Alpaca**: moving-average crossovers
+confirmed across two timeframes, gated by trend strength, with risk sized in ATR.
 
-| `BROKER` | Market | Endpoint |
-|---|---|---|
-| `alpaca` (default) | US stocks **and** crypto | `paper-api.alpaca.markets` / `api.alpaca.markets` |
-| `binance` | Spot crypto | Binance / Binance Testnet |
-
-`strategy.py` is shared — only the execution layer (`broker.py`) differs.
+| | |
+|---|---|
+| Market | US stocks, ETFs and crypto |
+| Endpoint | `paper-api.alpaca.markets` / `api.alpaca.markets` |
+| Data | `data.alpaca.markets` (SIP, falling back to IEX) |
 
 ## What it trades
 
@@ -44,8 +42,9 @@ WATCHLIST=GLD@15m, FXE@1h:4h, FXB@1h:4h, FXY@1h:4h, UUP@1h:4h
 With no higher timeframe, the entry-timeframe `TREND_SMA` filter carries the
 load instead.
 
-> ⚠️ **Trading is risky. This bot can lose money. Test on the Testnet first and
-> never trade more than you can afford to lose.**
+> ⚠️ **Trading is risky. This bot can lose money — and on the instruments
+> tested so far it does (see [Measured effect](#measured-effect)). Run it on
+> the paper account first and never trade more than you can afford to lose.**
 
 ## How it works
 
@@ -60,14 +59,13 @@ load instead.
 
 ## Modes (safest first)
 
-| `SIGNAL_ONLY` | `ENABLE_TRADING` | `USE_TESTNET` | Behaviour |
+| `SIGNAL_ONLY` | `ENABLE_TRADING` | `ALPACA_PAPER` | Behaviour |
 |---|---|---|---|
 | `true` | — | — | **Default.** Notify signals only. No orders. No API key needed. |
 | `false` | `false` | — | Paper: track positions + notify, send no orders. |
-| `false` | `true` | `true` | Place **real** orders on Testnet / Alpaca paper (fake money). |
+| `false` | `true` | `true` | Place **real** orders on the Alpaca paper account (fake money). |
 | `false` | `true` | `false` | Place **real** orders on your live account. |
 
-For Alpaca the fake-money switch is `ALPACA_PAPER` rather than `USE_TESTNET`.
 
 ## Risk controls
 
@@ -144,7 +142,6 @@ cp .env.example .env       # then edit .env with your keys
 2. **Home → API Keys → Generate New Key.** The secret is shown **once**.
 3. Put them in `.env`:
    ```
-   BROKER=alpaca
    ALPACA_API_KEY=your_key_id
    ALPACA_API_SECRET=your_secret_key
    ALPACA_PAPER=true
@@ -161,21 +158,10 @@ Notes:
 - Alpaca authenticates its **market data** endpoints too, so keys are required
   even with `SIGNAL_ONLY=true`.
 - `ALPACA_FEED=iex` is the free real-time feed; `sip` needs a paid data plan.
-- Binance-style crypto tickers are auto-converted (`BTCUSDT` → `BTC/USD`),
-  since Alpaca settles crypto in USD.
+- USDT-style crypto tickers are auto-converted (`BTCUSDT` → `BTC/USD`), since
+  Alpaca settles crypto in USD.
 - US stocks only trade during market hours; the bot skips entries when the
   market is closed. Crypto trades 24/7.
-
-### Binance Testnet (recommended first)
-1. Go to https://testnet.binance.vision/ and log in with GitHub.
-2. Generate an HMAC API key + secret.
-3. Put them in `.env` and keep `USE_TESTNET=true`.
-
-### Live account
-1. In Binance → API Management, create a key.
-2. **Enable "Spot Trading" ONLY. Do NOT enable Withdrawals.**
-3. Restrict the key to your IP address if possible.
-4. Set `USE_TESTNET=false` in `.env`.
 
 ## Running
 
@@ -184,13 +170,15 @@ python bot.py
 ```
 
 The bot starts in the **safest** mode:
-- `USE_TESTNET=true` → fake money
+- `ALPACA_PAPER=true` → fake money
 - `ENABLE_TRADING=false` → paper mode (logs signals, sends no orders)
 
 ### Going from paper → real orders
-1. Run in paper mode and watch the logs until you trust the signals.
-2. Flip `ENABLE_TRADING=true` (still on testnet) to test real order placement.
-3. Only after that, set `USE_TESTNET=false` to trade live funds.
+1. Run in signal-only mode and watch the logs until you trust the signals.
+2. Flip `ENABLE_TRADING=true` with `ALPACA_PAPER=true` — real order placement,
+   fake money.
+3. Only after that, and only with a strategy that backtests profitably, set
+   `ALPACA_PAPER=false`.
 
 ## Configuration (`.env`)
 
@@ -201,9 +189,7 @@ The bot starts in the **safest** mode:
 | `INTERVAL` | Fallback candle size when `WATCHLIST` is empty |
 | `FAST_SMA` / `SLOW_SMA` | SMA periods (fast must be < slow) |
 | `POLL_SECONDS` | How often to re-check the market |
-| `USE_TESTNET` | Binance: `true` = testnet, `false` = live |
 | `ENABLE_TRADING` | `false` = paper, `true` = send real orders |
-| `BROKER` | `binance` or `alpaca` |
 | `ALPACA_API_KEY` / `ALPACA_API_SECRET` | Alpaca credentials |
 | `ALPACA_PAPER` | `true` = paper account (fake money), `false` = real money |
 | `ALPACA_FEED` | `iex` (free) or `sip` (paid) |

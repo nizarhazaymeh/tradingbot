@@ -1,7 +1,7 @@
-"""Broker adapters — one strategy, two venues.
+"""Alpaca broker adapter.
 
-`get_broker()` returns an object with a uniform surface that bot.py drives, so
-strategy.py stays venue-agnostic:
+`get_broker()` returns the object bot.py drives, keeping strategy.py free of any
+venue detail:
 
     name / ERRORS               label for logs; exceptions the loop should catch
     supports_brackets           broker-side stop-loss/take-profit available?
@@ -17,12 +17,9 @@ strategy.py stays venue-agnostic:
     buy(symbol, notional, ...)  -> {fill, qty, protection}
     sell(symbol)                liquidate -> qty sold
 
-Alpaca is the default (BROKER=alpaca). Binance remains available for crypto,
-but has no equity/PDT/bracket concepts, so those rails simply don't engage.
 """
 import logging
 import uuid
-from decimal import Decimal
 from typing import Dict, List, Optional
 
 import config
@@ -63,7 +60,7 @@ class AlpacaBroker:
         self._pos_key: Dict[str, str] = {}  # BTCUSD -> BTC/USD
 
     def prepare(self, symbols: List[str]) -> List[str]:
-        """Normalise Binance-style tickers (BTCUSDT -> BTC/USD) and check them."""
+        """Validate symbols, converting any USDT-style crypto ticker to a pair."""
         from alpaca_client import AlpacaError, normalize_symbol
 
         resolved = []
@@ -209,103 +206,6 @@ class AlpacaBroker:
         return qty
 
 
-# --------------------------------------------------------------------------- #
-# Binance — spot crypto
-# --------------------------------------------------------------------------- #
-class BinanceBroker:
-    name = "Binance"
-    supports_brackets = False  # no broker-side OCO wired up here
-
-    def __init__(self):
-        from binance.client import Client
-        from binance.exceptions import BinanceAPIException
-
-        self.ERRORS = (BinanceAPIException,)
-        self.client = Client(config.API_KEY, config.API_SECRET,
-                             testnet=config.USE_TESTNET)
-        self.filters = {}
-
-    def prepare(self, symbols: List[str]) -> List[str]:
-        for sym in symbols:
-            info = self.client.get_symbol_info(sym)
-            if info is None:
-                raise SystemExit(f"Symbol {sym} not found on this exchange/endpoint.")
-            f = {x["filterType"]: x for x in info["filters"]}
-            self.filters[sym] = {
-                "step": float(f.get("LOT_SIZE", {}).get("stepSize", "0.00000001")),
-                "min_notional": float(
-                    f.get("NOTIONAL", f.get("MIN_NOTIONAL", {})).get("minNotional", "0")
-                ),
-                "base": info["baseAsset"],
-                "quote": info["quoteAsset"],
-            }
-        return symbols
-
-    def closes(self, symbol: str, interval: str, limit: int) -> List[float]:
-        klines = self.client.get_klines(symbol=symbol, interval=interval, limit=limit + 1)
-        return [float(k[4]) for k in klines[:-1]]  # drop the forming candle
-
-    def history(self, symbol: str, interval: str, limit: int):
-        """Last `limit` CLOSED candles, oldest first."""
-        raw = self.client.get_klines(symbol=symbol, interval=interval, limit=limit + 1)
-        return [Bar(_epoch(k[0]), float(k[4]), float(k[2]), float(k[3]))
-                for k in raw[:-1]]
-
-    def history_many(self, symbols: List[str], interval: str, limit: int):
-        """Binance klines are single-symbol, so this is just a loop."""
-        return {s: self.history(s, interval, limit) for s in symbols}
-
-    def entry_window_ok(self, symbol: str, min_minutes: float) -> Optional[str]:
-        return None  # crypto never closes
-
-    def _balance(self, asset: str) -> float:
-        bal = self.client.get_asset_balance(asset=asset)
-        return float(bal["free"]) if bal else 0.0
-
-    def account(self) -> dict:
-        """Spot has no equity/PDT concept — report quote cash so the rails
-        that need equity stay inert rather than firing on bad data."""
-        quote = self.filters[config.SYMBOLS[0]]["quote"] if self.filters else "USDT"
-        cash = self._balance(quote)
-        return {"equity": cash, "cash": cash, "last_equity": cash,
-                "buying_power": cash, "daytrade_count": 0, "status": "ACTIVE"}
-
-    def positions(self, symbols: List[str]) -> Dict[str, dict]:
-        out = {}
-        for sym in symbols:
-            qty = self._balance(self.filters[sym]["base"])
-            if qty > 0:
-                out[sym] = {"qty": qty, "avg_entry_price": 0.0}
-        return out
-
-    def is_dust(self, symbol: str, qty: float, price: float) -> bool:
-        """Leftover crypto below the exchange minimum isn't a real position."""
-        return qty * price < max(self.filters[symbol]["min_notional"], 1e-8)
-
-    def market_open(self, symbol: str) -> bool:
-        return True  # crypto is 24/7
-
-    def buy(self, symbol, notional, price, stop_price=None, target_price=None) -> dict:
-        log.info("Placing MARKET BUY: spend %.8f quote on %s", notional, symbol)
-        order = self.client.order_market_buy(symbol=symbol, quoteOrderQty=notional)
-        fills = order.get("fills") or []
-        qty = sum(float(f["qty"]) for f in fills)
-        cost = sum(float(f["qty"]) * float(f["price"]) for f in fills)
-        return {"fill": (cost / qty) if qty else 0.0, "qty": qty, "protection": "poll"}
-
-    def sell(self, symbol: str) -> float:
-        step = self.filters[symbol]["step"]
-        raw = self._balance(self.filters[symbol]["base"])
-        qty = float((Decimal(str(raw)) // Decimal(str(step))) * Decimal(str(step))) \
-            if step else raw
-        if qty <= 0:
-            log.warning("[%s] EXIT signal but quantity rounds to 0.", symbol)
-            return 0.0
-        log.info("Placing MARKET SELL: %.8f of %s", qty, symbol)
-        self.client.order_market_sell(symbol=symbol, quantity=qty)
-        return qty
-
-
-def get_broker():
-    """Instantiate the broker named by BROKER in .env."""
-    return BinanceBroker() if config.BROKER == "binance" else AlpacaBroker()
+def get_broker() -> "AlpacaBroker":
+    """The trading venue. Alpaca only."""
+    return AlpacaBroker()
