@@ -83,6 +83,14 @@ and spends tokens thinking). It falls back to "approve", which is safe because
 the deterministic gates still run — but it means the critic is not always doing
 its job.
 
+### ✅ SAFETY — DONE: circuit breaker and crash recovery verified
+`scripts/test_safety.py` — 21/21 passed. A real halt against the DEV account
+cancelled orders, flattened the book, set `suspend_trade` server-side, and Alpaca
+then **rejected a real order** with `403 "new orders are rejected by user
+request"`. Crash recovery confirmed the exit plan survives an unclean restart,
+and reconciliation detects both ghosts and orphans. See
+[`SAFETY_TESTS.md`](SAFETY_TESTS.md).
+
 ### T7 — Rate-limit headroom untested under load
 The governor reads `X-RateLimit-*` headers and throttles correctly in testing,
 but we have never run a full session with 3 underlyings on a 5-minute loop for
