@@ -28,6 +28,16 @@ Deadline: **Fri 4 Sep 2026, 11:00 ET / 18:00 GMT+3**
 
 ## 🟠 TECHNICAL — not blocking, but this is where the risk is
 
+### ✅ T2 — DONE: exit logic verified on real historical data
+Built `agent/replay.py` — replays real option prices through the live
+`monitor.evaluate_exit()`. 85 trades over 6 expiry cycles. Take-profit, time
+stop, expiry force-close, mark-to-market and intrinsic settlement all confirmed
+working. See [`BACKTEST.md`](BACKTEST.md).
+
+### ✅ T4 — DONE: backtest complete
+Naive strategy loses (−$240, PF 0.91); each of the agent's filters improves it,
+reaching +$657 / PF 2.52 / 81% win rate. Caveats documented honestly.
+
 ### T1 — 🔴 No order has ever actually filled
 **This is the single biggest unknown in the whole project.**
 
@@ -44,12 +54,6 @@ Unverified until a real fill happens:
 **Plan:** Monday 09:30 ET — run live on the **DEV** account, watch real fills,
 fix whatever breaks, then switch to COMP.
 
-### T2 — Exit logic never tested against a real position
-`monitor.py` is covered by 9 unit tests using synthetic quotes. It has never
-managed a position that actually exists. Since Alpaca does not support bracket
-orders on options, **this loop is our only stop-loss** — if it misbehaves, a
-position sits unprotected.
-
 ### T3 — IV rank is missing
 The agent currently compares implied vol against *realised* vol as a proxy. The
 better signal is IV **rank** (where today's IV sits within its own recent range),
@@ -59,11 +63,6 @@ days deep by Friday.
 
 **Optional improvement:** backfill from option bars (available since Feb 2024).
 Costs a lot of API calls; only worth doing if there's spare time.
-
-### T4 — No backtest
-The `alpaca-trading-backtest` skill is installed but unused. A backtest with
-documented assumptions would strengthen the "clear, testable strategy" claim and
-give us numbers for the slides beyond a few live days.
 
 ### T5 — MCP server installed but never actually used
 It is registered and connected, and `07_mcp_cli/` documents it, but we have no
@@ -118,10 +117,10 @@ daily. That curve is the single most persuasive artifact for the P&L criterion.
 | P0 | Agent live and trading on COMP | ❌ never |
 | P0 | Risk gates working | ❌ never |
 | P0 | B1–B8 (all submission blockers) | ❌ never |
-| P1 | T1, T2 — verify real fills and exits | ❌ effectively never |
+| P1 | T1 — verify a real fill (T2 exits now verified via replay) | ❌ effectively never |
 | P1 | Demo website | ⚠️ required, but can be simple |
 | P2 | T5 MCP transcript | ⚠️ 30 min, keep it |
 | P2 | T8 equity curve export | ⚠️ cheap, keep it |
-| P3 | T4 backtest | ✅ droppable |
+
 | P3 | T3 IV rank backfill | ✅ droppable |
 | P3 | Everything under "nice to have" | ✅ droppable |

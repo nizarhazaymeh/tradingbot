@@ -18,3 +18,4 @@ venv/
 **/.DS_Store
 # Scraped third-party documentation — research material, kept local only
 searching_docs/09_raw_sources/
+.cache/
