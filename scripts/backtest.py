@@ -23,13 +23,16 @@ ap.add_argument("--underlyings", default="SPY,QQQ,IWM")
 ap.add_argument("--weeks", type=int, default=8)
 ap.add_argument("--dte", type=int, default=4)
 ap.add_argument("--out", default="docs/backtest_results.json")
+ap.add_argument("--end", default=None,
+                help="last Friday to test (YYYY-MM-DD). Default: most recent.")
+ap.add_argument("--label", default="")
 a = ap.parse_args()
 
 c = AlpacaClient(); rp = Replayer(c)
 YESTERDAY = date.today() - timedelta(days=1)
 
 def fridays(n):
-    d = YESTERDAY
+    d = date.fromisoformat(a.end) if a.end else YESTERDAY
     while d.weekday() != 4:
         d -= timedelta(days=1)
     out = []
@@ -130,7 +133,7 @@ def stats(rs):
             "expectancy": round(statistics.mean(p),2),
             "held_to_expiry": sum(1 for x in rs if x["held_to_expiry"])}
 
-print(f"\n{'='*76}\nBACKTEST — {len(rows)} trades over {a.weeks} weekly cycles, {a.dte} DTE\n{'='*76}")
+print(f"\n{'='*76}\nBACKTEST {a.label} — {len(rows)} trades, {a.weeks} cycles ending {a.end or 'now'}, {a.dte} DTE\n{'='*76}")
 print(f"\n{'strategy':20} {'n':>4} {'win%':>6} {'net $':>9} {'avg win':>9} {'avg loss':>9} {'PF':>6}")
 print("-"*76)
 for name,_,_,_ in STRATS:

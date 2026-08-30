@@ -109,6 +109,16 @@ WING_STRIKES = _i("WING_STRIKES", 5)            # default wing width, in strike 
 # Search space the optimiser enumerates each cycle
 WIDTH_STRIKES = [int(x) for x in _s("WIDTH_STRIKES", "2,3,4,5,8").split(",") if x.strip()]
 CONDOR_SIGMAS = [float(x) for x in _s("CONDOR_SIGMAS", "1.0,1.25,1.5,1.75").split(",") if x.strip()]
+# Iron condors profit from the underlying staying in a range. Backtesting across
+# four market regimes (277 trades) showed they collapse when volatility is high:
+#   realised vol ~10%  -> profit factor 1.3
+#   realised vol ~21%  -> profit factor 0.9
+#   realised vol ~46%  -> profit factor 0.28   (42% win rate)
+# So we refuse to open condors above this realised-vol ceiling. Directional
+# credit spreads, which do not need the price to sit still, are unaffected.
+MAX_VOL_FOR_CONDOR = _f("MAX_VOL_FOR_CONDOR", 0.18)
+# In elevated vol, push condor short strikes further out before giving up.
+CONDOR_SIGMA_VOL_BOOST = _f("CONDOR_SIGMA_VOL_BOOST", 0.5)
 CREDIT_DELTAS = [float(x) for x in _s("CREDIT_DELTAS", "0.10,0.14,0.18,0.22").split(",") if x.strip()]
 DEBIT_LONG_DELTAS = [float(x) for x in _s("DEBIT_LONG_DELTAS", "0.40,0.50,0.60").split(",") if x.strip()]
 MIN_CREDIT_RATIO = _f("MIN_CREDIT_RATIO", 0.04) # sanity floor only; EV is the real test

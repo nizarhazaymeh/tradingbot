@@ -220,7 +220,11 @@ def candidates(reg: Regime, views: List[O.ContractView], expiry: date,
         if sp and sp.width > 0 and sp.max_loss_per_unit <= (budget or float("inf")):
             out.append(sp)
 
-    neutral_ok = reg.name in (HIGH_IV_RANGE, LOW_IV_RANGE)
+    # Condors need a quiet market. See config.MAX_VOL_FOR_CONDOR — they lose
+    # badly above it, so above the ceiling we simply do not offer them.
+    rv = (reg.detail or {}).get("realized_vol") or 0.0
+    condors_allowed = rv <= config.MAX_VOL_FOR_CONDOR
+    neutral_ok = reg.name in (HIGH_IV_RANGE, LOW_IV_RANGE) and condors_allowed
     trend_ok = reg.name in (HIGH_IV_TREND, LOW_IV_TREND)
     bias = reg.trend_dir or view.bias
 
@@ -304,6 +308,11 @@ def propose(reg: Regime, views: List[O.ContractView], expiry: date,
 
     pool = candidates(reg, views, expiry, view, budget or float("inf"))
     if not pool:
+        rv = (reg.detail or {}).get("realized_vol") or 0.0
+        if rv > config.MAX_VOL_FOR_CONDOR and reg.name in (HIGH_IV_RANGE, LOW_IV_RANGE):
+            return None, (f"{reg.name}: realised vol {rv:.1%} > "
+                          f"{config.MAX_VOL_FOR_CONDOR:.0%} ceiling — condors are "
+                          f"unreliable in high vol and no directional structure qualifies")
         return None, f"{reg.name}: no feasible structure fits the risk budget"
 
     rv = (reg.detail or {}).get("realized_vol")

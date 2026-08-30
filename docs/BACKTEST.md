@@ -61,13 +61,91 @@ SPY moves over the tested cycles: −0.44%, +1.07%, +2.04%, +0.42%, −0.90%, +0
 A gently rising market. That flatters put-selling and punishes call-selling, and
 the results reflect exactly that.
 
+---
+
+# Part 2 — Stress test across four market regimes
+
+The section above tested one calm, mildly rising period. That flatters
+premium-selling, so we went looking for the periods that would break it.
+
+Scanning SPY since Feb 2024 for the worst 4-week windows produced three:
+
+| Period | 4-week return | Realised vol | Character |
+|---|---:|---:|---|
+| **Apr 2025** | −4.7% | **46%** | volatility spike |
+| **Mar 2026** | **−7.7%** | 15% | sustained selloff |
+| **Aug 2024** | −4.6% | 21% | carry unwind |
+| *Jul–Aug 2026* | +3.9% | 10% | *calm, rising (original test)* |
+
+**277 trades across all four.**
+
+## Result by strategy and regime (net $ / profit factor)
+
+| Strategy | Calm/rising | Vol spike 46% | Selloff −7.7% | Carry unwind | **All** |
+|---|---:|---:|---:|---:|---:|
+| put credit 3.0% OTM | +98 / 1.4 | +311 / 2.3 | +316 / 4.9 | +233 / 3.8 | **+958 / 2.5** |
+| put credit 1.5% OTM | +183 / 1.4 | +718 / 4.3 | −234 / 0.5 | +341 / 6.7 | +1008 / 1.8 |
+| **iron condor ±2.2%** | +143 / 1.3 | 🔴 **−510 / 0.28** | +1443 / ∞ | −98 / 0.9 | +978 / 1.4 |
+| call credit 1.5% | −467 / 0.6 | −694 / 0.5 | +1540 / ∞ | −21 / 1.0 | +358 / 1.1 |
+| call credit 3.0% | −197 / 0.4 | −520 / 0.5 | +414 / ∞ | −298 / 0.7 | −601 / 0.8 |
+
+### 🔴 The finding that changed the strategy
+
+**Iron condors collapse in high volatility.** They profit from the underlying
+sitting still, so a 46%-vol market destroys them:
+
+| Realised vol | Condor win rate | Profit factor |
+|---:|---:|---:|
+| ~10% | 65% | 1.30 ✅ |
+| ~21% | 57% | 0.90 ⚠️ |
+| **~46%** | **42%** | **0.28** 🔴 |
+
+The original single-period backtest could never have found this — that period had
+10% realised vol, where condors look fine.
+
+### The fix
+
+`config.MAX_VOL_FOR_CONDOR = 0.18` — the agent will not open an iron condor when
+realised volatility exceeds 18%. Directional credit spreads, which do not need
+the price to sit still, are unaffected. Two unit tests cover both sides of the
+ceiling.
+
+**Effect across all four regimes:**
+
+| Variant | Trades | Win rate | Net P&L | Profit factor |
+|---|---:|---:|---:|---:|
+| Everything | 277 | 69% | +$2,701 | 1.27 |
+| **+ condor volatility ceiling** | 251 | 71% | **+$3,309** | **1.41** |
+| **+ trend filter** | 140 | **77%** | **+$3,552** | **2.49** |
+
+The ceiling removes 26 condor trades that lost −$608 (PF 0.63) and keeps 29 that
+made +$1,586 (PF 3.90, 79% win). A clean split along exactly the line theory
+predicts.
+
+### Also confirmed
+
+**Put credit spreads at 3% OTM were profitable in all four regimes** (PF 2.3–4.9)
+— the most robust structure tested, and the only one that never had a losing
+period.
+
+**Call credit spreads only worked in the selloff.** Overall PF 0.8–1.1. This is
+why the agent's trend filter refuses to sell calls into a rising market.
+
+---
+
 ## 🔴 Honest limitations
 
 State these anywhere the numbers appear:
 
-- **85 trades over 6 weeks is a small sample.** Not statistically significant.
-- **The period was mildly bullish.** A falling market would reverse the
-  put/call asymmetry. These results do not generalise across regimes.
+- **277 trades across 4 regimes is better than one period, but still small.**
+  Four regimes is not the same as four independent samples — each is a handful of
+  consecutive weeks, so the trades within a period are correlated.
+- **The regimes were chosen by looking for the worst windows.** That is the right
+  way to stress-test, but it is not a random sample of history.
+- **The condor volatility ceiling was fitted to this data.** 18% sits between the
+  21% period (PF 0.9) and the 10% period (PF 1.3). The *direction* of the effect
+  is well-supported by theory — condors need a still market — but the exact
+  threshold is not independently validated.
 - **Daily bars only.** No intraday movement, so exits trigger on closes. Real
   intraday stops would fire earlier and more often.
 - **Fills at the bar close**, with a synthetic 2-cent spread per leg. Real

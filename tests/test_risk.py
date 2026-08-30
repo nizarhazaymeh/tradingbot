@@ -183,3 +183,26 @@ def test_portfolio_delta_gate_allows_offsetting():
                           cv("C", 771, mid=2.00, delta=0.25))
     sp.qty = 1
     assert gate_portfolio(sp, book(net_delta=-2.0))   # offsets existing short delta
+
+
+# ---------------------------------------------- condor volatility ceiling
+def test_condors_offered_in_quiet_markets():
+    from agent.strategy import candidates, View
+    from agent.regime import Regime, HIGH_IV_RANGE
+    views = ([cv("P", s, mid=1.0) for s in range(740, 770)] +
+             [cv("C", s, mid=1.0) for s in range(770, 800)])
+    reg = Regime(HIGH_IV_RANGE, "SPY", 769, 0.12, None, 0.1, 0, 8.0, 5, "quiet",
+                 {"realized_vol": 0.10})
+    kinds = {c.kind for c in candidates(reg, views, E, View(), 10_000)}
+    assert "iron_condor" in kinds
+
+
+def test_condors_withheld_in_high_vol():
+    from agent.strategy import candidates, View
+    from agent.regime import Regime, HIGH_IV_RANGE
+    views = ([cv("P", s, mid=1.0) for s in range(740, 770)] +
+             [cv("C", s, mid=1.0) for s in range(770, 800)])
+    reg = Regime(HIGH_IV_RANGE, "SPY", 769, 0.40, None, 0.1, 0, 30.0, 5, "wild",
+                 {"realized_vol": 0.46})     # the April-2025 regime
+    kinds = {c.kind for c in candidates(reg, views, E, View(), 10_000)}
+    assert "iron_condor" not in kinds
