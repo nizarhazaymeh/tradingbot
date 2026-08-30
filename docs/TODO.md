@@ -19,7 +19,7 @@ Deadline: **Fri 4 Sep 2026, 11:00 ET / 18:00 GMT+3**
 | B2 | **Live demo URL** — must load for a judge with no login | **Ali** | ☐ |
 | B3 | **Video**, MP4, 3:00–5:00 (under 3 min scores a 2 on their rubric) | Mahdi | ☐ |
 | B4 | **Slides**, PDF, 8–10 pages | Mahdi | ☐ |
-| B5 | **One-page write-up** — must cover AI logic / risk gates / Alpaca infrastructure | Mahdi | ☐ |
+| B5 | ✅ **One-page write-up** — drafted at `docs/WRITEUP.md`; results table filled in after the window | Mahdi | ✅ |
 | B6 | **Cover image**, PNG or JPG, 16:9 | Ali | ☐ |
 | B7 | **Competition account ID in the submission** — `PA3BAT1OOEFE`. Without it, P&L is not scored at all | Mahdi | ☐ |
 | B8 | **Short description** ≤255 chars · **Long description** ≥100 words · tags | Mahdi | ☐ |
@@ -64,11 +64,18 @@ days deep by Friday.
 **Optional improvement:** backfill from option bars (available since Feb 2024).
 Costs a lot of API calls; only worth doing if there's spare time.
 
-### T5 — MCP server installed but never actually used
-It is registered and connected, and `07_mcp_cli/` documents it, but we have no
-transcript of a real session. The judging criterion explicitly names the MCP
-server. **Fix:** one genuine session where we interrogate the account in natural
-language, saved to `docs/mcp_session_transcript.md`. ~30 minutes.
+### ✅ T5 — DONE: MCP session recorded
+`scripts/mcp_session.py` drives the MCP server over stdio via JSON-RPC and
+records a real, reproducible session — 54 tools discovered (12 options-specific),
+account state, clock, option chain with Greeks, contracts, positions, the agent
+looking up its own API docs, and news. Saved to
+[`mcp_session_transcript.md`](mcp_session_transcript.md).
+
+Also documented there: Alpaca's MCP server wraps every response in a security
+envelope marking tool output as untrusted, and classifies news/docs output as
+`external_text` (prompt-injection risk). Our architecture already defends against
+this — the LLM's output is schema-constrained and consumed only as a probability
+tilt, so it cannot pick strikes or place orders.
 
 ### T6 — Critic sometimes returns unparsable output
 `brain.critic()` occasionally fails to return JSON (GLM-5.2 is a reasoning model
@@ -119,7 +126,7 @@ daily. That curve is the single most persuasive artifact for the P&L criterion.
 | P0 | B1–B8 (all submission blockers) | ❌ never |
 | P1 | T1 — verify a real fill (T2 exits now verified via replay) | ❌ effectively never |
 | P1 | Demo website | ⚠️ required, but can be simple |
-| P2 | T5 MCP transcript | ⚠️ 30 min, keep it |
+
 | P2 | T8 equity curve export | ⚠️ cheap, keep it |
 
 | P3 | T3 IV rank backfill | ✅ droppable |
