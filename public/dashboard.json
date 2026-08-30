@@ -1,0 +1,143 @@
+{
+  "updated_at": "2026-08-30T18:39:06+00:00",
+  "account": {
+    "account_id": "PA349BYK6I13",
+    "environment": "dev",
+    "equity": 100000.0,
+    "starting_equity": 100000.0,
+    "total_pnl": 0.0,
+    "total_pnl_pct": 0.0,
+    "max_drawdown_pct": 0.0,
+    "open_positions": 0,
+    "closed_trades": 0,
+    "win_rate": null,
+    "realized_pnl": 0
+  },
+  "equity_curve": [
+    {
+      "ts": "2026-08-30T18:22:58+00:00",
+      "equity": 100000.0
+    },
+    {
+      "ts": "2026-08-30T18:23:24+00:00",
+      "equity": 100000.0
+    },
+    {
+      "ts": "2026-08-30T18:23:51+00:00",
+      "equity": 100000.0
+    }
+  ],
+  "market": [
+    {
+      "underlying": "SPY",
+      "spot": 769.28,
+      "implied_vol": 0.1079,
+      "realized_vol": 0.1012,
+      "premium_edge": 0.0067,
+      "verdict": "stand aside",
+      "reason": "market charges LESS than the real risk"
+    },
+    {
+      "underlying": "QQQ",
+      "spot": 716.91,
+      "implied_vol": 0.1604,
+      "realized_vol": 0.1771,
+      "premium_edge": -0.0167,
+      "verdict": "stand aside",
+      "reason": "market charges LESS than the real risk"
+    },
+    {
+      "underlying": "IWM",
+      "spot": 295.73,
+      "implied_vol": 0.1565,
+      "realized_vol": 0.1421,
+      "premium_edge": 0.0144,
+      "verdict": "trade",
+      "reason": "market charges more than the real risk"
+    }
+  ],
+  "positions": [],
+  "decisions": [
+    {
+      "ts": "2026-08-30T18:24:11+00:00",
+      "underlying": "IWM",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "dry run",
+      "regime": "LOW_IV_RANGE"
+    },
+    {
+      "ts": "2026-08-30T18:24:05+00:00",
+      "underlying": "QQQ",
+      "decision": "hold",
+      "gate": "",
+      "reason": "best of 37 candidates rejected: expected value +1.26% of risk < required 2% (P(win) 89%, VRP -0.9%)",
+      "regime": "LOW_IV_RANGE"
+    },
+    {
+      "ts": "2026-08-30T18:23:58+00:00",
+      "underlying": "SPY",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "dry run",
+      "regime": "LOW_IV_RANGE"
+    },
+    {
+      "ts": "2026-08-30T18:23:45+00:00",
+      "underlying": "IWM",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "dry run",
+      "regime": "LOW_IV_RANGE"
+    },
+    {
+      "ts": "2026-08-30T18:23:40+00:00",
+      "underlying": "QQQ",
+      "decision": "hold",
+      "gate": "",
+      "reason": "best of 37 candidates rejected: expected value +1.26% of risk < required 2% (P(win) 89%, VRP -0.9%)",
+      "regime": "LOW_IV_RANGE"
+    },
+    {
+      "ts": "2026-08-30T18:23:30+00:00",
+      "underlying": "SPY",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "dry run",
+      "regime": "LOW_IV_RANGE"
+    },
+    {
+      "ts": "2026-08-30T18:23:22+00:00",
+      "underlying": "IWM",
+      "decision": "hold",
+      "gate": "",
+      "reason": "best of 27 candidates rejected: net delta -0.37/unit exceeds \u00b10.35",
+      "regime": "HIGH_IV_TREND"
+    },
+    {
+      "ts": "2026-08-30T18:23:16+00:00",
+      "underlying": "QQQ",
+      "decision": "hold",
+      "gate": "",
+      "reason": "best of 37 candidates rejected: expected value +1.26% of risk < required 2% (P(win) 89%, VRP -0.9%)",
+      "regime": "LOW_IV_RANGE"
+    },
+    {
+      "ts": "2026-08-30T18:23:05+00:00",
+      "underlying": "SPY",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "dry run",
+      "regime": "LOW_IV_RANGE"
+    }
+  ],
+  "funnel": {
+    "considered": 9,
+    "rejected": 0,
+    "submitted": 5,
+    "held": 4,
+    "closed": 0
+  },
+  "gate_rejections": {},
+  "disclaimer": "Paper trading simulation. Not investment advice. Options involve significant risk."
+}
