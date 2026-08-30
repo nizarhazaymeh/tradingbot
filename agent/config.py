@@ -1,0 +1,158 @@
+"""Configuration. Everything comes from .env — nothing is hardcoded."""
+from __future__ import annotations
+
+import os
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+ROOT = Path(__file__).resolve().parent.parent
+load_dotenv(ROOT / ".env")
+
+
+def _s(key: str, default: str = "") -> str:
+    return os.getenv(key, default).strip()
+
+
+def _f(key: str, default: float) -> float:
+    try:
+        return float(os.getenv(key, "") or default)
+    except ValueError:
+        return default
+
+
+def _i(key: str, default: int) -> int:
+    try:
+        return int(float(os.getenv(key, "") or default))
+    except ValueError:
+        return default
+
+
+def _b(key: str, default: bool) -> bool:
+    v = os.getenv(key, "").strip().lower()
+    return default if not v else v in ("1", "true", "yes", "on")
+
+
+# ---------------------------------------------------------------- accounts
+# ACCOUNT=dev  -> sandbox (break things)
+# ACCOUNT=comp -> the judged account. Guarded; see safety.py.
+ACCOUNT = _s("ACCOUNT", "dev").lower()
+
+if ACCOUNT == "comp":
+    API_KEY = _s("COMP_ALPACA_API_KEY")
+    SECRET_KEY = _s("COMP_ALPACA_SECRET_KEY")
+    ACCOUNT_NUMBER = _s("COMP_ACCOUNT_NUMBER")
+else:
+    API_KEY = _s("ALPACA_API_KEY")
+    SECRET_KEY = _s("ALPACA_SECRET_KEY")
+    ACCOUNT_NUMBER = _s("DEV_ACCOUNT_NUMBER")
+
+# Paper only. There is no live path in this codebase, by design.
+TRADE_BASE = "https://paper-api.alpaca.markets"
+DATA_BASE = "https://data.alpaca.markets"
+
+# OPRA is not entitled on this account (403 "OPRA agreement is not signed").
+OPTIONS_FEED = _s("ALPACA_OPTIONS_FEED", "indicative")
+STOCK_FEED = _s("ALPACA_STOCK_FEED", "iex")
+
+# ---------------------------------------------------------------- LLM
+FEATHERLESS_API_KEY = _s("FEATHERLESS_API_KEY")
+FEATHERLESS_BASE_URL = _s("FEATHERLESS_BASE_URL", "https://api.featherless.ai/v1")
+FEATHERLESS_MODEL = _s("FEATHERLESS_MODEL", "zai-org/GLM-5.2")
+LLM_MAX_TOKENS = _i("LLM_MAX_TOKENS", 700)
+LLM_TIMEOUT = _i("LLM_TIMEOUT", 90)
+
+# ---------------------------------------------------------------- universe
+UNIVERSE = [s.strip().upper() for s in _s("UNIVERSE", "SPY,QQQ,IWM").split(",") if s.strip()]
+
+# ---------------------------------------------------------------- risk
+STARTING_EQUITY = _f("STARTING_EQUITY", 100_000.0)
+RISK_PER_TRADE_PCT = _f("RISK_PER_TRADE_PCT", 0.0040)    # 0.40% -> $400
+PORTFOLIO_HEAT_PCT = _f("PORTFOLIO_HEAT_PCT", 0.0400)    # 4.00% -> $4,000
+MAX_PER_UNDERLYING_PCT = _f("MAX_PER_UNDERLYING_PCT", 0.0120)
+MAX_PER_EXPIRY_PCT = _f("MAX_PER_EXPIRY_PCT", 0.0250)
+MAX_OPEN_POSITIONS = _i("MAX_OPEN_POSITIONS", 10)
+MAX_ORDERS_PER_HOUR = _i("MAX_ORDERS_PER_HOUR", 12)
+
+DAILY_DRAWDOWN_LIMIT = _f("DAILY_DRAWDOWN_LIMIT", 0.02)  # -2%
+TOTAL_DRAWDOWN_LIMIT = _f("TOTAL_DRAWDOWN_LIMIT", 0.06)  # -6%
+
+# ---------------------------------------------------------------- contracts
+MIN_DTE = _i("MIN_DTE", 2)          # 0DTE has no Greeks; 1DTE gamma is unstable
+TARGET_DTE = _i("TARGET_DTE", 4)    # preferred holding window
+MAX_DTE = _i("MAX_DTE", 10)
+MIN_OPEN_INTEREST = _i("MIN_OPEN_INTEREST", 500)
+MAX_SPREAD_PCT = _f("MAX_SPREAD_PCT", 0.15)     # (ask-bid)/mid
+# A percentage-only spread test wrongly rejects cheap far-OTM wings: a 50% spread
+# on a $0.04 option is 2 cents. Accept if EITHER the % limit OR this absolute
+# cents limit is satisfied.
+MAX_SPREAD_ABS = _f("MAX_SPREAD_ABS", 0.06)
+MAX_QTY_VS_OI = _f("MAX_QTY_VS_OI", 0.05)
+IV_MIN, IV_MAX = _f("IV_MIN", 0.01), _f("IV_MAX", 5.0)
+
+# ---------------------------------------------------------------- regime
+# When IV-rank history exists we use rank; otherwise implied-vs-realised.
+IV_RANK_RICH = _f("IV_RANK_RICH", 0.60)
+IV_RANK_CHEAP = _f("IV_RANK_CHEAP", 0.35)
+IV_OVER_RV_RICH = _f("IV_OVER_RV_RICH", 1.10)   # implied >= 1.10x realised -> rich
+IV_OVER_RV_CHEAP = _f("IV_OVER_RV_CHEAP", 0.95)
+TREND_Z_MIN = _f("TREND_Z_MIN", 1.0)
+
+# ---------------------------------------------------------------- structure
+SHORT_DELTA_CONDOR = _f("SHORT_DELTA_CONDOR", 0.16)
+# Delta ~= probability of finishing ITM, so delta 0.16 ~= the 1-sigma strike.
+# Keep these consistent with MIN_SHORT_SIGMA or every proposal gets rejected.
+SHORT_DELTA_CREDIT = _f("SHORT_DELTA_CREDIT", 0.16)
+LONG_DELTA_DEBIT = _f("LONG_DELTA_DEBIT", 0.50)
+SHORT_DELTA_DEBIT = _f("SHORT_DELTA_DEBIT", 0.28)
+WING_STRIKES = _i("WING_STRIKES", 5)            # default wing width, in strike increments
+# Search space the optimiser enumerates each cycle
+WIDTH_STRIKES = [int(x) for x in _s("WIDTH_STRIKES", "2,3,4,5,8").split(",") if x.strip()]
+CONDOR_SIGMAS = [float(x) for x in _s("CONDOR_SIGMAS", "1.0,1.25,1.5,1.75").split(",") if x.strip()]
+CREDIT_DELTAS = [float(x) for x in _s("CREDIT_DELTAS", "0.10,0.14,0.18,0.22").split(",") if x.strip()]
+DEBIT_LONG_DELTAS = [float(x) for x in _s("DEBIT_LONG_DELTAS", "0.40,0.50,0.60").split(",") if x.strip()]
+MIN_CREDIT_RATIO = _f("MIN_CREDIT_RATIO", 0.04) # sanity floor only; EV is the real test
+
+# ---------------------------------------------------------------- expectancy
+# Vanilla spreads price at ~fair value, so the edge must come from our view
+# disagreeing with the market's delta-implied probabilities.
+MAX_VIEW_TILT = _f("MAX_VIEW_TILT", 0.35)       # max probability shift at full conviction
+MIN_EV_RATIO = _f("MIN_EV_RATIO", 0.02)         # require EV >= 2% of capital at risk
+MIN_SHORT_SIGMA = _f("MIN_SHORT_SIGMA", 0.90)   # short strike >= 0.9σ from spot
+CONSERVATIVE_SIGMA = _f("CONSERVATIVE_SIGMA", 1.6)  # wider condor when no regime edge
+MAX_ABS_NET_DELTA = _f("MAX_ABS_NET_DELTA", 0.35)  # per-unit directional cap
+MAX_PORTFOLIO_DELTA = _f("MAX_PORTFOLIO_DELTA", 3.0)  # aggregate, per $100k equity
+MAX_DEBIT_RATIO = _f("MAX_DEBIT_RATIO", 0.60)   # debit must be <= 60% of width
+
+# ---------------------------------------------------------------- exits
+TAKE_PROFIT_CREDIT = _f("TAKE_PROFIT_CREDIT", 0.50)   # +50% of max gain
+TAKE_PROFIT_DEBIT = _f("TAKE_PROFIT_DEBIT", 0.75)
+STOP_CREDIT_MULT = _f("STOP_CREDIT_MULT", 1.50)       # -150% of credit
+STOP_DEBIT_PCT = _f("STOP_DEBIT_PCT", 0.60)
+DELTA_BREACH = _f("DELTA_BREACH", 0.40)
+TIME_STOP_DTE = _i("TIME_STOP_DTE", 1)
+
+NO_NEW_AFTER_ET = _s("NO_NEW_AFTER_ET", "15:30")
+FORCE_CLOSE_AFTER_ET = _s("FORCE_CLOSE_AFTER_ET", "14:00")
+ESCALATE_CLOSE_AFTER_ET = _s("ESCALATE_CLOSE_AFTER_ET", "15:30")
+
+# ---------------------------------------------------------------- runtime
+POLL_SECONDS = _i("POLL_SECONDS", 300)
+DRY_RUN = _b("DRY_RUN", True)
+STATE_DB = str(ROOT / "state" / "agent.db")
+LOG_DIR = ROOT / "logs"
+LOG_DIR.mkdir(exist_ok=True)
+
+
+def summary() -> dict:
+    return {
+        "account": ACCOUNT,
+        "account_number": ACCOUNT_NUMBER,
+        "key_set": bool(API_KEY),
+        "universe": UNIVERSE,
+        "options_feed": OPTIONS_FEED,
+        "dry_run": DRY_RUN,
+        "risk_per_trade": f"{RISK_PER_TRADE_PCT:.2%}",
+        "portfolio_heat": f"{PORTFOLIO_HEAT_PCT:.2%}",
+        "dte": f"{MIN_DTE}-{MAX_DTE}",
+    }

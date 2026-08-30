@@ -1,11 +1,20 @@
+# NEVER commit credentials
 .env
+.env.*
+!.env.example
+*.key
+*.pem
+secrets/
 state.json
+state/
+*.db
+trades.csv
+logs/
 __pycache__/
 *.pyc
-*.log
-venv/
 .venv/
-
-# Claude Code local settings
-.claude/settings.local.json
-trades.csv
+venv/
+.DS_Store
+**/.DS_Store
+# Scraped third-party documentation — research material, kept local only
+searching_docs/09_raw_sources/

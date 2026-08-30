@@ -1,0 +1,327 @@
+"""The agent's main loop. One cycle = observe -> reconcile -> manage -> propose -> execute.
+
+Order matters: existing positions are managed BEFORE new ones are considered, and
+circuit breakers run before anything else.
+"""
+from __future__ import annotations
+
+import json
+import logging
+import time
+from dataclasses import asdict
+from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
+from typing import Dict, List, Optional
+
+from . import config
+from . import brain, monitor, options as O, regime as R, risk as RK, spreads as S, strategy as ST
+from .client import AlpacaClient, AlpacaError
+from .executor import Executor, price_ladder
+from .state import Store, utcnow
+
+log = logging.getLogger("agent")
+HALT_FILE = Path(config.ROOT if hasattr(config, "ROOT") else ".") / "HALTED"
+
+
+class Agent:
+    def __init__(self, *, dry_run: bool = None, use_llm: bool = True,
+                 rehearse: bool = False):
+        self.c = AlpacaClient()
+        self.store = Store()
+        self.ex = Executor(self.c, self.store, dry_run=dry_run)
+        self.use_llm = use_llm
+        # rehearse: pretend the market is open so the full pipeline can be
+        # exercised outside session hours. NEVER combine with --live.
+        self.rehearse = rehearse
+        self.cycle_n = 0
+
+    # ------------------------------------------------------------- helpers
+    def _halted(self) -> bool:
+        return HALT_FILE.exists()
+
+    def _orders_last_hour(self) -> int:
+        since = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat(timespec="seconds")
+        return self.store.orders_since(since)
+
+    def _pick_expiry(self, underlying: str) -> Optional[date]:
+        """Nearest expiry inside [MIN_DTE, MAX_DTE]."""
+        today = date.today()
+        lo = (today + timedelta(days=config.MIN_DTE)).isoformat()
+        hi = (today + timedelta(days=config.MAX_DTE)).isoformat()
+        try:
+            exps = self.c.expirations(underlying, lo, hi)
+        except AlpacaError as e:
+            log.warning("%s: expirations failed: %s", underlying, e.message[:120])
+            return None
+        candidates = [date.fromisoformat(e) for e in exps]
+        candidates = [d for d in candidates
+                      if config.MIN_DTE <= (d - today).days <= config.MAX_DTE]
+        if not candidates:
+            return None
+        # prefer the expiry closest to TARGET_DTE, not simply the nearest —
+        # very short DTE has unstable Greeks and violent gamma.
+        return min(candidates, key=lambda d: abs((d - today).days - config.TARGET_DTE))
+
+    def _chain(self, underlying: str, spot: float, expiry: date, span=0.10):
+        chain = self.c.option_chain(underlying, exp=expiry.isoformat(),
+                                    strike_gte=spot * (1 - span),
+                                    strike_lte=spot * (1 + span))
+        rejects: List[str] = []
+        views = O.usable_contracts(chain, collect_rejects=rejects)
+        return views, rejects
+
+    # --------------------------------------------------------------- phases
+    def observe(self) -> dict:
+        acct = self.c.account()
+        clock = self.c.clock()
+        positions = self.c.positions()
+        self.store.snapshot_equity(float(acct["equity"]), float(acct.get("cash") or 0),
+                                   float(acct.get("options_buying_power") or 0))
+        return {"account": acct, "clock": clock, "positions": positions}
+
+    def manage_open_positions(self, snaps_cache: dict = None) -> List[dict]:
+        """Exit management. Runs every cycle regardless of whether we're opening."""
+        actions = []
+        open_pos = self.store.open_positions()
+        if not open_pos:
+            return actions
+
+        symbols = sorted({l["symbol"] for p in open_pos
+                          for l in json.loads(p["legs_json"])})
+        try:
+            snaps = self.c.option_snapshots(symbols)
+        except AlpacaError as e:
+            log.error("cannot fetch snapshots for open positions: %s", e.message[:150])
+            return actions
+
+        views = {}
+        for sym, snap in snaps.items():
+            try:
+                views[sym] = O.view(sym, snap, min_dte=0, max_dte=3650)
+            except Exception:
+                pass
+
+        for p in open_pos:
+            d = monitor.evaluate_exit(p, snaps, views)
+            if not d:
+                log.info("  hold %s — %s", p["signature"][:40], d.reason)
+                continue
+
+            log.warning("  EXIT %s -> %s (%s)", p["signature"][:40], d.action, d.reason)
+            sp = self._rebuild_spread(p, views)
+            if sp is None:
+                actions.append({"signature": p["signature"], "action": d.action,
+                                "reason": d.reason, "result": "could not rebuild spread"})
+                continue
+
+            order, msg = self.ex.close_spread(
+                sp, market=(d.action == monitor.CLOSE_MARKET))
+            pnl = monitor.unrealized_pnl(p, snaps)
+            if order and order.get("status") != "dry_run":
+                self.store.close_position(p["signature"], realized_pnl=pnl or 0.0,
+                                          reason=d.reason,
+                                          close_order_id=order.get("id"))
+            self.store.log_decision(cycle=self.cycle_n, underlying=p["underlying"],
+                                    regime="-", view={}, proposal=p["kind"],
+                                    decision="close", gate=d.action, reason=d.reason,
+                                    payload={"pnl": pnl, "msg": msg})
+            actions.append({"signature": p["signature"], "action": d.action,
+                            "reason": d.reason, "pnl": pnl, "result": msg})
+        return actions
+
+    def _rebuild_spread(self, p: dict, views: Dict[str, O.ContractView]) -> Optional[S.Spread]:
+        legs = []
+        for l in json.loads(p["legs_json"]):
+            legs.append(S.Leg(l["symbol"], l["side"], l["position_intent"],
+                              int(l["ratio_qty"]), views.get(l["symbol"])))
+        try:
+            return S.Spread(kind=p["kind"], underlying=p["underlying"],
+                            expiry=date.fromisoformat(p["expiry"]), legs=legs,
+                            net_price=p["entry_price"], max_loss_per_unit=p["max_loss"] / p["qty"],
+                            max_gain_per_unit=p["max_gain"] / p["qty"],
+                            width=p["width"], qty=p["qty"])
+        except Exception as e:
+            log.error("rebuild failed for %s: %s", p["signature"], e)
+            return None
+
+    def consider(self, underlying: str, book: RK.Book, clock: dict) -> dict:
+        """Full proposal pipeline for one underlying."""
+        out = {"underlying": underlying, "decision": "hold", "reason": ""}
+
+        expiry = self._pick_expiry(underlying)
+        if not expiry:
+            out["reason"] = f"no expiry in the {config.MIN_DTE}-{config.MAX_DTE} DTE window"
+            self.store.log_decision(cycle=self.cycle_n, underlying=underlying, regime="-",
+                                    view={}, proposal="", decision="hold", reason=out["reason"])
+            return out
+
+        snaps = self.c.stock_snapshots([underlying])
+        spot = ((snaps.get(underlying) or {}).get("latestTrade") or {}).get("p")
+        bars = self.c.stock_bars([underlying], timeframe="1Day", limit=90)
+        closes = [b["c"] for b in bars.get(underlying, [])]
+        if not spot and closes:
+            spot = closes[-1]
+        if not spot or len(closes) < 25:
+            out["reason"] = "insufficient price history"
+            return out
+
+        views, rejects = self._chain(underlying, spot, expiry)
+        iv_hist = self.store.iv_history(underlying)
+        reg = R.classify(underlying, spot, views, closes, expiry=expiry, iv_history=iv_hist)
+
+        if reg.iv > 0:
+            self.store.record_iv(underlying, date.today(), reg.iv)
+
+        out["regime"] = reg.name
+        out["regime_summary"] = reg.summary()
+        log.info("  %s", reg.summary())
+        log.info("    %d usable contracts (%d rejected)", len(views), len(rejects))
+
+        v = ST.NEUTRAL
+        if self.use_llm and reg.tradable:
+            news = []
+            try:
+                news = self.c.news([underlying], limit=6)
+            except AlpacaError:
+                pass
+            v = brain.view(reg, news=news)
+            log.info("    view: %s (conf %.2f) — %s", v.direction, v.confidence, v.thesis[:90])
+
+        budget = config.RISK_PER_TRADE_PCT * book.equity
+        sp, why = ST.propose(reg, views, expiry, view=v, budget=budget)
+        out["view"] = asdict(v)
+
+        if sp is None:
+            out["reason"] = why
+            self.store.log_decision(cycle=self.cycle_n, underlying=underlying,
+                                    regime=reg.name, view=asdict(v), proposal="",
+                                    decision="hold", reason=why)
+            return out
+
+        gate = RK.evaluate(sp, book)
+        out["proposal"] = sp.describe()
+
+        if not gate:
+            out.update(decision="reject", gate=gate.gate, reason=gate.reason)
+            log.info("    REJECT [%s] %s", gate.gate, gate.reason)
+            self.store.log_decision(cycle=self.cycle_n, underlying=underlying,
+                                    regime=reg.name, view=asdict(v), proposal=sp.kind,
+                                    decision="reject", gate=gate.gate, reason=gate.reason,
+                                    payload={"describe": sp.describe()})
+            return out
+
+        # LLM critic — advisory only; deterministic gates already passed
+        crit = {"approve": True, "note": "critic skipped"}
+        if self.use_llm:
+            crit = brain.critic({"kind": sp.kind, "describe": sp.describe(),
+                                 "net_price": sp.net_price, "max_loss": sp.total_max_loss(),
+                                 "net_delta": round(sp.net_delta, 3),
+                                 "net_theta": round(sp.net_theta, 2)}, reg, v)
+        if not crit.get("approve", True):
+            out.update(decision="reject", gate="g_critic",
+                       reason="critic: " + "; ".join(crit.get("concerns", []))[:200])
+            log.info("    CRITIC REJECT: %s", out["reason"])
+            self.store.log_decision(cycle=self.cycle_n, underlying=underlying,
+                                    regime=reg.name, view=asdict(v), proposal=sp.kind,
+                                    decision="reject", gate="g_critic", reason=out["reason"])
+            return out
+
+        ladder = price_ladder(sp)
+        order, msg = self.ex.open_spread(sp, limit_price=ladder[0])
+        out.update(decision="submit", reason=msg, order=msg)
+        log.info("    SUBMIT %s @ %.2f -> %s", sp.describe()[:70], ladder[0], msg)
+
+        if order and order.get("status") != "dry_run":
+            coid = order.get("client_order_id") or sp.client_order_id()
+            tp = config.TAKE_PROFIT_CREDIT if sp.is_credit else config.TAKE_PROFIT_DEBIT
+            self.store.open_position(
+                signature=RK.signature(sp), spread=sp, order=order,
+                take_profit=tp * sp.max_gain_per_unit * sp.qty,
+                stop_loss=(config.STOP_CREDIT_MULT if sp.is_credit else config.STOP_DEBIT_PCT)
+                          * abs(sp.net_price) * 100 * sp.qty,
+                time_stop_dte=config.TIME_STOP_DTE, client_order_id=coid)
+
+        self.store.log_decision(cycle=self.cycle_n, underlying=underlying, regime=reg.name,
+                                view=asdict(v), proposal=sp.kind, decision="submit",
+                                gate="all", reason=msg,
+                                payload={"describe": sp.describe(), "limit": ladder[0],
+                                         "critic": crit})
+        return out
+
+    # ---------------------------------------------------------------- cycle
+    def run_once(self, *, allow_new: bool = True) -> dict:
+        self.cycle_n += 1
+        started = utcnow()
+        log.info("=" * 78)
+        log.info("cycle %d | account=%s | dry_run=%s | %s",
+                 self.cycle_n, config.ACCOUNT, self.ex.dry_run, started)
+
+        obs = self.observe()
+        acct, clock = obs["account"], obs["clock"]
+
+        rec = monitor.reconcile(self.store, obs["positions"])
+        if not rec["clean"]:
+            log.warning("RECONCILE: ghosts=%s orphans=%s", rec["ghosts"], rec["orphans"])
+
+        book = RK.Book.from_account(acct, self.store.tracked_for_book())
+        book.orders_last_hour = self._orders_last_hour()
+
+        cb = RK.circuit_breakers(book, halted_flag=self._halted())
+        if not cb:
+            log.critical("CIRCUIT BREAKER [%s]: %s", cb.gate, cb.reason)
+            res = self.ex.halt_everything(cb.reason)
+            HALT_FILE.write_text(f"{utcnow()} {cb.gate}: {cb.reason}\n")
+            self.store.log_decision(cycle=self.cycle_n, underlying="*", regime="-", view={},
+                                    proposal="", decision="halt", gate=cb.gate,
+                                    reason=cb.reason, payload=res)
+            return {"cycle": self.cycle_n, "halted": True, "gate": cb.gate,
+                    "reason": cb.reason, "action": res}
+
+        exits = self.manage_open_positions()
+
+        if self.rehearse:
+            log.warning("REHEARSAL MODE — pretending the market is open")
+            clock = dict(clock, is_open=True)
+        mg = RK.market_gates(clock, allow_new=allow_new)
+        results = []
+        if not mg:
+            log.info("no new positions: %s", mg.reason)
+        else:
+            for u in config.UNIVERSE:
+                try:
+                    results.append(self.consider(u, book, clock))
+                    book = RK.Book.from_account(self.c.account(), self.store.tracked_for_book())
+                    book.orders_last_hour = self._orders_last_hour()
+                except AlpacaError as e:
+                    log.error("%s: %s", u, e)
+                    results.append({"underlying": u, "decision": "error",
+                                    "reason": f"[{e.status}] {e.message[:150]}"})
+                except Exception as e:
+                    log.exception("%s: unexpected", u)
+                    results.append({"underlying": u, "decision": "error", "reason": str(e)[:200]})
+
+        summary = {
+            "cycle": self.cycle_n, "ts": started, "halted": False,
+            "equity": float(acct["equity"]),
+            "market_open": bool(clock.get("is_open")),
+            "reconcile": rec, "exits": exits, "considered": results,
+            "open_positions": len(self.store.open_positions()),
+            "rate_remaining": self.c.gov.remaining,
+        }
+        log.info("cycle %d done | equity $%s | open %d | submits %d",
+                 self.cycle_n, acct["equity"], summary["open_positions"],
+                 sum(1 for r in results if r.get("decision") == "submit"))
+        return summary
+
+    def run_forever(self, interval: int = None) -> None:
+        interval = interval or config.POLL_SECONDS
+        log.info("starting loop, interval %ss", interval)
+        while True:
+            try:
+                self.run_once()
+            except KeyboardInterrupt:
+                log.info("stopped by user")
+                return
+            except Exception:
+                log.exception("cycle failed — continuing")
+            time.sleep(interval)

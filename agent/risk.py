@@ -1,0 +1,279 @@
+"""Deterministic risk gates. No LLM touches anything in this file, by design.
+
+Order of operations for every proposal:
+    circuit_breakers()  ->  gate_spread()  ->  size_spread()
+First failure rejects, and the failing gate is named in the audit log.
+"""
+from __future__ import annotations
+
+import math
+from dataclasses import dataclass, field
+from datetime import date, datetime, time
+from typing import Dict, List, Optional
+from zoneinfo import ZoneInfo
+
+from . import config
+from .options import ContractView
+from .spreads import Spread, validate_mleg
+
+ET = ZoneInfo("America/New_York")
+
+
+def now_et() -> datetime:
+    return datetime.now(ET)
+
+
+def _hhmm(s: str) -> time:
+    h, m = s.split(":")
+    return time(int(h), int(m))
+
+
+@dataclass
+class GateResult:
+    passed: bool
+    gate: str = ""
+    reason: str = ""
+    detail: dict = field(default_factory=dict)
+
+    def __bool__(self) -> bool:
+        return self.passed
+
+
+PASS = GateResult(True)
+
+
+def _fail(gate: str, reason: str, **detail) -> GateResult:
+    return GateResult(False, gate, reason, detail)
+
+
+# ----------------------------------------------------------- portfolio state
+@dataclass
+class Book:
+    """What we currently have on, summarised for the gates."""
+    equity: float
+    last_equity: float
+    options_buying_power: float
+    open_positions: int = 0
+    open_heat: float = 0.0                       # total max-loss at risk, dollars
+    heat_by_underlying: Dict[str, float] = field(default_factory=dict)
+    heat_by_expiry: Dict[str, float] = field(default_factory=dict)
+    net_delta: float = 0.0
+    orders_last_hour: int = 0
+    held_structures: set = field(default_factory=set)
+
+    @classmethod
+    def from_account(cls, account: dict, tracked: List[dict] = None) -> "Book":
+        tracked = tracked or []
+        b = cls(
+            equity=float(account.get("equity") or 0),
+            last_equity=float(account.get("last_equity") or account.get("equity") or 0),
+            options_buying_power=float(account.get("options_buying_power") or 0),
+            open_positions=len(tracked),
+        )
+        for t in tracked:
+            loss = float(t.get("max_loss") or 0)
+            b.open_heat += loss
+            b.heat_by_underlying[t["underlying"]] = b.heat_by_underlying.get(t["underlying"], 0) + loss
+            b.heat_by_expiry[t["expiry"]] = b.heat_by_expiry.get(t["expiry"], 0) + loss
+            b.net_delta += float(t.get("net_delta") or 0)
+            b.held_structures.add(t.get("signature", ""))
+        return b
+
+
+# --------------------------------------------------------- circuit breakers
+def circuit_breakers(book: Book, *, halted_flag: bool = False) -> GateResult:
+    """Account-level kill switches. Checked at the TOP of every cycle."""
+    if halted_flag:
+        return _fail("g_kill_switch", "HALTED file present — manual halt engaged")
+
+    if book.last_equity > 0:
+        daily = (book.equity - book.last_equity) / book.last_equity
+        if daily <= -config.DAILY_DRAWDOWN_LIMIT:
+            return _fail("g_daily_drawdown",
+                         f"daily P&L {daily:.2%} <= -{config.DAILY_DRAWDOWN_LIMIT:.0%}",
+                         daily_pct=daily)
+
+    total = (book.equity - config.STARTING_EQUITY) / config.STARTING_EQUITY
+    if total <= -config.TOTAL_DRAWDOWN_LIMIT:
+        return _fail("g_total_drawdown",
+                     f"total P&L {total:.2%} <= -{config.TOTAL_DRAWDOWN_LIMIT:.0%}",
+                     total_pct=total)
+
+    if book.orders_last_hour >= config.MAX_ORDERS_PER_HOUR:
+        return _fail("g_order_rate",
+                     f"{book.orders_last_hour} orders in the last hour "
+                     f">= {config.MAX_ORDERS_PER_HOUR}")
+    return PASS
+
+
+# ------------------------------------------------------------- market timing
+def market_gates(clock: dict, *, allow_new: bool = True) -> GateResult:
+    if not clock.get("is_open"):
+        return _fail("g_market_open", f"market closed; next open {clock.get('next_open')}")
+    if allow_new:
+        cutoff = _hhmm(config.NO_NEW_AFTER_ET)
+        if now_et().time() >= cutoff:
+            return _fail("g_not_near_close",
+                         f"past {config.NO_NEW_AFTER_ET} ET — no new positions")
+    return PASS
+
+
+# ------------------------------------------------------------ contract gates
+def gate_contracts(spread: Spread, oi_map: Dict[str, int] = None) -> GateResult:
+    """Per-leg quality. ContractView construction already enforced quote/Greeks/DTE."""
+    oi_map = oi_map or {}
+    for leg in spread.legs:
+        v: Optional[ContractView] = leg.view
+        if v is None:
+            return _fail("g_greeks_present", f"{leg.symbol}: no contract view attached")
+        if v.spread_pct > config.MAX_SPREAD_PCT and (v.ask - v.bid) > config.MAX_SPREAD_ABS:
+            return _fail("g_spread_width",
+                         f"{v.symbol}: bid/ask spread {v.spread_pct:.1%} "
+                         f"(${v.ask - v.bid:.2f}) exceeds both limits")
+        if not (config.MIN_DTE <= v.dte <= config.MAX_DTE):
+            return _fail("g_dte_bounds", f"{v.symbol}: DTE {v.dte} outside "
+                                         f"{config.MIN_DTE}-{config.MAX_DTE}")
+        oi = oi_map.get(v.symbol, v.open_interest)
+        if oi is not None:
+            if oi < config.MIN_OPEN_INTEREST:
+                return _fail("g_open_interest",
+                             f"{v.symbol}: open interest {oi} < {config.MIN_OPEN_INTEREST}")
+            if spread.qty > config.MAX_QTY_VS_OI * oi:
+                return _fail("g_qty_vs_oi",
+                             f"{v.symbol}: qty {spread.qty} > "
+                             f"{config.MAX_QTY_VS_OI:.0%} of OI {oi}")
+    return PASS
+
+
+# -------------------------------------------------------------- structure
+def gate_structure(spread: Spread) -> GateResult:
+    body = spread.order()
+    errs = validate_mleg(body)
+    if errs:
+        return _fail("g_mleg_valid", errs[0], all_errors=errs)
+
+    if spread.max_loss_per_unit <= 0:
+        return _fail("g_defined_risk", "structure has undefined or zero max loss")
+
+    # sign convention: the price sign must match what the STRATEGY implies.
+    # Verified live 2026-08-30: positive = debit, negative = credit.
+    if spread.is_credit and spread.net_price >= 0:
+        return _fail("g_sign_convention",
+                     f"{spread.kind} is a CREDIT structure but limit_price is "
+                     f"{spread.net_price:+.2f} — must be negative")
+    if not spread.is_credit and spread.net_price <= 0:
+        return _fail("g_sign_convention",
+                     f"{spread.kind} is a DEBIT structure but limit_price is "
+                     f"{spread.net_price:+.2f} — must be positive")
+
+    # a credit wider than the spread width is impossible -> bad pricing data
+    if spread.is_credit and abs(spread.net_price) >= spread.width:
+        return _fail("g_pricing_sane",
+                     f"credit ${abs(spread.net_price):.2f} >= width ${spread.width:.2f}")
+    return PASS
+
+
+# ---------------------------------------------------------------- portfolio
+def gate_portfolio(spread: Spread, book: Book) -> GateResult:
+    if book.open_positions >= config.MAX_OPEN_POSITIONS:
+        return _fail("g_max_concurrent",
+                     f"{book.open_positions} open >= {config.MAX_OPEN_POSITIONS}")
+
+    sig = signature(spread)
+    if sig in book.held_structures:
+        return _fail("g_no_duplicate", f"already holding {sig}")
+
+    cost = estimated_cost(spread)
+    if cost > 0.5 * book.options_buying_power:
+        return _fail("g_buying_power",
+                     f"cost ${cost:,.0f} > 50% of options BP ${book.options_buying_power:,.0f}")
+
+    # Portfolio-level directional exposure. Individual defined-risk spreads can
+    # each be small yet all lean the same way; this caps the aggregate.
+    projected = book.net_delta + spread.net_delta
+    cap = config.MAX_PORTFOLIO_DELTA * (book.equity / 100_000.0)
+    if abs(projected) > cap:
+        return _fail("g_net_delta",
+                     f"portfolio delta would be {projected:+.2f}, cap ±{cap:.2f} "
+                     f"(current {book.net_delta:+.2f}, adding {spread.net_delta:+.2f})")
+    return PASS
+
+
+def signature(spread: Spread) -> str:
+    legs = "/".join(sorted(l.symbol for l in spread.legs))
+    return f"{spread.kind}:{legs}"
+
+
+def estimated_cost(spread: Spread) -> float:
+    """Rough buying-power draw: max loss is the right proxy for defined-risk spreads."""
+    return spread.total_max_loss()
+
+
+# ------------------------------------------------------------------- sizing
+def size_spread(spread: Spread, book: Book) -> GateResult:
+    """Set spread.qty from the risk budget. Returns a failed gate if nothing fits."""
+    per_unit = spread.max_loss_per_unit
+    if per_unit <= 0:
+        return _fail("g_sizing", "max loss per unit is zero/undefined")
+
+    eq = book.equity
+    und = spread.underlying
+    exp = spread.expiry.isoformat()
+
+    budgets = {
+        "per_trade": config.RISK_PER_TRADE_PCT * eq,
+        "portfolio_heat": config.PORTFOLIO_HEAT_PCT * eq - book.open_heat,
+        "per_underlying": config.MAX_PER_UNDERLYING_PCT * eq - book.heat_by_underlying.get(und, 0.0),
+        "per_expiry": config.MAX_PER_EXPIRY_PCT * eq - book.heat_by_expiry.get(exp, 0.0),
+    }
+    binding = min(budgets, key=budgets.get)
+    budget = budgets[binding]
+
+    if budget <= 0:
+        return _fail("g_sizing", f"no risk budget left ({binding} exhausted)", **budgets)
+
+    qty = math.floor(budget / per_unit)
+    if qty < 1:
+        return _fail("g_sizing",
+                     f"one unit risks ${per_unit:,.0f} > {binding} budget ${budget:,.0f}",
+                     per_unit=per_unit, budget=budget, binding=binding)
+
+    spread.qty = qty
+    return GateResult(True, "g_sizing", f"qty={qty} (bound by {binding})",
+                      {"qty": qty, "binding": binding, "budget": budget,
+                       "risk": qty * per_unit})
+
+
+# ------------------------------------------------------------- full pipeline
+GATE_ORDER = ["g_structure", "g_contracts", "g_sizing", "g_portfolio"]
+
+
+def evaluate(spread: Spread, book: Book, oi_map: Dict[str, int] = None) -> GateResult:
+    """Run every gate in order. Mutates spread.qty on success."""
+    for check in (gate_structure(spread),
+                  gate_contracts(spread, oi_map)):
+        if not check:
+            return check
+
+    sized = size_spread(spread, book)
+    if not sized:
+        return sized
+
+    port = gate_portfolio(spread, book)
+    if not port:
+        return port
+
+    return GateResult(True, "all", sized.reason, sized.detail)
+
+
+# ------------------------------------------------------------- expiry policy
+def expiry_action(dte: int, now: datetime = None) -> Optional[str]:
+    """Never let a position expire. Returns 'close_limit' | 'close_market' | None."""
+    if dte > 0:
+        return None
+    t = (now or now_et()).time()
+    if t >= _hhmm(config.ESCALATE_CLOSE_AFTER_ET):
+        return "close_market"
+    if t >= _hhmm(config.FORCE_CLOSE_AFTER_ET):
+        return "close_limit"
+    return "close_limit"

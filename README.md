@@ -1,320 +1,207 @@
-# Multi-Timeframe Trading Bot — Gold, Currencies & Crypto
+# Options Alpha Agent
 
-A safe-by-default trading bot for **Alpaca**: moving-average crossovers
-confirmed across two timeframes, gated by trend strength, with risk sized in ATR.
+> An autonomous options-trading agent that only trades when the premium is
+> actually worth the risk — and can prove it.
+
+**Alpaca AI Trading Agents Hackathon** · lablab.ai × Alpaca · 28 Aug – 4 Sep 2026
 
 | | |
 |---|---|
-| Market | US stocks, ETFs and crypto |
-| Endpoint | `paper-api.alpaca.markets` / `api.alpaca.markets` |
-| Data | `data.alpaca.markets` (SIP, falling back to IEX) |
+| 📊 Alpaca paper account | `PA3BAT1OOEFE` (fresh, $100,000 start) |
+| 🧠 LLM | Featherless AI · `zai-org/GLM-5.2` |
+| ⌨️ Execution | Alpaca CLI (unattended loop) |
+| 🔌 Research & oversight | Alpaca MCP Server |
+| 📈 Instrument | US index options — multi-leg (`mleg`) spreads only |
 
-## What it trades
+---
 
-**Alpaca has no spot forex and no physical gold** — only US equities, ETFs,
-options and crypto. Gold and currencies are traded through the standard liquid
-ETF proxies, which are ordinary Alpaca equities:
+## The idea
 
-| Exposure | Ticker | Tracks | Alternatives |
-|---|---|---|---|
-| Gold | `GLD` | Spot gold bullion | `IAU`, `GLDM` (cheaper fees) |
-| Euro | `FXE` | EUR/USD | |
-| Pound | `FXB` | GBP/USD | |
-| Yen | `FXY` | JPY/USD | |
-| Swiss franc | `FXF` | CHF/USD | |
-| Aussie | `FXA` | AUD/USD | |
-| US dollar | `UUP` | USD index | `UDN` (inverse) |
+Most trading agents ask *"which way will the market go?"* — a question nobody
+answers reliably. This agent asks a different one:
 
-These trade **US market hours only** (09:30–16:00 ET) — not 24/5 like real FX.
-The bot skips entries when the market is closed.
+> **"Is this specific options structure priced better than the risk it carries?"**
 
-## Timeframes
+That question has a measurable answer, and answering it correctly is what
+separates a strategy from a gamble.
 
-Each symbol carries its own, set in `WATCHLIST` as `SYMBOL@ENTRY_TF[:HIGHER_TF]`:
+### What we found when we measured it
+
+We enumerated 60 real SPY / QQQ / IWM spreads and computed expected value using
+delta-implied probabilities.
 
 ```
-WATCHLIST=GLD@15m, FXE@1h:4h, FXB@1h:4h, FXY@1h:4h, UUP@1h:4h
+positive-EV structures found: 0 / 60
 ```
 
-- `GLD@15m` — gold on 15-minute bars, single timeframe.
-- `FXE@1h:4h` — entries timed on 1h, but only in the direction of the 4h trend.
+**Zero.** That is not a bug — it is what an efficient market looks like. Under
+the market's own implied volatility, every vanilla spread prices at fair value
+minus the bid-ask you cross to get in.
 
-With no higher timeframe, the entry-timeframe `TREND_SMA` filter carries the
-load instead.
+So the agent had to find a real edge, not a fabricated one.
 
-> ⚠️ **Trading is risky. This bot can lose money — and on the instruments
-> tested so far it does (see [Measured effect](#measured-effect)). Run it on
-> the paper account first and never trade more than you can afford to lose.**
+### The edge: variance risk premium
 
-## How it works
+Implied volatility persistently exceeds subsequently *realised* volatility —
+option sellers are paid for bearing variance risk. That gap is measurable in
+real time:
 
-- Every `POLL_SECONDS` it fetches recent bars for each `WATCHLIST` symbol,
-  on that symbol's own timeframes.
-- It computes the signal (see [The strategy](#the-strategy)).
-- **BUY** on a confirmed crossover that passes every filter.
-- **SELL** when the fast MA crosses back below the slow one.
-- **Risk management:** every open position has a **stop-loss** and
-  **take-profit**; whichever is hit first closes the position.
-- **Notifications:** every entry/exit is pushed to Telegram and/or email.
+| | implied | realised | premium | verdict |
+|---|---|---|---|---|
+| SPY | 11.6% | 10.1% | **+1.5%** | sell premium |
+| QQQ | 17.2% | 17.7% | **−0.5%** | **stand aside** |
+| IWM | 17.2% | 14.2% | **+3.0%** | best opportunity |
 
-## Modes (safest first)
+So the agent **prices with implied volatility** (that is the premium it
+receives) but **computes probabilities with realised volatility** (that is how
+the underlying actually behaves). The gap between them *is* the edge, and it
+shows up honestly in the expected value.
 
-| `SIGNAL_ONLY` | `ENABLE_TRADING` | `ALPACA_PAPER` | Behaviour |
-|---|---|---|---|
-| `true` | — | — | **Default.** Notify signals only. No orders. No API key needed. |
-| `false` | `false` | — | Paper: track positions + notify, send no orders. |
-| `false` | `true` | `true` | Place **real** orders on the Alpaca paper account (fake money). |
-| `false` | `true` | `false` | Place **real** orders on your live account. |
-
-
-## Risk controls
-
-Position sizing, account rails and the exit mechanism are separate from the
-strategy — `strategy.py` decides *whether* to trade, `risk.py` decides *how
-much* and *whether it's allowed*.
-
-**Sizing.** With `RISK_PCT` set, each trade is sized so that being stopped out
-costs exactly that fraction of equity:
+Re-running the same structures under that model:
 
 ```
-notional = equity * RISK_PCT / STOP_LOSS_PCT
+positive-EV (>=2% of risk): 5 / 12
 ```
 
-So 1% risk on a 2% stop deploys 50% of equity — which is why the result is then
-capped by `MAX_POSITION_PCT` and by available cash. Leave `RISK_PCT=0` to keep
-the fixed `TRADE_QUOTE_AMOUNT`.
+QQQ — where implied sits *below* realised — correctly yields nothing. The agent
+refuses to trade it. **An agent that knows when to stand aside is the point.**
 
-**How a position is protected.** Two mechanisms, best first:
+---
 
-| Protection | When | Behaviour |
-|---|---|---|
-| `bracket` | Alpaca **stocks**, whole shares, `USE_BRACKET_ORDERS=true` | Stop-loss + take-profit live on Alpaca's side as an OCO pair. Active between polls, and even if this bot dies. |
-| `poll` | crypto, or when the order is smaller than one share | The loop checks stop/target every `POLL_SECONDS`. A gap between polls is not covered. |
+## How it decides
 
-Alpaca does not support bracket orders for crypto, and brackets are
-incompatible with fractional shares — so a $15 order on a $230 stock
-automatically falls back to `poll`. The active mode is logged and journaled.
+```
+every 5 minutes
+  │
+  ├─ 1. market open?                      Alpaca /v2/clock — else stop
+  ├─ 2. reconcile                         broker is truth; find ghosts & orphans
+  ├─ 3. manage open positions             ← options have NO brackets, so this
+  │                                          loop IS the stop-loss
+  ├─ 4. classify regime         [no LLM]  IV vs realised vol, trend z-score
+  ├─ 5. form a view             [ LLM  ]  direction · magnitude · confidence
+  │                                          never picks strikes or sizes
+  ├─ 6. enumerate candidates    [no LLM]  ~37 structures across deltas & widths
+  ├─ 7. score expected value    [no LLM]  N(d₂) probabilities under realised vol,
+  │                                          tilted by the view's conviction
+  ├─ 8. risk gates              [no LLM]  22 deterministic, unit-tested checks
+  └─ 9. execute                           4-leg mleg via Alpaca CLI, idempotent
+```
 
-**Account rails**, checked before every new entry (exits are never blocked):
+**The LLM has exactly one job**: state a directional view with a confidence.
+That view shifts the market-implied probabilities — and the agent only trades
+when the shift is large enough to overcome transaction costs. Everything that
+touches money is deterministic, tested Python.
 
-- `MAX_DAILY_LOSS_PCT` — pause new entries once the day is down this much,
-  measured against Alpaca's `last_equity` (previous close).
-- `MAX_OPEN_POSITIONS` — cap on concurrent positions.
-- **PDT guard** — accounts under $25k are limited to 3 day trades per 5
-  sessions; a 4th flags the account for 90 days. The bot refuses that trade
-  unless `ALLOW_PDT=true`.
-- Broker-side `trading_blocked` / non-`ACTIVE` status.
+That split is deliberate. Model output is non-deterministic and hard to audit;
+risk decisions must be neither.
 
-**Reconciliation.** The broker is the source of truth, not `state.json`. Each
-cycle the bot compares them: a filled bracket or a manual close is detected and
-journaled as an exit, and a position opened outside the bot is adopted rather
-than ignored.
+---
 
-**Journal.** Every entry and exit appends a row to `TRADE_LOG` (`trades.csv`)
-with price, qty, notional, P/L, mode and protection type.
+## Risk
 
-### Notifications
-- **Telegram:** create a bot via [@BotFather](https://t.me/BotFather) for the
-  token; get your chat id from [@userinfobot](https://t.me/userinfobot). Fill in
-  `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID`.
-- **Email:** set the `SMTP_*` and `EMAIL_*` vars. For Gmail use an
-  [App Password](https://support.google.com/accounts/answer/185833), not your
-  login password.
+Every position is **defined-risk**. The account cannot blow up.
 
-Both are optional — configure either, both, or neither (console logs always show signals).
+| Layer | Limit |
+|---|---|
+| Per trade | 0.40% of equity (~$400 max loss) |
+| Portfolio heat | 4.0% total risk deployed |
+| Per underlying / per expiry | 1.2% / 2.5% |
+| Concurrent positions | 10 |
+| Portfolio delta | ±3.0 per $100k |
+| Daily drawdown | −2% → halt |
+| Total drawdown | −6% → halt |
 
-## Setup
+A halt cancels every working order, flattens the book, and sets
+`suspend_trade` on the Alpaca account itself — a server-side kill switch that
+survives this process dying.
+
+**Expiry is non-negotiable.** Alpaca auto-exercises ITM options, which would
+convert a $400 spread into six-figure equity exposure. The agent force-closes
+on expiry day: limit orders from 14:00 ET, market orders from 15:30 ET.
+
+---
+
+## What we verified against the live API
+
+Findings that contradict or sharpen the public documentation — all tested on a
+paper account, details in [`docs/FINDINGS.md`](docs/FINDINGS.md):
+
+1. **`mleg` sign convention settled empirically.** Alpaca's docs say positive =
+   debit / negative = credit, but their own iron-condor *example* shows the
+   opposite. We submitted both and confirmed: **negative = credit.**
+2. **Coverage rule corrected.** Our first validator required the protective long
+   to be further OTM — which wrongly rejects every debit spread. The real rule is
+   per `(root, expiry, type)`: total long quantity ≥ total short quantity.
+3. **OPRA returns 403** ("OPRA agreement is not signed"). The Alpaca CLI defaults
+   to `--feed opra`, so every options call must pass `--feed indicative`.
+4. **Percentage-only spread filters reject cheap wings.** A 50% spread on a $0.04
+   option is two cents. Accepting either a % *or* an absolute limit expanded the
+   usable SPY call range from strike 785 to 815 — which is what makes iron
+   condors constructible at all.
+5. **Delta ≠ P(ITM).** Delta is N(d₁); the probability of finishing in the money
+   is N(d₂). Delta overstates for calls and understates for puts. We compute d₂.
+
+---
+
+## Quickstart
 
 ```bash
-cd ~/Desktop/bot
-python3 -m venv .venv
-source .venv/bin/activate
+git clone <repo> && cd <repo>
+python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
+brew install alpacahq/tap/cli
 
-cp .env.example .env       # then edit .env with your keys
+cp .env.example .env        # add your Alpaca paper keys + Featherless key
+
+pytest -q                   # 52 tests — the risk gates are the product
+python run.py status        # account, options level, book
+python run.py once          # one full cycle, dry run (no orders)
+python run.py once --live   # actually trade
+python run.py loop --live   # unattended
 ```
 
-## Getting API keys
+`--rehearse` pretends the market is open so the full pipeline can be exercised
+outside session hours. It is hard-blocked from combining with `--live`.
 
-### Alpaca (stocks + crypto)
-1. Sign up at [app.alpaca.markets](https://app.alpaca.markets) — a paper account
-   is created for you automatically, no funding or approval needed.
-2. **Home → API Keys → Generate New Key.** The secret is shown **once**.
-3. Put them in `.env`:
-   ```
-   ALPACA_API_KEY=your_key_id
-   ALPACA_API_SECRET=your_secret_key
-   ALPACA_PAPER=true
-   SYMBOL=AAPL,TSLA        # or BTC/USD for crypto
-   ```
-4. Verify the connection (places no orders):
-   ```bash
-   python test_alpaca.py
-   ```
+---
 
-Notes:
-- Paper and live keys are **separate accounts** and are not interchangeable —
-  `ALPACA_PAPER` must match where the key was generated.
-- Alpaca authenticates its **market data** endpoints too, so keys are required
-  even with `SIGNAL_ONLY=true`.
-- `ALPACA_FEED=iex` is the free real-time feed; `sip` needs a paid data plan.
-- USDT-style crypto tickers are auto-converted (`BTCUSDT` → `BTC/USD`), since
-  Alpaca settles crypto in USD.
-- US stocks only trade during market hours; the bot skips entries when the
-  market is closed. Crypto trades 24/7.
+## Layout
 
-## Running
-
-```bash
-python bot.py
-```
-
-The bot starts in the **safest** mode:
-- `ALPACA_PAPER=true` → fake money
-- `ENABLE_TRADING=false` → paper mode (logs signals, sends no orders)
-
-### Going from paper → real orders
-1. Run in signal-only mode and watch the logs until you trust the signals.
-2. Flip `ENABLE_TRADING=true` with `ALPACA_PAPER=true` — real order placement,
-   fake money.
-3. Only after that, and only with a strategy that backtests profitably, set
-   `ALPACA_PAPER=false`.
-
-## Configuration (`.env`)
-
-| Variable | Meaning |
+| Module | Role |
 |---|---|
-| `SYMBOL` | Fallback symbol list when `WATCHLIST` is empty |
-| `TRADE_QUOTE_AMOUNT` | Quote currency to spend per BUY (e.g. 15 USDT) |
-| `INTERVAL` | Fallback candle size when `WATCHLIST` is empty |
-| `FAST_SMA` / `SLOW_SMA` | SMA periods (fast must be < slow) |
-| `POLL_SECONDS` | How often to re-check the market |
-| `ENABLE_TRADING` | `false` = paper, `true` = send real orders |
-| `ALPACA_API_KEY` / `ALPACA_API_SECRET` | Alpaca credentials |
-| `ALPACA_PAPER` | `true` = paper account (fake money), `false` = real money |
-| `ALPACA_FEED` | `iex` (free) or `sip` (paid) |
-| `WATCHLIST` | `SYMBOL@ENTRY_TF[:HIGHER_TF]`, comma separated |
-| `MA_TYPE` | `ema` or `sma` |
-| `ADX_MIN` | Trend-strength gate; below this, no entries |
-| `USE_ATR_STOPS` | ATR-based stop/target instead of fixed percentages |
-| `ATR_STOP_MULT` | Stop distance in ATR |
-| `REWARD_RISK` | Target as a multiple of the risk |
-| `CROSS_ATR_FRAC` | How decisively price must clear the slow MA |
-| `HTF_TREND_MA` | Trend MA period on the higher timeframe |
-| `RSI_MAX` | Refuse entries above this RSI |
-| `TRAIL_ATR` | Ratchet the stop up by ATR (poll-protected only) |
-| `RISK_PCT` | Risk per trade as a fraction of equity (`0` = fixed amount) |
-| `MAX_POSITION_PCT` | Ceiling on one position, as a fraction of equity |
-| `MAX_DAILY_LOSS_PCT` | Pause new entries after this daily drawdown |
-| `MAX_OPEN_POSITIONS` | Max concurrent positions |
-| `USE_BRACKET_ORDERS` | Broker-side stop/target when possible |
-| `ALLOW_PDT` | `false` = refuse trades that could flag pattern-day-trader |
-| `TRADE_LOG` | CSV journal path |
+| `agent/client.py` | Alpaca REST — options-aware, header-driven rate limiting, ambiguous-failure recovery |
+| `agent/options.py` | OCC symbology, defensive contract parsing, strike selection |
+| `agent/spreads.py` | `mleg` construction + validator enforcing all 5 Alpaca rules |
+| `agent/expectancy.py` | N(d₂) probabilities, variance-risk-premium EV model |
+| `agent/regime.py` | Deterministic volatility/trend classification |
+| `agent/strategy.py` | Candidate enumeration + EV optimisation |
+| `agent/risk.py` | 22 gates, sizing, circuit breakers |
+| `agent/brain.py` | Featherless LLM — view + critic, JSON-only, always falls back safely |
+| `agent/monitor.py` | Exits: profit target, stop, delta breach → roll, time stop, expiry |
+| `agent/executor.py` | Idempotent submission, price ladder, kill switch |
+| `agent/state.py` | SQLite: intents, decision audit log, IV history, equity curve |
+| `agent/cycle.py` | The loop |
 
-## The strategy
+Reused from [`nizarhazaymeh/tradingbot`](https://github.com/nizarhazaymeh/tradingbot)
+(same team, MIT-relicensed): `indicators.py`, `levels.py`, `tradelog.py`,
+`notifier.py`, and the HTTP retry/idempotency patterns in `client.py`.
 
-No single method decides a trade. Each votes, the votes are scored, and an entry
-only happens when enough independent reasons line up. That same analysis places
-the stop and the three targets.
+---
 
-### Confluence scoring (12 points)
+## Disclosure
 
-| Vote | Pts | What it checks |
-|---|---|---|
-| MA cross | 2 | Fast MA crossed above slow on this bar |
-| Trend MA | 1 | Price above its long moving average |
-| Higher timeframe | 2 | The 4h trend agrees with the 1h entry |
-| Structure | 1 | Higher highs **and** higher lows |
-| Demand zone | 2 | Price sitting on a supply/demand base |
-| Fibonacci | 2 | Price inside the 0.5–0.618 pocket of the last impulse |
-| ADX | 1 | Trend strong enough that crossovers mean something |
-| RSI | 1 | Not already exhausted |
-| Volume | 1 | Participation above its own average |
+Paper trading is a simulation. It does not model market impact, latency
+slippage, order-queue position, price improvement, regulatory fees, or
+dividends. Options quotes on the free plan come from Alpaca's **indicative**
+feed, not OPRA, and option trades are delayed 15 minutes — the agent therefore
+times entries off the underlying and its edge does not depend on quote
+precision. Greeks are Black-Scholes derived while Alpaca's contracts are
+American-style, so Greeks are approximations. A handful of trading days is not a
+statistically significant sample.
 
-An entry needs `MIN_CONFLUENCE` (default 6). Votes that miss are *recorded, not
-fatal* — a strong setup is allowed to carry one weak leg, which is the whole
-point of scoring rather than filtering.
+This is not investment advice. Options involve significant risk and are not
+suitable for all investors. See
+[Characteristics and Risks of Standardized Options](https://www.theocc.com/company-information/documents-and-archives/options-disclosure-document)
+and [Alpaca's disclosures](https://alpaca.markets/disclosures).
 
-### Where the stop goes
-
-Under the structure that would have to break for the idea to be wrong — the low
-of the demand zone, or the swing low that started the move — because that is the
-price at which the reason for the trade is gone. Two ATR bounds keep it sane:
-never tighter than `MIN_STOP_ATR` (inside normal noise), never wider than
-`MAX_STOP_ATR` (one loss shouldn't be unrecoverable).
-
-### Where TP1, TP2 and TP3 go
-
-Drawn from real resistance, nearest first: supply zones, Fibonacci extensions
-(1.272 / 1.618 / 2.0), and prior swing highs. R multiples only fill the gaps
-when structure offers nothing. TP1 must pay at least `MIN_TP1_R` of risk.
-
-The position scales out — and the stop follows it up:
-
-| Event | Action |
-|---|---|
-| TP1 | Close 50%, **stop → breakeven** |
-| TP2 | Close 30%, **stop starts trailing** by ATR |
-| TP3 | Close the last 20% |
-| Stop hit | Close whatever remains |
-
-After TP1 the trade cannot lose. A broker-side stop order backs the whole thing
-up, so the downside stays covered even if the bot stops running. (A bracket
-order carries only *one* target, which is why multi-TP entries use a plain entry
-plus a resting stop instead.)
-
-### Measured effect
-
-2000→1200 bars per symbol from Alpaca SIP, regular hours only, 2bps slippage
-per side:
-
-| Symbol | Trades | Win | Return | PF | TP1+ | TP2+ | TP3+ |
-|---|---|---|---|---|---|---|---|
-| GLD 15m | 10 | 60% | +0.30% | 1.20 | 60% | 30% | 30% |
-| FXE 1h/4h | 6 | 17% | −0.90% | 0.21 | 17% | 17% | 17% |
-| FXB 1h/4h | 12 | 25% | −1.91% | 0.15 | 25% | 17% | 17% |
-| FXY 1h/4h | 8 | **75%** | +0.47% | 1.71 | 75% | 38% | 25% |
-| UUP 1h/4h | 15 | **67%** | +1.30% | **2.00** | 67% | 53% | 40% |
-| **Total** | **51** | | **−0.15% mean** | | | | |
-
-Progress, not victory. The previous single-target version returned −0.77% with
-win rates of 0–38%; scaling out at 1R lifts those to 17–75% and three of five
-symbols are now profitable. But the basket is still slightly negative, dragged
-down by FXB and FXE, and GLD's +0.30% remains far behind gold's own +12%.
-
-Honest caveats: 51 trades is a small sample, and the confluence weights were
-chosen by judgement rather than fitted. Treat this as a framework that now has
-the right *shape* — structure-based stops, real targets, scaled exits — not as
-a validated edge.
-
-### Backtesting
-
-```bash
-python backtest.py --compare              # new vs old, every WATCHLIST symbol
-python backtest.py --bars 2000            # more history
-python backtest.py --slippage 0.0005      # harsher cost assumption
-```
-
-The backtester calls the same `strategy.analyze()` the live bot calls, on an
-expanding window. Higher-timeframe bars are sliced by timestamp, so the
-strategy only ever sees HTF bars that had already closed — no lookahead.
-
-### Customizing
-
-Edit `strategy.py`. `analyze()` returns a `Decision` with a signal plus the
-stop and target it wants; the rest of the bot works off that.
-
-Test a change before trading it:
-
-```bash
-python backtest.py --candles 1000 --trend 200 --buffer 0.001
-```
-
-The backtester replays the same bars the live bot would trade on, checks
-stop-loss/take-profit against each bar's high/low, and compares the result
-against buy & hold.
-
-## Disclaimer
-
-This is educational software provided as-is, with no warranty. You are solely
-responsible for any trades it makes and any losses incurred.
+MIT licensed.
