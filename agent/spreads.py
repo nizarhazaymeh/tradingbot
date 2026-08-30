@@ -205,6 +205,47 @@ def iron_condor(long_put: ContractView, short_put: ContractView,
     )
 
 
+def roll_order(old: Spread, new_short: "ContractView", new_long: "ContractView",
+               *, limit_price: float = None) -> dict:
+    """Close a threatened 2-leg vertical and reopen it further out, atomically.
+
+    Alpaca documents rolling a spread as a single 4-leg `mleg` order: two legs
+    with *_to_close intents and two with *_to_open. That is strictly better than
+    closing and reopening separately, which risks legging out at a bad price
+    between the two orders.
+
+    Only valid for 2-leg verticals — a 4-leg condor would need 8 legs to roll,
+    which exceeds Alpaca's 4-leg cap, so condors are closed instead.
+    """
+    if len(old.legs) != 2:
+        raise ValueError(f"can only roll a 2-leg vertical, got {len(old.legs)} legs")
+
+    flip = {"buy": "sell", "sell": "buy"}
+    intent_close = {BUY_TO_OPEN: SELL_TO_CLOSE, SELL_TO_OPEN: BUY_TO_CLOSE}
+
+    legs = [Leg(l.symbol, flip[l.side], intent_close[l.intent], l.ratio_qty, l.view)
+            for l in old.legs]
+
+    # reopen with the same shape: short leg sold, protective long bought
+    legs.append(Leg(new_short.symbol, "sell", SELL_TO_OPEN, 1, new_short))
+    legs.append(Leg(new_long.symbol, "buy", BUY_TO_OPEN, 1, new_long))
+
+    width = abs(new_short.strike - new_long.strike)
+    new_credit = new_short.mid - new_long.mid
+    old_cost = sum((l.view.mid if l.view else 0.0) * (1 if l.side == "buy" else -1)
+                   for l in old.legs)
+
+    roller = Spread(kind=old.kind, underlying=old.underlying, expiry=new_short.expiry,
+                    legs=legs, net_price=round(old_cost - new_credit, 2),
+                    max_loss_per_unit=round((width - new_credit) * MULTIPLIER, 2),
+                    max_gain_per_unit=round(new_credit * MULTIPLIER, 2),
+                    width=width, qty=old.qty,
+                    meta={"rolled_from": [l.symbol for l in old.legs]})
+    body = roller.order(limit_price=limit_price,
+                        client_order_id=old.client_order_id("roll"))
+    return body
+
+
 def closing_order(spread: Spread, *, limit_price: float = None) -> dict:
     """Mirror every leg with *_to_close intents — closes the whole structure atomically."""
     flip = {"buy": "sell", "sell": "buy"}

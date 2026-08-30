@@ -12,6 +12,9 @@ from agent.spreads import iron_condor, bull_put_spread, bull_call_spread
 E = date(2026, 9, 4)
 
 
+BUDGET = config.RISK_PER_TRADE_PCT * 100_000      # derive, never hardcode
+
+
 def cv(kind, strike, *, mid=1.0, delta=0.15, dte=5, oi=5000, spread_pct=0.05):
     sym = occ("SPY", E, kind, strike)
     return ContractView(symbol=sym, root="SPY", expiry=E, kind=kind, strike=strike, dte=dte,
@@ -60,32 +63,37 @@ def test_breaker_kill_switch():
 
 # ------------------------------------------------------------------- sizing
 def test_sizing_respects_per_trade_budget():
-    sp = condor()                                     # max loss $433/unit
-    r = size_spread(sp, book())                       # budget 0.40% * 100k = $400
-    assert not r and r.gate == "g_sizing"             # one unit is too big
+    """A structure risking more than the per-trade budget must be rejected."""
+    sp = condor()
+    sp.max_loss_per_unit = BUDGET + 50                # deliberately one notch too big
+    r = size_spread(sp, book())
+    assert not r and r.gate == "g_sizing"
 
 
 def test_sizing_allows_smaller_structure():
     sp = bull_call_spread(cv("C", 769, mid=3.00), cv("C", 771, mid=2.00))
-    r = size_spread(sp, book())                       # $100/unit -> $400 budget -> 4
-    assert r and sp.qty == 4
+    r = size_spread(sp, book())                       # $100 max loss per unit
+    assert r and sp.qty == int(BUDGET // 100)
 
 
 def test_sizing_bound_by_portfolio_heat():
     sp = bull_call_spread(cv("C", 769, mid=3.00), cv("C", 771, mid=2.00))
-    r = size_spread(sp, book(open_heat=3_950))        # only $50 of heat left
+    heat_cap = config.PORTFOLIO_HEAT_PCT * 100_000
+    r = size_spread(sp, book(open_heat=heat_cap - 50))     # only $50 of heat left
     assert not r
 
 
 def test_sizing_bound_by_per_underlying():
     sp = bull_call_spread(cv("C", 769, mid=3.00), cv("C", 771, mid=2.00))
-    r = size_spread(sp, book(heat_by_underlying={"SPY": 1_150}))   # $50 left of $1,200
+    cap = config.MAX_PER_UNDERLYING_PCT * 100_000
+    r = size_spread(sp, book(heat_by_underlying={"SPY": cap - 50}))
     assert not r
 
 
 def test_sizing_bound_by_per_expiry():
     sp = bull_call_spread(cv("C", 769, mid=3.00), cv("C", 771, mid=2.00))
-    r = size_spread(sp, book(heat_by_expiry={E.isoformat(): 2_480}))
+    cap = config.MAX_PER_EXPIRY_PCT * 100_000
+    r = size_spread(sp, book(heat_by_expiry={E.isoformat(): cap - 50}))
     assert not r
 
 
@@ -139,14 +147,16 @@ def test_expiry_limit_then_market():
 
 # ------------------------------------------------------------------ pipeline
 def test_evaluate_end_to_end_rejects_oversized_condor():
-    r = evaluate(condor(), book())
+    sp = condor()
+    sp.max_loss_per_unit = BUDGET + 50
+    r = evaluate(sp, book())
     assert not r and r.gate == "g_sizing"
 
 
 def test_evaluate_end_to_end_accepts_sized_spread():
     sp = bull_call_spread(cv("C", 769, mid=3.00), cv("C", 771, mid=2.00))
     r = evaluate(sp, book())
-    assert r and sp.qty >= 1 and r.detail["risk"] <= 400.01
+    assert r and sp.qty >= 1 and r.detail["risk"] <= BUDGET + 0.01
 
 
 def test_evaluate_rejects_illiquid_contract():
@@ -162,7 +172,8 @@ def test_evaluate_rejects_wide_spread():
     assert not r and r.gate == "g_spread_width"
 
 
-def test_evaluate_rejects_0dte():
+def test_evaluate_rejects_short_dte():
+    """0-2 DTE is excluded: no Greeks at 0DTE, unstable gamma below MIN_DTE."""
     sp = bull_call_spread(cv("C", 769, mid=3.00, dte=0), cv("C", 771, mid=2.00, dte=0))
     r = evaluate(sp, book())
     assert not r and r.gate == "g_dte_bounds"

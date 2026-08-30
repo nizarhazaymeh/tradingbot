@@ -114,6 +114,20 @@ class Agent:
                                 "reason": d.reason, "result": "could not rebuild spread"})
                 continue
 
+            # ROLL: close the threatened vertical and reopen it further out in a
+            # single atomic 4-leg order, rather than legging out and back in.
+            if d.action == monitor.ROLL:
+                rolled, msg = self._try_roll(p, sp, views)
+                if rolled:
+                    actions.append({"signature": p["signature"], "action": "roll",
+                                    "reason": d.reason, "result": msg})
+                    self.store.log_decision(cycle=self.cycle_n, underlying=p["underlying"],
+                                            regime="-", view={}, proposal=p["kind"],
+                                            decision="roll", gate="roll", reason=d.reason,
+                                            payload={"msg": msg})
+                    continue
+                log.info("    roll not possible (%s) — closing instead", msg)
+
             order, msg = self.ex.close_spread(
                 sp, market=(d.action == monitor.CLOSE_MARKET))
             pnl = monitor.unrealized_pnl(p, snaps)
@@ -128,6 +142,62 @@ class Agent:
             actions.append({"signature": p["signature"], "action": d.action,
                             "reason": d.reason, "pnl": pnl, "result": msg})
         return actions
+
+    def _try_roll(self, p: dict, sp: S.Spread,
+                  views: Dict[str, O.ContractView]) -> tuple:
+        """Roll a threatened 2-leg vertical further out. Returns (ok, message)."""
+        if len(sp.legs) != 2:
+            return False, "only 2-leg verticals can be rolled (a condor needs 8 legs)"
+
+        short_leg = next((l for l in sp.legs if l.side == "sell"), None)
+        if short_leg is None or short_leg.view is None:
+            return False, "no short leg view"
+
+        expiry = date.fromisoformat(p["expiry"])
+        if (expiry - date.today()).days < config.MIN_DTE:
+            return False, "too close to expiry to roll"
+
+        try:
+            spot = self.c.latest_trade(p["underlying"])
+            chain = self.c.option_chain(p["underlying"], exp=expiry.isoformat(),
+                                        strike_gte=spot * 0.90, strike_lte=spot * 1.10)
+            fresh = O.usable_contracts(chain)
+        except AlpacaError as e:
+            return False, f"chain fetch failed: {e.message[:80]}"
+
+        target = ST.find_roll_target(short_leg.view, fresh, expiry, width=sp.width)
+        if target is None:
+            return False, "no strike far enough out to be worth rolling to"
+        new_short, new_long = target
+
+        try:
+            body = S.roll_order(sp, new_short, new_long)
+        except ValueError as e:
+            return False, str(e)
+
+        errs = S.validate_mleg(body)
+        if errs:
+            return False, f"roll payload invalid: {errs[0]}"
+
+        if self.ex.dry_run:
+            log.info("    DRY RUN roll: %s -> %s (delta %.2f -> %.2f)",
+                     short_leg.view.strike, new_short.strike,
+                     abs(short_leg.view.delta), abs(new_short.delta))
+            return True, (f"dry run: roll {short_leg.view.strike:.0f} -> "
+                          f"{new_short.strike:.0f}")
+
+        try:
+            order = self.c.submit_order(body)
+        except AlpacaError as e:
+            return False, f"roll rejected [{e.status}] {e.message[:100]}"
+
+        self.store.log_order(body["client_order_id"], body, order, "roll")
+        self.store.close_position(p["signature"], realized_pnl=0.0,
+                                  reason=f"rolled to {new_short.strike:.0f}",
+                                  close_order_id=order.get("id"))
+        return True, (f"rolled {short_leg.view.strike:.0f} -> {new_short.strike:.0f} "
+                      f"(delta {abs(short_leg.view.delta):.2f} -> "
+                      f"{abs(new_short.delta):.2f}), order {order.get('status')}")
 
     def _rebuild_spread(self, p: dict, views: Dict[str, O.ContractView]) -> Optional[S.Spread]:
         legs = []

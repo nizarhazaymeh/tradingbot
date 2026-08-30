@@ -181,3 +181,112 @@ python scripts/backtest.py --weeks 6 --dte 4 --underlyings SPY,QQQ,IWM
 python scripts/replay_week.py --underlying SPY --entry 2026-08-24 --expiry 2026-08-28
 ```
 Historical data is cached under `.cache/replay/`, so re-runs are instant.
+
+---
+
+# Part 3 — Parameter sweep
+
+Our take-profit level, DTE, strike distance and spread width were originally
+chosen by judgement. We swept each one across all four regimes (~55 trades per
+setting) to replace guesses with measurements.
+
+## Take-profit level — when to close a winner
+
+| Close at | Win rate | Net | Profit factor |
+|---:|---:|---:|---:|
+| 25% of max gain | 84% | +$964 | 2.92 |
+| **35% of max gain** | **84%** | **+$1,026** | **3.04** ← |
+| 50% (previous) | 80% | +$958 | 2.47 |
+| 65% | 77% | +$877 | 2.32 |
+| 80% | 71% | +$642 | 1.68 |
+
+Taking profit **earlier** is strictly better. The last stretch of a credit
+spread's max gain takes the longest to earn and carries the most tail risk —
+holding for it converts winners into losers. **Changed 50% → 35%.**
+
+## Days to expiry
+
+| DTE | Win rate | Net | Profit factor |
+|---:|---:|---:|---:|
+| **2** | 60% | **−$1,085** | **0.29** 🔴 |
+| 3 | 78% | +$638 | 2.46 |
+| **4** | **80%** | **+$958** | **2.47** ← |
+| 7 | 81% | +$745 | 1.85 |
+
+**2 DTE is destructive, not merely worse.** Gamma near expiry means a small
+adverse move blows through the short strike faster than any exit loop can react.
+**Raised `MIN_DTE` from 2 to 3.**
+
+## Strike distance
+
+| Distance | Win rate | Net | PF | Per trade |
+|---:|---:|---:|---:|---:|
+| 1.0% OTM | 70% | +$1,341 | 1.89 | +$23.53 |
+| **2.0% OTM** | 75% | +$1,328 | 2.59 | **+$24.15** |
+| 3.0% OTM | 80% | +$958 | 2.47 | +$17.11 |
+| 5.0% OTM | 84% | +$438 | 2.67 | +$10.19 |
+
+A clean trade-off: closer strikes collect more premium but win less often. The
+live agent selects by **delta**, not fixed percentage, because delta
+auto-adjusts for volatility — the same delta sits further out in % terms when
+the market is volatile, which is exactly when you want it further out.
+
+## Spread width
+
+| Width | Win rate | Net | PF | Worst trade | Per trade |
+|---:|---:|---:|---:|---:|---:|
+| $2 | 77% | +$602 | 2.84 | −$109 | +$11.36 |
+| $3 | 79% | +$904 | 3.03 | −$202 | +$17.06 |
+| $5 | 82% | +$1,382 | 2.99 | −$222 | +$25.13 |
+| **$8** | **84%** | **+$2,313** | **4.22** | −$299 | **+$42.05** |
+
+Wider is better, because a wider spread collects proportionally more credit for
+the same structure.
+
+**Note the worst trade at $8 wide was −$299, not the theoretical −$650.** The exit
+loop cut losses well before maximum. We deliberately did **not** size on that
+observed loss: options do not trade overnight, and a gap open past the short
+strike can realise close to the full theoretical loss with no chance to react.
+Sizing still uses theoretical max loss.
+
+At the old $400 per-trade budget the optimiser could never afford an $8-wide
+structure. **Raised `RISK_PER_TRADE_PCT` from 0.40% to 0.55%** so the search space
+actually includes them — the optimiser then picks on expected value, not width.
+
+## Old config vs tuned
+
+| Config | Trades | Win rate | Net | PF | Per trade |
+|---|---:|---:|---:|---:|---:|
+| Old — 4 DTE, TP 50%, 3% OTM, $5 | 56 | 80% | +$958 | 2.47 | +$17.11 |
+| Tuned — 4 DTE, TP 35%, 2% OTM, $5 | 55 | 82% | +$1,382 | 2.99 | +$25.13 |
+| **Tuned, $8 wide** | 55 | **84%** | **+$2,313** | **4.22** | **+$42.05** |
+
+Per regime, the tuned config was profitable in **all four**:
+
+| Regime | Trades | Win rate | Net | PF |
+|---|---:|---:|---:|---:|
+| Calm / rising | 17 | 76% | +$24 | **1.05** ⚠️ |
+| Volatility spike 46% | 12 | 100% | +$1,396 | 99 |
+| Selloff −7.7% | 12 | 83% | +$483 | 3.78 |
+| Carry unwind | 14 | 79% | +$410 | 16.19 |
+
+## 🔴 Read this before believing the numbers
+
+**These parameters were tuned on the same four regimes they are scored against.**
+Those results are therefore optimistic by construction. The honest expectation is
+that live performance lands below them.
+
+**The calm regime is the weak one — PF 1.05, +$24 across 17 trades.** And the
+market going into the competition is calm: SPY realised volatility is ~10%, the
+lowest of the four periods tested. **Our realistic expectation for the
+competition window is a small positive, not the headline numbers above.**
+
+What we consider genuinely supported, because it is theory-backed rather than
+purely fitted:
+- taking profit early beats holding for max gain (theta decays fastest near the end)
+- very short DTE is dangerous (gamma)
+- condors need a quiet market (they are a bet on stillness)
+- selling calls into an uptrend loses (directional exposure)
+
+What is fitted and should be treated with suspicion: the exact thresholds — 35%,
+3 DTE, 18% volatility, 0.55% risk.

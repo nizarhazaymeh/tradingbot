@@ -67,7 +67,13 @@ UNIVERSE = [s.strip().upper() for s in _s("UNIVERSE", "SPY,QQQ,IWM").split(",") 
 
 # ---------------------------------------------------------------- risk
 STARTING_EQUITY = _f("STARTING_EQUITY", 100_000.0)
-RISK_PER_TRADE_PCT = _f("RISK_PER_TRADE_PCT", 0.0040)    # 0.40% -> $400
+# Wider spreads measured better across all four regimes (PF 4.22 at $8 wide vs
+# 2.99 at $5), because they collect proportionally more credit. At $400 the
+# optimiser could never afford one, so the budget was raised enough to let it
+# choose. Sizing still uses THEORETICAL max loss, not the observed average loss —
+# an overnight gap can realise the full amount even though the exit loop
+# historically capped losses near -$300.
+RISK_PER_TRADE_PCT = _f("RISK_PER_TRADE_PCT", 0.0055)    # 0.55% -> $550
 PORTFOLIO_HEAT_PCT = _f("PORTFOLIO_HEAT_PCT", 0.0400)    # 4.00% -> $4,000
 MAX_PER_UNDERLYING_PCT = _f("MAX_PER_UNDERLYING_PCT", 0.0120)
 MAX_PER_EXPIRY_PCT = _f("MAX_PER_EXPIRY_PCT", 0.0250)
@@ -78,7 +84,12 @@ DAILY_DRAWDOWN_LIMIT = _f("DAILY_DRAWDOWN_LIMIT", 0.02)  # -2%
 TOTAL_DRAWDOWN_LIMIT = _f("TOTAL_DRAWDOWN_LIMIT", 0.06)  # -6%
 
 # ---------------------------------------------------------------- contracts
-MIN_DTE = _i("MIN_DTE", 2)          # 0DTE has no Greeks; 1DTE gamma is unstable
+# Swept across 4 regimes. 2 DTE is not merely worse, it is destructive — gamma
+# near expiry means a small adverse move blows through the short strike before
+# any exit can react:
+#   2 DTE -> 60% win, PF 0.29, -$1,085     4 DTE -> 80% win, PF 2.47, +$958
+#   3 DTE -> 78% win, PF 2.46,   +$638     7 DTE -> 81% win, PF 1.85, +$745
+MIN_DTE = _i("MIN_DTE", 3)          # 0-2 DTE excluded: no Greeks / unstable gamma
 TARGET_DTE = _i("TARGET_DTE", 4)    # preferred holding window
 MAX_DTE = _i("MAX_DTE", 10)
 MIN_OPEN_INTEREST = _i("MIN_OPEN_INTEREST", 500)
@@ -135,7 +146,12 @@ MAX_PORTFOLIO_DELTA = _f("MAX_PORTFOLIO_DELTA", 3.0)  # aggregate, per $100k equ
 MAX_DEBIT_RATIO = _f("MAX_DEBIT_RATIO", 0.60)   # debit must be <= 60% of width
 
 # ---------------------------------------------------------------- exits
-TAKE_PROFIT_CREDIT = _f("TAKE_PROFIT_CREDIT", 0.50)   # +50% of max gain
+# Swept across 4 market regimes (56 trades each). Closing winners EARLIER beat
+# holding for more of the max gain — the last 15% of a credit spread's profit
+# takes the most time and carries the most tail risk:
+#   close at 25% -> 84% win, PF 2.92     close at 50% -> 80% win, PF 2.47
+#   close at 35% -> 84% win, PF 3.04 ←   close at 80% -> 71% win, PF 1.68
+TAKE_PROFIT_CREDIT = _f("TAKE_PROFIT_CREDIT", 0.35)   # % of max gain
 TAKE_PROFIT_DEBIT = _f("TAKE_PROFIT_DEBIT", 0.75)
 STOP_CREDIT_MULT = _f("STOP_CREDIT_MULT", 1.50)       # -150% of credit
 STOP_DEBIT_PCT = _f("STOP_DEBIT_PCT", 0.60)

@@ -144,6 +144,37 @@ def build_debit_vertical(reg: Regime, views: List[O.ContractView], expiry: date,
     return sp
 
 
+def find_roll_target(old_short: O.ContractView, views: List[O.ContractView],
+                     expiry: date, *, width: float,
+                     min_delta_improvement: float = 0.10) -> Optional[tuple]:
+    """Pick a further-OTM strike to roll a threatened short leg to.
+
+    Requires a meaningful delta improvement — rolling to a strike barely further
+    out just pays the spread twice for almost no protection.
+    """
+    kind = old_short.kind
+    target_delta = max(config.SHORT_DELTA_CREDIT,
+                       abs(old_short.delta) - min_delta_improvement)
+    new_short = O.by_delta(views, target_delta, kind, expiry)
+    if not new_short:
+        return None
+    # must actually be further out of the money than what we hold
+    if kind == "P" and new_short.strike >= old_short.strike:
+        return None
+    if kind == "C" and new_short.strike <= old_short.strike:
+        return None
+    if abs(new_short.delta) > abs(old_short.delta) - min_delta_improvement / 2:
+        return None
+    new_long = O.wing(views, new_short, width)
+    if not new_long:
+        return None
+    if kind == "P" and new_long.strike >= new_short.strike:
+        return None
+    if kind == "C" and new_long.strike <= new_short.strike:
+        return None
+    return new_short, new_long
+
+
 def quality_gate(sp: S.Spread, reg: Regime = None, view: "View" = None) -> Optional[str]:
     """Reject structures whose risk/reward or exposure is not worth taking."""
     if sp.width <= 0:

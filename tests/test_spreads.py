@@ -114,3 +114,67 @@ def test_missing_position_intent_rejected():
 
 def test_single_leg_rejected():
     assert any("R1" in e for e in validate_mleg(body([leg(P(750), "sell")])))
+
+
+# ------------------------------------------------------------------- rolling
+def test_roll_order_is_four_legs_with_correct_intents():
+    from agent.spreads import roll_order, bull_put_spread
+    from agent.options import ContractView
+
+    def cv(strike, mid, delta):
+        return ContractView(symbol=P(strike), root="SPY", expiry=E, kind="P",
+                            strike=strike, dte=5, bid=mid*0.98, ask=mid*1.02, mid=mid,
+                            spread_pct=0.04, delta=delta, gamma=0.01, theta=-0.2,
+                            vega=0.1, iv=0.15, open_interest=5000)
+
+    old = bull_put_spread(cv(760, 2.00, -0.45), cv(755, 1.20, -0.30))
+    body = roll_order(old, cv(750, 0.90, -0.18), cv(745, 0.45, -0.10))
+
+    assert len(body["legs"]) == 4
+    intents = [l["position_intent"] for l in body["legs"]]
+    assert intents.count("buy_to_close") == 1
+    assert intents.count("sell_to_close") == 1
+    assert intents.count("sell_to_open") == 1
+    assert intents.count("buy_to_open") == 1
+    assert validate_mleg(body) == []
+
+
+def test_roll_refuses_four_leg_structures():
+    from agent.spreads import roll_order, iron_condor
+    from agent.options import ContractView
+    import pytest
+
+    def cv(kind, strike, mid):
+        return ContractView(symbol=occ("SPY", E, kind, strike), root="SPY", expiry=E,
+                            kind=kind, strike=strike, dte=5, bid=mid*0.98, ask=mid*1.02,
+                            mid=mid, spread_pct=0.04, delta=0.15, gamma=0.01,
+                            theta=-0.2, vega=0.1, iv=0.15, open_interest=5000)
+
+    cond = iron_condor(cv("P", 745, 0.5), cv("P", 750, 0.9),
+                       cv("C", 790, 0.9), cv("C", 795, 0.5))
+    with pytest.raises(ValueError, match="2-leg"):
+        roll_order(cond, cv("P", 740, 0.4), cv("P", 735, 0.2))
+
+
+def test_find_roll_target_requires_real_improvement():
+    from agent.strategy import find_roll_target
+    from agent.options import ContractView
+
+    def cv(strike, delta, mid=1.0):
+        return ContractView(symbol=P(strike), root="SPY", expiry=E, kind="P",
+                            strike=strike, dte=5, bid=mid*0.98, ask=mid*1.02, mid=mid,
+                            spread_pct=0.04, delta=delta, gamma=0.01, theta=-0.2,
+                            vega=0.1, iv=0.15, open_interest=5000)
+
+    threatened = cv(760, -0.45)
+    # a chain where nothing is meaningfully further out
+    flat = [cv(759, -0.44), cv(758, -0.43)]
+    assert find_roll_target(threatened, flat, E, width=5) is None
+
+    # a chain with a genuinely safer strike
+    good = [cv(s, -0.45 + (760 - s) * 0.03) for s in range(740, 761)]
+    target = find_roll_target(threatened, good, E, width=5)
+    assert target is not None
+    new_short, new_long = target
+    assert new_short.strike < threatened.strike
+    assert abs(new_short.delta) < abs(threatened.delta)
