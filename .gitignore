@@ -19,3 +19,6 @@ venv/
 # Scraped third-party documentation — research material, kept local only
 searching_docs/09_raw_sources/
 .cache/
+# Per-developer Claude Code settings. The shared .claude/settings.json, if one is
+# ever added, stays tracked.
+.claude/settings.local.json

@@ -1,6 +1,6 @@
 # What's left — Options Alpha Agent
 
-Last updated: **Sun 30 Aug 2026, evening**
+Last updated: **Mon 31 Aug 2026, pre-market**
 Deadline: **Fri 4 Sep 2026, 11:00 ET / 18:00 GMT+3**
 
 | Team | Owner |
@@ -54,6 +54,54 @@ Unverified until a real fill happens:
 **Plan:** Monday 09:30 ET — run live on the **DEV** account, watch real fills,
 fix whatever breaks, then switch to COMP.
 
+**Tool ready:** `scripts/t1_fill_test.py` submits ONE 1-lot SPY vertical through
+the production path (client → `usable_contracts` → `bull_put_spread` →
+`validate_mleg` → `Executor.open_spread`), then polls until it fills and prints
+the payload, per-leg fills and resulting positions. Strategy *selection* is
+bypassed; no risk gate is read or changed.
+
+```
+python scripts/t1_fill_test.py --width 4            # plan, submits nothing
+python scripts/t1_fill_test.py --width 4 --live     # submit + watch the fill
+python scripts/t1_fill_test.py --close --live       # close it
+```
+
+It prices at the **natural** (short bid / long ask), not the mid. A mid limit is
+roughly a coin flip and an unfilled order tells us nothing — which is how T1
+stayed open. Costs about $0.05 on one paper lot. Guards: DEV-only, refuses while
+the market is closed, checks the account is unblocked and options level 3.
+
+### ✅ T9 — FIXED: the agent was standing aside on every underlying
+
+Found while checking why candidate strikes sat too near spot. `propose()` ranked
+candidates by expected value, then ran `quality_gate()` on `scored[0]` **only**
+and abandoned the underlying if it failed. Candidates 2..N were never examined.
+
+That is the common case, not a rare one: EV rises as the short strike moves
+toward spot (that is where the premium is), while `MIN_SHORT_SIGMA` requires the
+opposite. The two are anti-correlated, so the top-EV structure is systematically
+the one the gate rejects.
+
+Measured on the 2026-09-04 expiry, 31 Aug, before the fix:
+
+| | Candidates | Passed every gate | Traded | Rank 0 rejected for | First acceptable |
+|---|---|---|---|---|---|
+| SPY | 36 | **27** | 0 | short 778C at 0.83σ | rank 1, −0.0059 EV |
+| QQQ | 36 | **16** | 0 | short 727C at 0.70σ | rank 1, −0.0032 EV |
+| IWM | 34 | 21 | 0 | (regime-dependent) | rank 0 |
+
+A rehearsal cycle went **0 submits → 3**, and every short strike in the chosen
+structures clears the floor it was previously failing (SPY 780C 1.02σ / 759P
+0.98σ, QQQ 695P 1.52σ, IWM 302C 1.06σ / 290P 0.96σ). The gate is respected, not
+weakened; all three fit the per-trade budget.
+
+**The backtest could not have caught this** — neither `scripts/backtest.py` nor
+`agent/replay.py` imports `agent/strategy.py`, so the selection path was never
+exercised. The documented +$657 / PF 2.52 is therefore unaffected, but it also
+validates payoff shape and exits, *not* live selection.
+`tests/test_strategy_selection.py` (8 tests) closes that gap and asserts its own
+premise, so it cannot silently go vacuous.
+
 ### T3 — IV rank is missing
 The agent currently compares implied vol against *realised* vol as a proxy. The
 better signal is IV **rank** (where today's IV sits within its own recent range),
@@ -96,9 +144,20 @@ The governor reads `X-RateLimit-*` headers and throttles correctly in testing,
 but we have never run a full session with 3 underlyings on a 5-minute loop for
 6.5 hours. Budget is 200 requests/min; a cycle uses roughly 25–30.
 
-### T8 — Equity curve export not wired
-`portfolio_history` is available via the client but nothing archives it to disk
-daily. That curve is the single most persuasive artifact for the P&L criterion.
+### ✅ T8 — DONE: equity curve archived
+`scripts/export_equity_curve.py` fetches `/v2/account/portfolio/history` and
+writes `docs/equity_curve.json`. Runs are **cumulative** — points are merged by
+timestamp, so a daily run builds real history even though the API window slides.
+Drops Alpaca's leading zero-equity placeholders (22 of them on this account),
+which would otherwise wreck the drawdown maths and the chart.
+
+Note this is a different curve from the one `export_dashboard.py` draws: that one
+comes from local SQLite snapshots written by `cycle.observe()` and only exists
+while the agent is running. This one is Alpaca's own record — continuous, and
+more persuasive precisely because we did not compute it.
+
+**Run it against COMP before submitting**; the artifact records `account_kind` so
+the provenance is unambiguous.
 
 ---
 
@@ -117,7 +176,7 @@ daily. That curve is the single most persuasive artifact for the P&L criterion.
 
 | Day | Focus |
 |---|---|
-| **Mon 31 Aug** | 16:30 local — go live on DEV, watch real fills (T1, T2). Switch to COMP if clean. |
+| **Mon 31 Aug** | 16:30 local — `t1_fill_test.py --live` on DEV, watch the fill. Switch to COMP if clean. ✅ T8, T9 done pre-market. |
 | **Tue 1 Sep** | Demo website (Ali). Fix whatever Monday exposed. MCP transcript (T5). |
 | **Wed 2 Sep** | 🔴 Record video + slides. Do NOT leave this to Friday. |
 | **Thu 3 Sep** | 15:00 ET stop opening new positions. Write-up, cover image, final checks. |
@@ -135,7 +194,7 @@ daily. That curve is the single most persuasive artifact for the P&L criterion.
 | P1 | T1 — verify a real fill (T2 exits now verified via replay) | ❌ effectively never |
 | P1 | Demo website | ⚠️ required, but can be simple |
 
-| P2 | T8 equity curve export | ⚠️ cheap, keep it |
+| P2 | ~~T8 equity curve export~~ | ✅ done |
 
 | P3 | T3 IV rank backfill | ✅ droppable |
 | P3 | Everything under "nice to have" | ✅ droppable |
