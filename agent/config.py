@@ -104,6 +104,10 @@ IV_MIN, IV_MAX = _f("IV_MIN", 0.01), _f("IV_MAX", 5.0)
 # ---------------------------------------------------------------- regime
 # When IV-rank history exists we use rank; otherwise implied-vs-realised.
 IV_RANK_RICH = _f("IV_RANK_RICH", 0.60)
+# IV rank needs a real range to mean anything. Below this many readings the
+# regime classifier falls back to comparing implied against realised vol —
+# a working proxy — instead of a rank invented from two data points.
+MIN_IV_HISTORY = _i("MIN_IV_HISTORY", 20)
 IV_RANK_CHEAP = _f("IV_RANK_CHEAP", 0.35)
 IV_OVER_RV_RICH = _f("IV_OVER_RV_RICH", 1.10)   # implied >= 1.10x realised -> rich
 IV_OVER_RV_CHEAP = _f("IV_OVER_RV_CHEAP", 0.95)

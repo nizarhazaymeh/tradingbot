@@ -187,7 +187,23 @@ def atm_iv(views: List[ContractView], spot: float, expiry: date = None) -> Optio
 
 
 def iv_rank(iv_now: float, history: List[float]) -> Optional[float]:
-    if not history:
+    """Where today's IV sits inside its own recent range, or None if unknowable.
+
+    Returning None matters as much as returning a number. regime.classify() only
+    uses the implied-vs-realised-vol fallback when this is None, so a fabricated
+    rank silently disables a proxy that works:
+
+      * 1 reading  -> min == max, and returning 0.5 made every underlying score
+        neither rich nor cheap, so the classifier said "no clear edge" forever.
+      * 2 readings -> returns exactly 0.0 or 1.0, a maximally confident signal
+        built from two data points.
+
+    state.py records one reading per underlying per day, so this stays None until
+    there is enough history to be worth trusting.
+    """
+    if len(history) < config.MIN_IV_HISTORY:
         return None
     lo, hi = min(history), max(history)
-    return 0.5 if hi <= lo else max(0.0, min(1.0, (iv_now - lo) / (hi - lo)))
+    if hi <= lo:
+        return None                 # a degenerate range carries no information
+    return max(0.0, min(1.0, (iv_now - lo) / (hi - lo)))

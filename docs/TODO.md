@@ -102,15 +102,35 @@ validates payoff shape and exits, *not* live selection.
 `tests/test_strategy_selection.py` (8 tests) closes that gap and asserts its own
 premise, so it cannot silently go vacuous.
 
-### T3 — IV rank is missing
-The agent currently compares implied vol against *realised* vol as a proxy. The
-better signal is IV **rank** (where today's IV sits within its own recent range),
-which needs a history we don't have yet. `state.py` already records one IV
-reading per underlying per day, so it will build up — but it will only be a few
-days deep by Friday.
+### ✅ T3 — FIXED: IV rank now says "unknown" instead of inventing a number
 
-**Optional improvement:** backfill from option bars (available since Feb 2024).
-Costs a lot of API calls; only worth doing if there's spare time.
+Not the missing-history problem it was filed as. The problem was that
+`iv_rank()` returned a *number* when it had no basis for one, and
+`regime.classify()` only reaches its implied-vs-realised fallback when the rank
+is `None`. So the first recorded reading silently switched the classifier off a
+working proxy and onto a fabricated rank:
+
+| History | Old rank | Effect |
+|---|---|---|
+| 0 readings | `None` | correct — uses IV vs realised vol |
+| **1 reading** | **0.50** | neither rich nor cheap → **every underlying "no clear edge", forever** |
+| **2 readings** | **0.00 / 1.00** | a maximally confident signal built from two data points |
+
+`state.py` records one reading per underlying per day, so this triggered as soon
+as the agent ran once. Observed live: SPY at implied/realised **1.29×** and IWM at
+**1.35×** both fell to `LOW_IV_RANGE` "no clear edge". After the fix they classify
+`HIGH_IV_RANGE` (sell premium, delta-neutral) and `HIGH_IV_TREND` (credit spread
+with the trend) again — matching the very first rehearsal, before any IV history
+existed.
+
+`iv_rank()` now returns `None` below `MIN_IV_HISTORY` (new, default 20) and on a
+degenerate range at any length. By Friday there will be ~5 readings, so the rank
+stays unknown all week and the IV-vs-realised proxy — which works — stays in
+charge. That is the intended outcome, not a limitation.
+
+`tests/test_iv_rank.py` — 10 tests, including one that drives
+`regime.classify()` end to end and asserts a rich regime is still detectable
+with an unknown rank.
 
 ### ✅ T5 — DONE: MCP session recorded
 `scripts/mcp_session.py` drives the MCP server over stdio via JSON-RPC and
