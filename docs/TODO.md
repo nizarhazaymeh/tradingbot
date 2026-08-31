@@ -15,14 +15,14 @@ Deadline: **Fri 4 Sep 2026, 11:00 ET / 18:00 GMT+3**
 
 | # | Item | Owner | Status |
 |---|---|---|---|
-| B1 | **Make the repo PUBLIC** — Settings → General → bottom → Change visibility. Judges cannot see a private repo; lablab says it "may lower your overall score" | **Nizar** | ☐ |
-| B2 | **Live demo URL** — must load for a judge with no login | **Ali** | ☐ |
+| B1 | ✅ **Repo is PUBLIC** — verified by unauthenticated HTTP 200 and a token-free anonymous clone. Full 20-commit history scanned first: no credentials in any commit | **Nizar** | ✅ |
+| B2 | ✅ **Live demo URL** — https://nizarhazaymeh.github.io/tradingbot/ · GitHub Pages from `main` root, serves `index.html` + `public/dashboard.json`, verified HTTP 200 unauthenticated. Ali can still ship the Streamlit version; this is the zero-infrastructure fallback | Ali / done | ✅ |
 | B3 | **Video**, MP4, 3:00–5:00 (under 3 min scores a 2 on their rubric) | Mahdi | ☐ |
 | B4 | **Slides**, PDF, 8–10 pages | Mahdi | ☐ |
 | B5 | ✅ **One-page write-up** — drafted at `docs/WRITEUP.md`; results table filled in after the window | Mahdi | ✅ |
 | B6 | **Cover image**, PNG or JPG, 16:9 | Ali | ☐ |
 | B7 | **Competition account ID in the submission** — `PA3BAT1OOEFE`. Without it, P&L is not scored at all | Mahdi | ☐ |
-| B8 | **Short description** ≤255 chars · **Long description** ≥100 words · tags | Mahdi | ☐ |
+| B8 | ✅ **Descriptions drafted** at [`SUBMISSION_COPY.md`](SUBMISSION_COPY.md) — short 235 chars, long 276 words, tags, plus a list of claims to avoid. Mahdi to paste and fill the final numbers | Mahdi | ✅ draft |
 
 ---
 
