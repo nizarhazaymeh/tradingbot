@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-08-31T10:24:14+00:00",
+  "updated_at": "2026-08-31T10:58:35+00:00",
   "account": {
     "account_id": "PA3YD776IS6I",
     "environment": "dev",
@@ -33,15 +33,55 @@
     {
       "ts": "2026-08-31T10:20:43+00:00",
       "equity": 100000.0
+    },
+    {
+      "ts": "2026-08-31T10:30:00+00:00",
+      "equity": 100000.0
+    },
+    {
+      "ts": "2026-08-31T10:30:56+00:00",
+      "equity": 100000.0
+    },
+    {
+      "ts": "2026-08-31T10:31:58+00:00",
+      "equity": 100000.0
+    },
+    {
+      "ts": "2026-08-31T10:32:27+00:00",
+      "equity": 100000.0
+    },
+    {
+      "ts": "2026-08-31T10:32:51+00:00",
+      "equity": 100000.0
+    },
+    {
+      "ts": "2026-08-31T10:34:52+00:00",
+      "equity": 100000.0
+    },
+    {
+      "ts": "2026-08-31T10:50:32+00:00",
+      "equity": 100000.0
+    },
+    {
+      "ts": "2026-08-31T10:52:41+00:00",
+      "equity": 100000.0
+    },
+    {
+      "ts": "2026-08-31T10:55:14+00:00",
+      "equity": 100000.0
+    },
+    {
+      "ts": "2026-08-31T10:55:38+00:00",
+      "equity": 100000.0
     }
   ],
   "market": [
     {
       "underlying": "SPY",
       "spot": 769.28,
-      "implied_vol": 0.1191,
+      "implied_vol": 0.1192,
       "realized_vol": 0.1012,
-      "premium_edge": 0.0179,
+      "premium_edge": 0.018,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     },
@@ -57,9 +97,9 @@
     {
       "underlying": "IWM",
       "spot": 295.73,
-      "implied_vol": 0.1721,
+      "implied_vol": 0.1722,
       "realized_vol": 0.1421,
-      "premium_edge": 0.03,
+      "premium_edge": 0.0301,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     }
@@ -67,130 +107,210 @@
   "positions": [],
   "decisions": [
     {
-      "ts": "2026-08-31T10:21:04+00:00",
+      "ts": "2026-08-31T10:55:58+00:00",
       "underlying": "IWM",
       "decision": "submit",
       "gate": "all",
       "reason": "dry run",
-      "regime": "LOW_IV_RANGE"
-    },
-    {
-      "ts": "2026-08-31T10:20:58+00:00",
-      "underlying": "QQQ",
-      "decision": "submit",
-      "gate": "all",
-      "reason": "dry run",
-      "regime": "LOW_IV_RANGE"
-    },
-    {
-      "ts": "2026-08-31T10:20:50+00:00",
-      "underlying": "SPY",
-      "decision": "submit",
-      "gate": "all",
-      "reason": "dry run",
-      "regime": "LOW_IV_RANGE"
-    },
-    {
-      "ts": "2026-08-31T10:09:53+00:00",
-      "underlying": "IWM",
-      "decision": "submit",
-      "gate": "all",
-      "reason": "dry run",
-      "regime": "LOW_IV_RANGE"
-    },
-    {
-      "ts": "2026-08-31T10:09:47+00:00",
-      "underlying": "QQQ",
-      "decision": "submit",
-      "gate": "all",
-      "reason": "dry run",
-      "regime": "LOW_IV_RANGE"
-    },
-    {
-      "ts": "2026-08-31T10:09:39+00:00",
-      "underlying": "SPY",
-      "decision": "submit",
-      "gate": "all",
-      "reason": "dry run",
-      "regime": "LOW_IV_RANGE"
-    },
-    {
-      "ts": "2026-08-31T10:03:08+00:00",
-      "underlying": "IWM",
-      "decision": "submit",
-      "gate": "all",
-      "reason": "dry run",
-      "regime": "LOW_IV_RANGE"
-    },
-    {
-      "ts": "2026-08-31T10:03:02+00:00",
-      "underlying": "QQQ",
-      "decision": "submit",
-      "gate": "all",
-      "reason": "dry run",
-      "regime": "LOW_IV_RANGE"
-    },
-    {
-      "ts": "2026-08-31T10:02:55+00:00",
-      "underlying": "SPY",
-      "decision": "submit",
-      "gate": "all",
-      "reason": "dry run",
-      "regime": "LOW_IV_RANGE"
-    },
-    {
-      "ts": "2026-08-31T09:59:13+00:00",
-      "underlying": "IWM",
-      "decision": "submit",
-      "gate": "all",
-      "reason": "dry run",
-      "regime": "LOW_IV_RANGE"
-    },
-    {
-      "ts": "2026-08-31T09:59:07+00:00",
-      "underlying": "QQQ",
-      "decision": "submit",
-      "gate": "all",
-      "reason": "dry run",
-      "regime": "LOW_IV_RANGE"
-    },
-    {
-      "ts": "2026-08-31T09:59:01+00:00",
-      "underlying": "SPY",
-      "decision": "submit",
-      "gate": "all",
-      "reason": "dry run",
-      "regime": "LOW_IV_RANGE"
-    },
-    {
-      "ts": "2026-08-31T09:46:46+00:00",
-      "underlying": "IWM",
-      "decision": "hold",
-      "gate": "",
-      "reason": "best of 27 candidates rejected: short 296P is only 0.05\u03c3 from spot (need 0.9\u03c3)",
       "regime": "HIGH_IV_TREND"
     },
     {
-      "ts": "2026-08-31T09:46:40+00:00",
+      "ts": "2026-08-31T10:55:52+00:00",
       "underlying": "QQQ",
-      "decision": "hold",
-      "gate": "",
-      "reason": "best of 37 candidates rejected: short 727C is only 0.70\u03c3 from spot (need 0.9\u03c3)",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "dry run",
       "regime": "LOW_IV_RANGE"
     },
     {
-      "ts": "2026-08-31T09:46:32+00:00",
+      "ts": "2026-08-31T10:55:44+00:00",
       "underlying": "SPY",
-      "decision": "hold",
-      "gate": "",
-      "reason": "best of 36 candidates rejected: short 778C is only 0.83\u03c3 from spot (need 0.9\u03c3)",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "dry run",
       "regime": "HIGH_IV_RANGE"
+    },
+    {
+      "ts": "2026-08-31T10:55:35+00:00",
+      "underlying": "IWM",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "dry run",
+      "regime": "HIGH_IV_TREND"
+    },
+    {
+      "ts": "2026-08-31T10:55:29+00:00",
+      "underlying": "QQQ",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "dry run",
+      "regime": "LOW_IV_RANGE"
+    },
+    {
+      "ts": "2026-08-31T10:55:21+00:00",
+      "underlying": "SPY",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "dry run",
+      "regime": "HIGH_IV_RANGE"
+    },
+    {
+      "ts": "2026-08-31T10:53:02+00:00",
+      "underlying": "IWM",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "dry run",
+      "regime": "HIGH_IV_TREND"
+    },
+    {
+      "ts": "2026-08-31T10:52:55+00:00",
+      "underlying": "QQQ",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "dry run",
+      "regime": "LOW_IV_RANGE"
+    },
+    {
+      "ts": "2026-08-31T10:52:48+00:00",
+      "underlying": "SPY",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "dry run",
+      "regime": "HIGH_IV_RANGE"
+    },
+    {
+      "ts": "2026-08-31T10:50:54+00:00",
+      "underlying": "IWM",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "dry run",
+      "regime": "HIGH_IV_TREND"
+    },
+    {
+      "ts": "2026-08-31T10:50:48+00:00",
+      "underlying": "QQQ",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "dry run",
+      "regime": "LOW_IV_RANGE"
+    },
+    {
+      "ts": "2026-08-31T10:50:40+00:00",
+      "underlying": "SPY",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "dry run",
+      "regime": "HIGH_IV_RANGE"
+    },
+    {
+      "ts": "2026-08-31T10:35:13+00:00",
+      "underlying": "IWM",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "dry run",
+      "regime": "LOW_IV_RANGE"
+    },
+    {
+      "ts": "2026-08-31T10:35:07+00:00",
+      "underlying": "QQQ",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "dry run",
+      "regime": "LOW_IV_RANGE"
+    },
+    {
+      "ts": "2026-08-31T10:34:59+00:00",
+      "underlying": "SPY",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "dry run",
+      "regime": "LOW_IV_RANGE"
+    },
+    {
+      "ts": "2026-08-31T10:33:12+00:00",
+      "underlying": "IWM",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "dry run",
+      "regime": "LOW_IV_RANGE"
+    },
+    {
+      "ts": "2026-08-31T10:33:06+00:00",
+      "underlying": "QQQ",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "dry run",
+      "regime": "LOW_IV_RANGE"
+    },
+    {
+      "ts": "2026-08-31T10:32:58+00:00",
+      "underlying": "SPY",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "dry run",
+      "regime": "LOW_IV_RANGE"
+    },
+    {
+      "ts": "2026-08-31T10:32:49+00:00",
+      "underlying": "IWM",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "dry run",
+      "regime": "LOW_IV_RANGE"
+    },
+    {
+      "ts": "2026-08-31T10:32:42+00:00",
+      "underlying": "QQQ",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "dry run",
+      "regime": "LOW_IV_RANGE"
+    },
+    {
+      "ts": "2026-08-31T10:32:34+00:00",
+      "underlying": "SPY",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "dry run",
+      "regime": "LOW_IV_RANGE"
+    },
+    {
+      "ts": "2026-08-31T10:32:23+00:00",
+      "underlying": "IWM",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "dry run",
+      "regime": "LOW_IV_RANGE"
+    },
+    {
+      "ts": "2026-08-31T10:32:17+00:00",
+      "underlying": "QQQ",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "dry run",
+      "regime": "LOW_IV_RANGE"
+    },
+    {
+      "ts": "2026-08-31T10:32:09+00:00",
+      "underlying": "SPY",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "dry run",
+      "regime": "LOW_IV_RANGE"
+    },
+    {
+      "ts": "2026-08-31T10:30:56+00:00",
+      "underlying": "*",
+      "decision": "halt",
+      "gate": "g_kill_switch",
+      "reason": "HALTED file present \u2014 manual halt engaged",
+      "regime": "-"
     }
   ],
   "funnel": {
-    "considered": 15,
+    "considered": 41,
     "rejected": 0,
-    "submitted": 12,
+    "submitted": 36,
     "held": 3,
     "closed": 0
   },

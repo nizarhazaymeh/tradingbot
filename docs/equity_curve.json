@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-31T10:21:13+00:00",
+  "generated_at": "2026-08-31T10:58:44+00:00",
   "source": "alpaca /v2/account/portfolio/history",
   "account": "PA3YD776IS6I",
   "account_kind": "dev",
