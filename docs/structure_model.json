@@ -1,0 +1,514 @@
+{
+  "features": [
+    "struct_up",
+    "struct_down",
+    "range_pos",
+    "golden",
+    "barrier_atr",
+    "protected",
+    "protect_dist_atr",
+    "protect_touches",
+    "threat_trend",
+    "rv20",
+    "adx",
+    "rsi",
+    "atr_pct",
+    "is_condor"
+  ],
+  "feature_set": "all",
+  "n_trades": 277,
+  "lambdas": [
+    0.3,
+    1.0,
+    3.0,
+    10.0,
+    30.0,
+    100.0
+  ],
+  "naive_total": 2701.0,
+  "shipped_total": 411.0,
+  "folds": [
+    {
+      "window": "calm/rising",
+      "lam": 100.0,
+      "thr": -0.06,
+      "naive": {
+        "n": 85,
+        "net": -240.0,
+        "win": 0.6941176470588235,
+        "pf": 0.91,
+        "exp": -2.82,
+        "R": -0.0021
+      },
+      "shipped": {
+        "n": 57,
+        "net": 293.0,
+        "win": 0.7368421052631579,
+        "pf": 1.2,
+        "exp": 5.14,
+        "R": 0.0156
+      },
+      "learned": {
+        "n": 83,
+        "net": -441.0,
+        "win": 0.6867469879518072,
+        "pf": 0.84,
+        "exp": -5.31,
+        "R": -0.0092
+      },
+      "coef": {
+        "struct_up": 0.0156,
+        "struct_down": -0.015,
+        "range_pos": 0.0353,
+        "golden": 0.0006,
+        "barrier_atr": -0.0098,
+        "protected": 0.0025,
+        "protect_dist_atr": 0.0118,
+        "protect_touches": 0.0022,
+        "threat_trend": 0.0684,
+        "rv20": -0.0555,
+        "adx": -0.0464,
+        "rsi": 0.0154,
+        "atr_pct": -0.0305,
+        "is_condor": -0.0067
+      }
+    },
+    {
+      "window": "vol spike 46%",
+      "lam": 0.3,
+      "thr": null,
+      "naive": {
+        "n": 60,
+        "net": -695.0,
+        "win": 0.5833333333333334,
+        "pf": 0.8,
+        "exp": -11.58,
+        "R": -0.0532
+      },
+      "shipped": {
+        "n": 32,
+        "net": -844.0,
+        "win": 0.53125,
+        "pf": 0.63,
+        "exp": -26.38,
+        "R": -0.1105
+      },
+      "learned": {
+        "n": 60,
+        "net": -695.0,
+        "win": 0.5833333333333334,
+        "pf": 0.8,
+        "exp": -11.58,
+        "R": -0.0532
+      },
+      "coef": {
+        "struct_up": 0.0543,
+        "struct_down": 0.0284,
+        "range_pos": -0.066,
+        "golden": 0.0244,
+        "barrier_atr": -0.0315,
+        "protected": 0.008,
+        "protect_dist_atr": 0.0169,
+        "protect_touches": -0.0024,
+        "threat_trend": 0.0455,
+        "rv20": -0.0636,
+        "adx": -0.0433,
+        "rsi": 0.1091,
+        "atr_pct": 0.0229,
+        "is_condor": 0.0131
+      }
+    },
+    {
+      "window": "selloff -7.7%",
+      "lam": 0.3,
+      "thr": 0.06,
+      "naive": {
+        "n": 60,
+        "net": 3479.0,
+        "win": 0.85,
+        "pf": 7.7,
+        "exp": 57.98,
+        "R": 0.1728
+      },
+      "shipped": {
+        "n": 38,
+        "net": 2322.0,
+        "win": 0.9210526315789473,
+        "pf": 9.9,
+        "exp": 61.11,
+        "R": 0.1757
+      },
+      "learned": {
+        "n": 13,
+        "net": 152.0,
+        "win": 0.6923076923076923,
+        "pf": 1.54,
+        "exp": 11.69,
+        "R": 0.0358
+      },
+      "coef": {
+        "struct_up": 0.0532,
+        "struct_down": -0.025,
+        "range_pos": 0.0432,
+        "golden": 0.0245,
+        "barrier_atr": -0.0239,
+        "protected": -0.0562,
+        "protect_dist_atr": 0.0647,
+        "protect_touches": 0.0241,
+        "threat_trend": 0.1155,
+        "rv20": -0.0258,
+        "adx": -0.0585,
+        "rsi": 0.0072,
+        "atr_pct": -0.0202,
+        "is_condor": -0.0527
+      }
+    },
+    {
+      "window": "carry unwind",
+      "lam": 0.3,
+      "thr": 0.05,
+      "naive": {
+        "n": 72,
+        "net": 157.0,
+        "win": 0.6527777777777778,
+        "pf": 1.05,
+        "exp": 2.18,
+        "R": -0.0242
+      },
+      "shipped": {
+        "n": 34,
+        "net": -1360.0,
+        "win": 0.5,
+        "pf": 0.36,
+        "exp": -40.0,
+        "R": -0.1565
+      },
+      "learned": {
+        "n": 27,
+        "net": -346.0,
+        "win": 0.5555555555555556,
+        "pf": 0.77,
+        "exp": -12.81,
+        "R": -0.0979
+      },
+      "coef": {
+        "struct_up": -0.0016,
+        "struct_down": -0.0356,
+        "range_pos": -0.0489,
+        "golden": 0.0046,
+        "barrier_atr": -0.0433,
+        "protected": -0.0712,
+        "protect_dist_atr": 0.0897,
+        "protect_touches": 0.0,
+        "threat_trend": 0.0287,
+        "rv20": -0.069,
+        "adx": 0.0117,
+        "rsi": -0.0009,
+        "atr_pct": -0.0538,
+        "is_condor": 0.0188
+      }
+    }
+  ],
+  "rules": [
+    {
+      "feature": "struct_up",
+      "side": "low",
+      "cuts": [
+        1.0,
+        1.0,
+        1.0,
+        0.0
+      ],
+      "pooled": {
+        "n": 254,
+        "net": 2066.0,
+        "win": 0.7007874015748031,
+        "pf": 1.22,
+        "exp": 8.13,
+        "R": 0.0133
+      },
+      "beat_shipped": 2,
+      "beat_naive": 0
+    },
+    {
+      "feature": "struct_down",
+      "side": "low",
+      "cuts": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "pooled": {
+        "n": 165,
+        "net": 2836.0,
+        "win": 0.7212121212121212,
+        "pf": 1.7,
+        "exp": 17.19,
+        "R": 0.0366
+      },
+      "beat_shipped": 3,
+      "beat_naive": 4
+    },
+    {
+      "feature": "range_pos",
+      "side": "low",
+      "cuts": [
+        0.90881,
+        0.28736,
+        0.28961,
+        0.28961
+      ],
+      "pooled": {
+        "n": 139,
+        "net": 1361.0,
+        "win": 0.6762589928057554,
+        "pf": 1.28,
+        "exp": 9.79,
+        "R": 0.0183
+      },
+      "beat_shipped": 4,
+      "beat_naive": 3
+    },
+    {
+      "feature": "golden",
+      "side": "low",
+      "cuts": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "pooled": {
+        "n": 247,
+        "net": 2327.0,
+        "win": 0.6842105263157895,
+        "pf": 1.27,
+        "exp": 9.42,
+        "R": 0.0194
+      },
+      "beat_shipped": 3,
+      "beat_naive": 2
+    },
+    {
+      "feature": "barrier_atr",
+      "side": "low",
+      "cuts": [
+        1.66294,
+        1.81292,
+        2.12227,
+        2.17425
+      ],
+      "pooled": {
+        "n": 234,
+        "net": 2250.0,
+        "win": 0.6794871794871795,
+        "pf": 1.24,
+        "exp": 9.62,
+        "R": 0.0173
+      },
+      "beat_shipped": 3,
+      "beat_naive": 1
+    },
+    {
+      "feature": "protected",
+      "side": "low",
+      "cuts": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "pooled": {
+        "n": 272,
+        "net": 2483.0,
+        "win": 0.6911764705882353,
+        "pf": 1.25,
+        "exp": 9.13,
+        "R": 0.0171
+      },
+      "beat_shipped": 2,
+      "beat_naive": 0
+    },
+    {
+      "feature": "protect_dist_atr",
+      "side": "low",
+      "cuts": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "pooled": {
+        "n": 272,
+        "net": 2483.0,
+        "win": 0.6911764705882353,
+        "pf": 1.25,
+        "exp": 9.13,
+        "R": 0.0171
+      },
+      "beat_shipped": 2,
+      "beat_naive": 0
+    },
+    {
+      "feature": "protect_touches",
+      "side": "low",
+      "cuts": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "pooled": {
+        "n": 275,
+        "net": 2601.0,
+        "win": 0.6909090909090909,
+        "pf": 1.26,
+        "exp": 9.46,
+        "R": 0.0183
+      },
+      "beat_shipped": 2,
+      "beat_naive": 0
+    },
+    {
+      "feature": "threat_trend",
+      "side": "high",
+      "cuts": [
+        2.21992,
+        2.13477,
+        1.92418,
+        1.77087
+      ],
+      "pooled": {
+        "n": 65,
+        "net": 2342.0,
+        "win": 0.7384615384615385,
+        "pf": 2.59,
+        "exp": 36.03,
+        "R": 0.1174
+      },
+      "beat_shipped": 2,
+      "beat_naive": 2
+    },
+    {
+      "feature": "threat_trend",
+      "side": "low",
+      "cuts": [
+        3.19166,
+        2.78688,
+        3.19166,
+        0.30491
+      ],
+      "pooled": {
+        "n": 223,
+        "net": 392.0,
+        "win": 0.672645739910314,
+        "pf": 1.05,
+        "exp": 1.76,
+        "R": -0.006
+      },
+      "beat_shipped": 1,
+      "beat_naive": 0
+    },
+    {
+      "feature": "rv20",
+      "side": "high",
+      "cuts": [
+        0.13348,
+        0.11069,
+        0.11069,
+        0.11069
+      ],
+      "pooled": {
+        "n": 244,
+        "net": 2386.0,
+        "win": 0.6885245901639344,
+        "pf": 1.26,
+        "exp": 9.78,
+        "R": 0.0179
+      },
+      "beat_shipped": 2,
+      "beat_naive": 0
+    },
+    {
+      "feature": "adx",
+      "side": "high",
+      "cuts": [
+        18.24607,
+        17.90466,
+        14.07143,
+        17.88356
+      ],
+      "pooled": {
+        "n": 215,
+        "net": 2193.0,
+        "win": 0.6790697674418604,
+        "pf": 1.26,
+        "exp": 10.2,
+        "R": 0.0179
+      },
+      "beat_shipped": 3,
+      "beat_naive": 1
+    },
+    {
+      "feature": "rsi",
+      "side": "low",
+      "cuts": [
+        60.39474,
+        49.39278,
+        61.31103,
+        49.39278
+      ],
+      "pooled": {
+        "n": 215,
+        "net": 386.0,
+        "win": 0.6697674418604651,
+        "pf": 1.04,
+        "exp": 1.8,
+        "R": -0.0085
+      },
+      "beat_shipped": 1,
+      "beat_naive": 1
+    },
+    {
+      "feature": "atr_pct",
+      "side": "high",
+      "cuts": [
+        0.0141,
+        0.01785,
+        0.01115,
+        0.01115
+      ],
+      "pooled": {
+        "n": 230,
+        "net": 1806.0,
+        "win": 0.6782608695652174,
+        "pf": 1.2,
+        "exp": 7.85,
+        "R": 0.0097
+      },
+      "beat_shipped": 2,
+      "beat_naive": 0
+    },
+    {
+      "feature": "is_condor",
+      "side": "low",
+      "cuts": [
+        1.0,
+        1.0,
+        0.0,
+        1.0
+      ],
+      "pooled": {
+        "n": 265,
+        "net": 1258.0,
+        "win": 0.6792452830188679,
+        "pf": 1.13,
+        "exp": 4.75,
+        "R": 0.0022
+      },
+      "beat_shipped": 2,
+      "beat_naive": 0
+    }
+  ]
+}

@@ -458,3 +458,130 @@ Not more fitting on this data.
 
 **Do not present fitted parameters as an improvement.** The measured claim is the
 opposite, and `scripts/walk_forward.py` reproduces it.
+
+---
+
+# Part 5 — Training a market-structure model on history
+
+Run 31 Aug 2026 · `scripts/train_structure.py` · raw data
+[`structure_dataset.json`](structure_dataset.json) ·
+results [`structure_model.json`](structure_model.json)
+
+`agent/levels.py` computes real market structure — swing pivots, supply/demand
+zones, Fibonacci retracements. Part 4's Finding 1 killed one *hand-written* rule
+built from it. That is not the same as showing structure carries no information,
+so this asks history to choose the rule instead of us.
+
+## Method
+
+Every one of the 277 recorded trades is relabelled with the market context that
+existed at its entry, rebuilt from bars **up to and including that date** — 57
+(underlying, entry) contexts across 19 entry dates. Fourteen features:
+
+| Structure (`levels.py`) | Trend & volatility |
+|---|---|
+| swing structure up / down | z-score signed toward the short strike |
+| position in the 20-day range | realised vol, ADX, RSI, ATR % |
+| Fibonacci golden pocket | condor flag |
+| ATRs of room to the short strike | |
+| a supply/demand zone in the way, its distance, its touches | |
+
+A ridge regression predicts each trade's **return on risk** (`pnl / max_loss`),
+scored **leave-one-window-out**. The regularisation strength *and* the admission
+threshold are chosen by an inner leave-one-out on the three training windows, so
+nothing about the held-out window touches the fit.
+
+## Result — the model does not generalise
+
+| Window | naive | shipped | learned |
+|---|---:|---:|---:|
+| Calm / rising | −$240 | **+$293** | −$441 |
+| Vol spike 46% | −$695 | −$844 | **−$695** |
+| Selloff −7.7% | **+$3,479** | +$2,322 | +$152 |
+| Carry unwind | **+$157** | −$1,360 | −$346 |
+| **Total** | **+$2,701** | +$411 | **−$1,330** |
+
+Beat the shipped filter in **2 of 4** windows and lost to doing nothing entirely.
+Fourteen parameters on 277 trades from 19 entry dates is the same arithmetic
+Part 4 spelled out, and it fails the same way.
+
+**Five coefficients kept a consistent sign across all four folds** — and that is
+*not* evidence. With four windows, any two training sets share two thirds of
+their trades, so the folds are not independent and a stable sign is close to
+guaranteed. The fold P&L is the test; the coefficients are not.
+
+## One-feature rules — the smallest thing that still counts as learning
+
+Fit a single cut on three windows, measure on the fourth. Fifteen non-degenerate
+rules; one survives, beating naive **on return-on-risk in all four folds**:
+
+> **stand aside when `levels.market_structure()` reads "down"**
+> 165 trades · 72% win · **+$2,836** · PF 1.70 · R **+0.037** (naive: +0.019)
+
+Before believing it, look at what it excludes:
+
+| Window | excluded (structure = "down") | kept |
+|---|---:|---:|
+| Calm / rising | −$975 · PF 0.45 | +$735 · PF 1.79 |
+| Vol spike 46% | −$1,206 · PF 0.46 | +$511 · PF 1.42 |
+| **Selloff −7.7%** | 🔴 **+$1,956 · PF 5.55** | +$1,523 · PF 18.11 |
+| Carry unwind | +$90 · PF 1.07 | +$67 · PF 1.04 |
+
+The excluded bucket is badly negative in two windows, roughly flat in one, and
+**the single most profitable bucket in the fourth**. It clears the bar on
+return-on-risk while giving up $1,956 of real money in the selloff, and it is the
+best of fifteen rules searched — about what the luckiest of fifteen coin flips
+looks like. **A hypothesis worth carrying into live data. Not a filter to ship.**
+
+## 🔴 What training actually found — about a filter that already ships
+
+The useful output was not a new model. Splitting the recorded trades by the
+trend direction `regime.trend_score()` reports:
+
+| | admitted by the trend filter | refused by it |
+|---|---:|---:|
+| **Call credit spreads** | 87 · 60% · **−$1,197** | 24 · 79% · **+$954** |
+| **Put credit spreads** | 63 · 78% · +$899 | 48 · 75% · **+$1,067** |
+
+**The filter blocks the better bucket on both sides.** Per window, the put-side
+veto — *do not sell puts into a downtrend* — cost money in **3 of 4** windows
+(+$659, +$154, +$479 refused; −$225 correctly refused once). The call-side veto
+applied in only two windows and was right in one of them.
+
+There is a mechanism, not just a correlation. **A downtrend is precisely when put
+premium is richest** — spot falls, implied volatility spikes, and the variance
+risk premium the agent exists to harvest is at its widest. The trend filter
+refuses to sell exactly then. It is fighting the edge in the README.
+
+This is the same wound Part 4's Finding 2 found from the other side, now measured
+against the real `strategy.candidates()` rule rather than a QQQ stand-in: across
+all four windows the directional filters turn **+$2,701 into +$411**.
+
+**Caveat that keeps this from being an instruction to invert the filter:** 19 entry
+dates. Three of the four windows are selloff-adjacent, and a market that falls
+then stabilises rewards fading — which is what "sell puts into a downtrend" is.
+The measured claim is *the veto's premise is unsupported here*, not *the opposite
+veto works*.
+
+## What this changes
+
+Nothing, yet, and deliberately:
+
+- **The structure model is not wired into the admission path.** It lost to doing
+  nothing out-of-sample. `agent/levels.py` keeps its existing role — computed,
+  logged, and passed to the LLM as context.
+- **`regime.trend_score()` still ignores structure**, as Part 4 left it. This adds
+  a second, independent reason.
+- **The put-side trend veto is now a live question**, with a mechanism and 3-of-4
+  windows behind it. Narrowing it is a strategy change worth making on more than
+  19 entry dates, and every trade on the competition account is one more.
+
+## Reproduce
+
+```bash
+python scripts/train_structure.py                    # model + rule search
+python scripts/train_structure.py --features structure   # structure alone
+python scripts/train_structure.py --mode rules --refresh # rebuild from the API
+```
+
+The per-trade feature dataset is committed, so re-runs need no API access.
