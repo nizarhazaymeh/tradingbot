@@ -1,0 +1,340 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Options Alpha Agent — Slides</title>
+<style>
+  @page{size:13.333in 7.5in;margin:0}
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body{background:#0d1117;color:#e6edf3;
+       font:400 15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+  .s{width:13.333in;height:7.5in;padding:0.62in 0.78in;position:relative;
+     display:flex;flex-direction:column;overflow:hidden;
+     page-break-after:always;break-after:page;background:#0d1117}
+  .s:last-child{page-break-after:auto;break-after:auto}
+  .grid{position:absolute;inset:0;
+        background-image:linear-gradient(rgba(76,142,255,.05) 1px,transparent 1px),
+                         linear-gradient(90deg,rgba(76,142,255,.05) 1px,transparent 1px);
+        background-size:52px 52px}
+  .in{position:relative;display:flex;flex-direction:column;height:100%}
+
+  .n{position:absolute;right:0.78in;bottom:0.42in;
+     font:600 12px/1 ui-monospace,Menlo,monospace;color:#3d444d;letter-spacing:.1em}
+  .eyebrow{font:600 12.5px/1 ui-monospace,Menlo,monospace;letter-spacing:.2em;
+           text-transform:uppercase;color:#6e7681;margin-bottom:16px}
+  h2{font-size:41px;line-height:1.1;font-weight:700;letter-spacing:-.028em;margin-bottom:8px}
+  h2 em{font-style:normal;color:#00C805}
+  .lede{font-size:19px;line-height:1.5;color:#a9b4c0;max-width:74ch;font-weight:300}
+  .body{margin-top:26px;flex:1;min-height:0}
+
+  .g{color:#00C805}.b{color:#4c8eff}.r{color:#FF3B30}.d{color:#8b949e}.f{color:#6e7681}
+  .mono{font-family:ui-monospace,Menlo,monospace}
+
+  table{width:100%;border-collapse:collapse;font-size:15.5px}
+  th{text-align:left;font:600 11.5px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;
+     text-transform:uppercase;color:#6e7681;padding:0 14px 9px 0;border-bottom:1px solid #262d36}
+  td{padding:10px 14px 10px 0;border-bottom:1px solid #1b2128;vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  td.num,th.num{text-align:right;font-family:ui-monospace,Menlo,monospace;white-space:nowrap}
+
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:36px;height:100%}
+  .card{background:#141a21;border:1px solid #232a33;border-radius:10px;padding:20px}
+  .card h3{font:600 13px/1 ui-monospace,Menlo,monospace;letter-spacing:.12em;
+           text-transform:uppercase;color:#8b949e;margin-bottom:14px}
+  .card p{font-size:15.5px;line-height:1.55;color:#a9b4c0}
+
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+  .kpi{background:#141a21;border:1px solid #232a33;border-radius:10px;padding:18px}
+  .kpi .v{font:700 38px/1 ui-monospace,Menlo,monospace;letter-spacing:-.03em}
+  .kpi .k{margin-top:9px;font-size:13.5px;line-height:1.35;color:#8b949e}
+
+  ol.flow{list-style:none;counter-reset:f}
+  ol.flow li{counter-increment:f;display:grid;grid-template-columns:34px 1fr 88px;
+             gap:16px;align-items:baseline;padding:9px 0;border-bottom:1px solid #1b2128;
+             font-size:16px}
+  ol.flow li:last-child{border-bottom:none}
+  ol.flow li::before{content:counter(f);font:600 13px/1.6 ui-monospace,Menlo,monospace;
+                     color:#6e7681;border:1px solid #2b323b;border-radius:6px;
+                     text-align:center;padding:3px 0}
+  .tag{font:600 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.08em;
+       padding:4px 8px;border-radius:5px;text-align:center;white-space:nowrap}
+  .code{background:rgba(0,200,5,.12);color:#00C805;border:1px solid rgba(0,200,5,.28)}
+  .llm{background:rgba(76,142,255,.14);color:#4c8eff;border:1px solid rgba(76,142,255,.3)}
+
+  .bars{display:grid;grid-template-columns:180px 1fr 82px;gap:11px 16px;align-items:center}
+  .bl{font-size:15px;color:#8b949e;text-align:right}
+  .tr{height:22px;background:#111820;border-radius:11px;overflow:hidden}
+  .fl{height:100%;border-radius:11px}
+  .bv{font:600 17px/1 ui-monospace,Menlo,monospace}
+
+  .quote{margin-top:auto;padding:16px 20px;border-left:3px solid #00C805;
+         background:rgba(0,200,5,.05);font-size:16.5px;line-height:1.55;color:#c9d4e0}
+  .foot{margin-top:auto;font-size:13px;color:#4d555f;line-height:1.5}
+
+  /* title slide */
+  .title{justify-content:center}
+  .title h1{font-size:88px;line-height:.96;font-weight:700;letter-spacing:-.04em}
+  .title h1 em{font-style:normal;color:#00C805}
+  .title .t2{margin-top:26px;font-size:26px;line-height:1.45;color:#c9d4e0;
+             font-weight:300;max-width:60ch}
+  .title .meta{margin-top:40px;display:flex;gap:34px;flex-wrap:wrap;
+               font:13.5px/1.6 ui-monospace,Menlo,monospace;color:#6e7681}
+  .title .meta b{color:#e6edf3;font-weight:600}
+</style></head><body>
+
+<!-- 1 -->
+<section class="s"><div class="grid"></div><div class="in title">
+  <div class="eyebrow">Alpaca AI Trading Agents Hackathon · 2026</div>
+  <h1>Options<br>Alpha <em>Agent</em></h1>
+  <p class="t2">An autonomous options agent that asks whether the market is
+     paying enough for risk — and refuses to trade when it isn't.</p>
+  <div class="meta">
+    <span>Paper account <b>PA3BAT1OOEFE</b></span>
+    <span>Repo <b>github.com/nizarhazaymeh/tradingbot</b></span>
+    <span>Team <b>Mahdi Anagreh · Nizar Hazaymeh · Ali</b></span>
+  </div>
+</div><div class="n">01</div></section>
+
+<!-- 2 -->
+<section class="s"><div class="grid"></div><div class="in">
+  <div class="eyebrow">The problem</div>
+  <h2>Predicting direction is the wrong question</h2>
+  <p class="lede">Most trading agents ask which way the market will move. Nobody
+    answers that reliably, and an LLM given a broad prompt cannot be audited when
+    it is wrong.</p>
+  <div class="body two">
+    <div class="card"><h3>What generic agents do</h3>
+      <p>Hand the model a prompt and a broker key, let it choose instruments,
+      strikes and sizes. When it loses you cannot tell whether the thesis or the
+      execution failed.</p></div>
+    <div class="card"><h3>What options add</h3>
+      <p>Structural constraints a generic agent gets wrong: four-leg order caps,
+      coverage rules, sign conventions on credit versus debit, and missing Greeks
+      near expiry.</p></div>
+  </div>
+  <div class="quote">So we changed the question to one with a measurable answer:
+    <strong>is this specific structure priced better than the risk it carries?</strong></div>
+</div><div class="n">02</div></section>
+
+<!-- 3 -->
+<section class="s"><div class="grid"></div><div class="in">
+  <div class="eyebrow">What we measured first</div>
+  <h2>Zero of 60 spreads were <em>positive-EV</em></h2>
+  <p class="lede">We enumerated 60 real SPY/QQQ/IWM spreads and scored expected
+    value using the market's own implied volatility. Not one was positive. That is
+    not a bug — it is what an efficient market looks like.</p>
+  <div class="body">
+    <div class="kpis">
+      <div class="kpi"><div class="v r">0/60</div><div class="k">positive-EV when priced
+        with the market's own implied vol</div></div>
+      <div class="kpi"><div class="v g">5/12</div><div class="k">clear a 2%-of-risk
+        threshold when probability uses realised vol</div></div>
+      <div class="kpi"><div class="v b">VRP</div><div class="k">the variance risk premium
+        is the only honest source of edge</div></div>
+      <div class="kpi"><div class="v">0</div><div class="k">QQQ structures traded — its
+        implied vol sat below realised</div></div>
+    </div>
+    <div class="quote" style="margin-top:30px">Under its own implied vol every vanilla
+      spread prices at fair value minus the spread you cross. If the edge is real it has
+      to come from somewhere the market is structurally mispricing.</div>
+  </div>
+</div><div class="n">03</div></section>
+
+<!-- 4 -->
+<section class="s"><div class="grid"></div><div class="in">
+  <div class="eyebrow">The insight</div>
+  <h2>Price with implied vol.<br>Score probability with <em>realised</em> vol.</h2>
+  <p class="lede">Implied volatility persistently exceeds subsequently realised
+    volatility, because option sellers are paid to bear variance risk. The gap is
+    the edge, and it appears honestly in the expected value.</p>
+  <div class="body">
+    <div class="bars">
+      <span class="bl">market charges (implied)</span>
+      <div class="tr"><div class="fl" style="width:78%;background:#4c8eff"></div></div>
+      <span class="bv b">17.2%</span>
+      <span class="bl">real risk (realised)</span>
+      <div class="tr"><div class="fl" style="width:64%;background:#5a6470"></div></div>
+      <span class="bv d">14.2%</span>
+    </div>
+    <p class="lede" style="margin-top:24px"><span class="mono g" style="font-size:22px">+3.0%</span>
+      &nbsp;variance risk premium — the agent sells it. When the gap inverts, it trades nothing.</p>
+    <div class="quote">Selling options is like selling insurance. It only makes money when
+      the premium charged is bigger than the real risk. The agent measures both, every cycle,
+      per underlying.</div>
+  </div>
+</div><div class="n">04</div></section>
+
+<!-- 5 -->
+<section class="s"><div class="grid"></div><div class="in">
+  <div class="eyebrow">Architecture</div>
+  <h2>The model opines. <em>Code decides.</em></h2>
+  <p class="lede">Seven stages per underlying per cycle. Two use the LLM; five are
+    deterministic. Everything that touches money is code.</p>
+  <div class="body">
+    <ol class="flow">
+      <li><span>Regime classification — implied vs realised vol, trend z-score, expected move</span><span class="tag code">CODE</span></li>
+      <li><span>Directional view — direction, magnitude, horizon, confidence, thesis</span><span class="tag llm">LLM</span></li>
+      <li><span>Candidate enumeration — ~37 structures across deltas, widths, sides</span><span class="tag code">CODE</span></li>
+      <li><span>Expected-value scoring — N(d₂) under realised vol, tilted by the view</span><span class="tag code">CODE</span></li>
+      <li><span>Critic — structural coherence check</span><span class="tag llm">LLM</span></li>
+      <li><span>Risk gates — 22 deterministic checks</span><span class="tag code">CODE</span></li>
+      <li><span>Execution — four-leg <span class="mono">mleg</span> order via the Alpaca CLI</span><span class="tag code">CODE</span></li>
+    </ol>
+    <div class="quote">This split is also the prompt-injection defence. The agent reads
+      news, which is attacker-influenceable. Because model output is schema-constrained and
+      consumed only as a probability tilt, a fully compromised response can only produce a
+      wrong opinion the EV test must still accept on its merits.</div>
+  </div>
+</div><div class="n">05</div></section>
+
+<!-- 6 -->
+<section class="s"><div class="grid"></div><div class="in">
+  <div class="eyebrow">Risk</div>
+  <h2>22 gates, and a breaker that really fires</h2>
+  <p class="lede">Sizing uses theoretical max loss, never the observed average — an
+    overnight gap can realise the full amount. The halt path was tested against the
+    live broker, not mocked.</p>
+  <div class="body">
+    <table><thead><tr><th>Layer</th><th>What it enforces</th><th class="num">Verified</th></tr></thead>
+    <tbody>
+      <tr><td>Structure gates</td><td>Short strike ≥ 0.9σ from spot · credit ≥ 4% of width · positive theta · net delta ≤ 0.35/unit</td><td class="num g">92 tests</td></tr>
+      <tr><td>Sizing</td><td>0.40% of equity per trade · 4% portfolio heat · caps per underlying and per expiry</td><td class="num g">92 tests</td></tr>
+      <tr><td>Expectancy</td><td>Expected value ≥ 2% of capital at risk, or no trade</td><td class="num g">92 tests</td></tr>
+      <tr><td>Circuit breakers</td><td>Daily 2% / total 6% drawdown · order-rate cap · kill-switch file</td><td class="num g">21/21</td></tr>
+      <tr><td>Broker-side halt</td><td>Cancel, flatten, then set <span class="mono">suspend_trade</span> on the account itself</td><td class="num g">real 403</td></tr>
+      <tr><td>Crash recovery</td><td>Exit plan survives an unclean restart; reconciliation finds ghosts and orphans</td><td class="num g">21/21</td></tr>
+    </tbody></table>
+    <div class="quote">A live halt against the broker cancelled orders, flattened the book,
+      set <span class="mono">suspend_trade</span>, and Alpaca then <strong>rejected a real
+      order</strong> with <span class="mono">403 "new orders are rejected by user
+      request"</span>.</div>
+  </div>
+</div><div class="n">06</div></section>
+
+<!-- 7 -->
+<section class="s"><div class="grid"></div><div class="in">
+  <div class="eyebrow">Alpaca infrastructure</div>
+  <h2>Both surfaces, each for what it is good at</h2>
+  <p class="lede">The hackathon requires the MCP server or the CLI. We use both, for
+    different jobs, and options are the only instrument the agent can trade.</p>
+  <div class="body two">
+    <div class="card"><h3>CLI — the unattended loop</h3>
+      <p>Drives a five-minute cycle: clock check, batched snapshots, option chain with
+      Greeks and IV, then a four-leg <span class="mono">mleg</span> submission. Measured at
+      <strong class="g">23 requests per cycle</strong> — 2% of the 200/min budget.</p></div>
+    <div class="card"><h3>MCP — research and oversight</h3>
+      <p><strong class="b">54 tools</strong> discovered over stdio JSON-RPC, 12 of them
+      options-specific. Used to inspect the account in natural language and to let the agent
+      look up its own API docs. Session recorded and reproducible.</p></div>
+  </div>
+  <div class="quote">Alpaca's MCP server wraps every response in a security envelope
+    marking tool output as untrusted, and classifies news and docs as
+    <span class="mono">external_text</span>. Our architecture already assumed that.</div>
+</div><div class="n">07</div></section>
+
+<!-- 8 -->
+<section class="s"><div class="grid"></div><div class="in">
+  <div class="eyebrow">Evidence</div>
+  <h2>Each filter earns its place</h2>
+  <p class="lede">We replayed real historical option prices through the live exit logic,
+    then added the agent's filters one at a time. The naive version loses money despite a
+    69% win rate — the losses are simply bigger than the wins.</p>
+  <div class="body">
+    <table><thead><tr><th>Configuration</th><th class="num">Trades</th><th class="num">Win%</th>
+      <th class="num">Net</th><th class="num">Profit factor</th><th class="num">Per trade</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Naive</strong> — sell both sides, every underlying</td>
+          <td class="num">85</td><td class="num">69%</td>
+          <td class="num r">−$240</td><td class="num r">0.91</td><td class="num r">−$2.82</td></tr>
+      <tr><td><strong>+ VRP filter</strong> — only where implied &gt; realised <span class="f">(drops QQQ)</span></td>
+          <td class="num">57</td><td class="num">74%</td>
+          <td class="num g">+$290</td><td class="num">1.26</td><td class="num g">+$5.09</td></tr>
+      <tr style="background:rgba(0,200,5,.06)"><td><strong>+ trend filter</strong> — never sell calls into an uptrend
+          <span class="f">(as shipped)</span></td>
+          <td class="num">36</td><td class="num g">81%</td>
+          <td class="num g">+$657</td><td class="num g">2.52</td><td class="num g">+$18.25</td></tr>
+    </tbody></table>
+    <p class="lede" style="margin-top:22px;font-size:17px">The filters do not merely raise the
+      win rate — they remove the specific trades that were losing. Expectancy per trade moves
+      from <span class="mono r">−$2.82</span> to <span class="mono g">+$18.25</span> while the
+      trade count falls from 85 to 36.</p>
+    <div class="quote" style="border-left-color:#8b949e;background:rgba(139,148,158,.05)">
+      <strong>Stated honestly.</strong> Daily bars only, so exits trigger on closes and
+      intraday paths are invisible; strikes chosen by percentage distance because historical
+      Greeks are unavailable from the bars endpoint; no commissions. The trend and EV filters
+      were tuned with some awareness of this data — the VRP filter was not, it predates the
+      backtest. This tests the <strong>logic</strong>; it is not a performance claim.</div>
+    <p class="foot" style="margin-top:14px">Corroborating: 85 replayed trades across 6 expiry
+      cycles · 21/21 safety tests against the live broker · 92 unit tests · 23 API requests
+      per cycle, 2% of the rate budget.</p>
+  </div>
+</div><div class="n">08</div></section>
+
+<!-- 9 -->
+<section class="s"><div class="grid"></div><div class="in">
+  <div class="eyebrow">Competitive analysis</div>
+  <h2>Where this sits</h2>
+  <p class="lede">Two camps exist today. Rules-only bots cannot reason about context;
+    LLM-first agents cannot be trusted with the order ticket.</p>
+  <div class="body">
+    <table><thead><tr><th>Approach</th><th>Strength</th><th>Weakness</th><th class="num">Options-native</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Rules-only retail bots</strong><br><span class="f">preset condor/wheel screeners</span></td>
+        <td>Deterministic, auditable, cheap</td>
+        <td>Blind to regime and context; the same rule fires in a selloff as in a calm week</td>
+        <td class="num g">yes</td></tr>
+      <tr><td><strong>LLM-first agents</strong><br><span class="f">prompt + broker key</span></td>
+        <td>Reads news and context, adapts quickly</td>
+        <td>Model picks strikes and sizes, so a bad or injected response reaches the market</td>
+        <td class="num r">rarely</td></tr>
+      <tr><td><strong>Managed options services</strong><br><span class="f">subscription signal providers</span></td>
+        <td>Human oversight, track record</td>
+        <td>Not autonomous, not inspectable, slow to act</td>
+        <td class="num g">yes</td></tr>
+      <tr style="background:rgba(0,200,5,.06)"><td><strong class="g">Options Alpha Agent</strong><br>
+        <span class="f">LLM view, deterministic execution</span></td>
+        <td>Context-aware <em>and</em> auditable; every rejection is logged with its reason</td>
+        <td>Narrow by design — it only sells premium when it is being overpaid for it</td>
+        <td class="num g">only</td></tr>
+    </tbody></table>
+    <div class="quote">The differentiator is not the model. It is the boundary: the LLM
+      returns one schema-constrained view, and 22 deterministic gates decide whether anything
+      is sent.</div>
+  </div>
+</div><div class="n">09</div></section>
+
+<!-- 10 -->
+<section class="s"><div class="grid"></div><div class="in">
+  <div class="eyebrow">Market and revenue model</div>
+  <h2>Sizing, with the arithmetic shown</h2>
+  <p class="lede">Figures below are an assumption-driven sizing framework, not cited
+    research. The assumptions are stated so a reader can disagree with them precisely.</p>
+  <div class="body">
+    <div class="two" style="height:auto">
+      <div>
+        <table><thead><tr><th>Layer</th><th>Basis</th><th class="num">Estimate</th></tr></thead>
+        <tbody>
+          <tr><td><strong>TAM</strong></td><td>Retail options traders on US brokers with an options-approved account</td><td class="num b">~10M accounts</td></tr>
+          <tr><td><strong>SAM</strong></td><td>Those approved at level 3+ (spreads) <em>and</em> willing to automate via API</td><td class="num b">~500k</td></tr>
+          <tr><td style="white-space:nowrap"><strong>SOM</strong> <span class="f">· 3-yr</span></td><td>1% of SAM at a $25/mo subscription</td><td class="num g">~$1.5M ARR</td></tr>
+        </tbody></table>
+        <p class="foot" style="margin-top:14px">Each number is a ratio applied to the one
+          above it. Replace any ratio and the model updates; nothing here depends on a
+          figure we cannot defend.</p>
+      </div>
+      <div>
+        <div class="card"><h3>Revenue model</h3>
+          <p><strong>Subscription</strong> — tiered by underlyings tracked and capital
+          managed. The agent is broker-agnostic in principle; Alpaca's API is the first
+          integration.</p>
+          <p style="margin-top:12px"><strong>Not</strong> performance fees, which require
+          regulatory standing we do not have, and not order-flow monetisation, which would
+          conflict with the risk gates.</p></div>
+        <div class="card" style="margin-top:18px"><h3>Why it could sustain</h3>
+          <p>The rejection log is the product. A trader pays to know <em>why</em> the agent
+          stood aside, which is the part no signal service provides.</p></div>
+      </div>
+    </div>
+    <p class="foot" style="margin-top:auto">Alpaca paper trading simulation · not investment
+      advice · no live-money path exists in this codebase by design</p>
+  </div>
+</div><div class="n">10</div></section>
+
+</body></html>
