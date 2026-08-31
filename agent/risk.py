@@ -108,13 +108,21 @@ def circuit_breakers(book: Book, *, halted_flag: bool = False) -> GateResult:
 
 # ------------------------------------------------------------- market timing
 def market_gates(clock: dict, *, allow_new: bool = True) -> GateResult:
+    """Whether this cycle may OPEN anything. Exits are managed regardless.
+
+    allow_new=False previously fell through to PASS, so `run.py --no-new` did the
+    opposite of its name: it permitted new positions AND skipped the near-close
+    cutoff, because the cutoff was nested inside `if allow_new`. Observed live on
+    31 Aug 2026 — a --no-new cycle opened a second SPY condor.
+    """
     if not clock.get("is_open"):
         return _fail("g_market_open", f"market closed; next open {clock.get('next_open')}")
-    if allow_new:
-        cutoff = _hhmm(config.NO_NEW_AFTER_ET)
-        if now_et().time() >= cutoff:
-            return _fail("g_not_near_close",
-                         f"past {config.NO_NEW_AFTER_ET} ET — no new positions")
+    if not allow_new:
+        return _fail("g_no_new_requested", "new positions disabled for this cycle")
+    cutoff = _hhmm(config.NO_NEW_AFTER_ET)
+    if now_et().time() >= cutoff:
+        return _fail("g_not_near_close",
+                     f"past {config.NO_NEW_AFTER_ET} ET — no new positions")
     return PASS
 
 
