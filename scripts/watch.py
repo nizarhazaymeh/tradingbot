@@ -51,11 +51,23 @@ def snapshot(c):
     return pos, orders, acct
 
 
+def market_is_open(c) -> bool:
+    """Best-effort: an unreachable clock counts as open, so a network blip
+    cannot silently drop the watcher into its slow overnight cadence during a
+    session."""
+    try:
+        return bool(c.clock().get("is_open"))
+    except Exception:
+        return True
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--interval", type=int, default=30)
     ap.add_argument("--heartbeat", type=int, default=20,
                     help="emit a heartbeat every N polls (0 to disable)")
+    ap.add_argument("--closed-interval", type=int, default=600,
+                    help="poll interval while the market is closed (default 600)")
     ap.add_argument("--equity-threshold", type=float, default=25.0,
                     help="minimum equity move worth reporting (default 25)")
     a = ap.parse_args()
@@ -80,8 +92,23 @@ def main():
         say("HALT FILE PRESENT —", HALT_FILE.read_text().strip()[:120])
 
     n = 0
+    closed_streak = 0
     while True:
-        time.sleep(a.interval)
+        # Nothing can fill outside the session, so polling every 30s overnight
+        # burns API calls and emits heartbeats with no information in them.
+        # Positions are still checked, just far less often — an assignment or an
+        # external action would still be caught, one interval later.
+        if market_is_open(c):
+            if closed_streak:
+                say("MARKET OPEN — resuming normal cadence")
+                closed_streak = 0
+            time.sleep(a.interval)
+        else:
+            if not closed_streak:
+                say(f"MARKET CLOSED — slowing to {a.closed_interval}s, "
+                    f"heartbeats suppressed")
+            closed_streak += 1
+            time.sleep(a.closed_interval)
         n += 1
         try:
             npos, norders, nacct = snapshot(c)
@@ -144,7 +171,7 @@ def main():
 
         pos, orders, acct = npos, norders, nacct
 
-        if a.heartbeat and n % a.heartbeat == 0:
+        if a.heartbeat and not closed_streak and n % a.heartbeat == 0:
             say(f"heartbeat: {len(pos)} leg(s), equity ${ne:,.2f}, poll #{n}")
 
 
