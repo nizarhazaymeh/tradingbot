@@ -38,35 +38,126 @@ def client():
     return _client
 
 
-def _extract_json(text: str) -> Optional[dict]:
-    """Reasoning models wrap JSON in prose or fences. Pull out the first object."""
-    if not text:
+def _scan(frag: str):
+    """Walk the fragment tracking string state and the bracket stack.
+
+    Returns (stack, in_string). Brackets inside string literals must not count,
+    or a thesis containing "{" corrupts the repair.
+    """
+    stack, in_str, esc = [], False, False
+    for ch in frag:
+        if in_str:
+            if esc:
+                esc = False
+            elif ch == "\\":
+                esc = True
+            elif ch == '"':
+                in_str = False
+            continue
+        if ch == '"':
+            in_str = True
+        elif ch in "{[":
+            stack.append(ch)
+        elif ch in "}]":
+            if stack and stack[-1] == ("{" if ch == "}" else "["):
+                stack.pop()
+    return stack, in_str
+
+
+def _repair_truncated(frag: str) -> Optional[dict]:
+    """Close an object the model ran out of tokens mid-way through.
+
+    This is T6's actual failure mode: GLM-5.2 is a reasoning model, it spends
+    output tokens thinking, and the JSON is cut off by max_tokens. The fragment
+    is usually valid right up to the cut, so closing the open string, arrays and
+    objects recovers the fields it did manage to emit. Fields never reached are
+    absent, and both callers already treat absent keys as defaults.
+
+    Closing arrays matters as much as objects: a critic cut off inside
+    "concerns":[...] used to yield nothing, and critic() then falls back to
+    approve — silently discarding a rejection.
+    """
+    frag = frag.rstrip()
+    if not frag.startswith("{"):
         return None
-    text = re.sub(r"<think>.*?</think>", "", text, flags=re.S | re.I)
-    fence = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.S)
-    if fence:
-        try:
-            return json.loads(fence.group(1))
-        except json.JSONDecodeError:
-            pass
-    depth, start = 0, None
+
+    stack, in_str = _scan(frag)
+    if in_str:
+        frag += '"'
+        stack, _ = _scan(frag)
+    if not stack:
+        return None
+
+    # drop a dangling key with no value, then any trailing comma or colon
+    frag = re.sub(r',\s*"[^"]*"\s*:?\s*$', "", frag)
+    frag = frag.rstrip().rstrip(",:")
+    stack, in_str = _scan(frag)
+    if in_str:
+        frag += '"'
+        stack, _ = _scan(frag)
+
+    closing = "".join("}" if ch == "{" else "]" for ch in reversed(stack))
+    try:
+        return json.loads(frag + closing)
+    except json.JSONDecodeError:
+        return None
+
+
+def _objects(text: str) -> list:
+    """Every balanced top-level {...} in order, plus a repaired trailing fragment."""
+    found, depth, start = [], 0, None
     for i, ch in enumerate(text):
         if ch == "{":
             if depth == 0:
                 start = i
             depth += 1
         elif ch == "}":
+            if depth == 0:
+                continue
             depth -= 1
             if depth == 0 and start is not None:
                 try:
-                    return json.loads(text[start:i + 1])
+                    found.append(json.loads(text[start:i + 1]))
                 except json.JSONDecodeError:
-                    start = None
-    return None
+                    pass
+                start = None
+    # unbalanced tail: the model was cut off mid-object
+    if depth > 0 and start is not None:
+        repaired = _repair_truncated(text[start:])
+        if repaired is not None:
+            found.append(repaired)
+    return found
+
+
+def _extract_json(text: str, require_keys=None) -> Optional[dict]:
+    """Pull the model's answer out of prose, fences and thinking blocks.
+
+    Prefers the LAST object carrying any of require_keys. Reasoning models emit
+    scratch work first and the answer last, so taking the first object returned
+    the scratch pad — for critic() that meant a garbage verdict silently becoming
+    "approve".
+    """
+    if not text:
+        return None
+    text = re.sub(r"<think>.*?</think>", "", text, flags=re.S | re.I)
+
+    candidates = []
+    # a fenced block is the strongest signal, so try it first
+    for m in re.finditer(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.S):
+        candidates.extend(_objects(m.group(1)))
+    candidates.extend(_objects(text))
+    if not candidates:
+        return None
+
+    if require_keys:
+        keyed = [c for c in candidates if any(k in c for k in require_keys)]
+        if keyed:
+            return keyed[-1]
+    return candidates[-1]
 
 
 def _ask(system: str, user: str, *, max_tokens: int = None,
-         temperature: float = 0.2) -> Optional[dict]:
+         temperature: float = 0.2, require_keys=None) -> Optional[dict]:
     if not config.FEATHERLESS_API_KEY:
         log.warning("no FEATHERLESS_API_KEY — skipping LLM")
         return None
@@ -78,7 +169,8 @@ def _ask(system: str, user: str, *, max_tokens: int = None,
             max_tokens=max_tokens or config.LLM_MAX_TOKENS,
             temperature=temperature,
         )
-        out = _extract_json(r.choices[0].message.content or "")
+        out = _extract_json(r.choices[0].message.content or "",
+                            require_keys=require_keys)
         if out is None:
             log.warning("LLM returned no parsable JSON")
         return out
@@ -125,7 +217,8 @@ def view(reg: Regime, *, news: List[dict] = None, extra: Dict[str, Any] = None) 
     if extra:
         ctx.update(extra)
 
-    data = _ask(VIEW_SYSTEM, json.dumps(ctx, separators=(",", ":")))
+    data = _ask(VIEW_SYSTEM, json.dumps(ctx, separators=(",", ":")),
+                require_keys=("direction", "confidence", "magnitude"))
     if not data:
         return View(source="fallback-neutral", thesis="LLM unavailable; defaulting to neutral")
 
@@ -179,7 +272,8 @@ def critic(spread_summary: dict, reg: Regime, v: View) -> Dict[str, Any]:
         "view": {"direction": v.direction, "confidence": v.confidence, "thesis": v.thesis},
     }
     data = _ask(CRITIC_SYSTEM, json.dumps(payload, separators=(",", ":")),
-                max_tokens=config.LLM_MAX_TOKENS)
+                max_tokens=config.LLM_MAX_TOKENS,
+                require_keys=("approve", "concerns"))
     if not data:
         # LLM unavailable -> do not block. Deterministic gates are the real guard.
         return {"approve": True, "concerns": [], "note": "critic unavailable — gates still applied",

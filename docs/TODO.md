@@ -125,11 +125,29 @@ envelope marking tool output as untrusted, and classifies news/docs output as
 this — the LLM's output is schema-constrained and consumed only as a probability
 tilt, so it cannot pick strikes or place orders.
 
-### T6 — Critic sometimes returns unparsable output
-`brain.critic()` occasionally fails to return JSON (GLM-5.2 is a reasoning model
-and spends tokens thinking). It falls back to "approve", which is safe because
-the deterministic gates still run — but it means the critic is not always doing
-its job.
+### ✅ T6 — FIXED: critic output now parses
+`brain._extract_json()` had two confirmed failure modes, found by probing it with
+the shapes reasoning models actually emit:
+
+1. **Output cut off by `max_tokens` mid-object returned `None`.** GLM-5.2 spends
+   output tokens thinking, so the JSON is often truncated. The fragment is valid
+   up to the cut, so open strings, arrays and objects are now closed and the
+   fields that did arrive are kept. Absent keys already fall back to defaults in
+   both callers.
+2. **It returned the FIRST top-level object.** Reasoning models emit scratch work
+   first and the answer last, so the scratch pad was being read as the answer.
+   `_extract_json` now takes `require_keys` and prefers the last object carrying
+   them — `view()` passes `direction/confidence/magnitude`, `critic()` passes
+   `approve/concerns`.
+
+The second was the dangerous one. A critic replying `{"approve": false, ...}`
+that failed to parse became `approve: True` in the fallback, so a **rejection was
+silently discarded**. Truncation inside `"concerns":[...]` hit exactly that path,
+because the old repair closed braces but not arrays.
+
+`tests/test_brain_json.py` — 21 tests covering truncation (mid-object, mid-string,
+dangling key, inside an array, nested), string escaping (braces inside strings,
+escaped quotes, trailing backslash) and the non-repairs that must stay `None`.
 
 ### ✅ SAFETY — DONE: circuit breaker and crash recovery verified
 `scripts/test_safety.py` — 21/21 passed. A real halt against the DEV account
@@ -176,7 +194,7 @@ the provenance is unambiguous.
 
 | Day | Focus |
 |---|---|
-| **Mon 31 Aug** | 16:30 local — `t1_fill_test.py --live` on DEV, watch the fill. Switch to COMP if clean. ✅ T8, T9 done pre-market. |
+| **Mon 31 Aug** | 16:30 local — `t1_fill_test.py --live` on DEV, watch the fill. Switch to COMP if clean. ✅ T6, T8, T9 done pre-market. |
 | **Tue 1 Sep** | Demo website (Ali). Fix whatever Monday exposed. MCP transcript (T5). |
 | **Wed 2 Sep** | 🔴 Record video + slides. Do NOT leave this to Friday. |
 | **Thu 3 Sep** | 15:00 ET stop opening new positions. Write-up, cover image, final checks. |
