@@ -67,7 +67,7 @@ def main():
         out = ag.run_once(allow_new=not a.no_new)
         print("\n" + json.dumps(out, indent=2, default=str))
     else:
-        ag.run_forever(interval=a.interval)
+        ag.run_forever(interval=a.interval, allow_new=not a.no_new)
 
 
 if __name__ == "__main__":

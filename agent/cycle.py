@@ -662,12 +662,20 @@ class Agent:
                  sum(1 for r in results if r.get("decision") == "submit"))
         return summary
 
-    def run_forever(self, interval: int = None) -> None:
+    def run_forever(self, interval: int = None, *, allow_new: bool = True) -> None:
+        """Cycle until stopped. `allow_new=False` manages exits only.
+
+        run_once() was called with no arguments here, so allow_new defaulted to
+        True on every cycle and `run.py loop --no-new` silently ignored the flag.
+        market_gates() was fixed to honour it this morning; the loop never
+        reached the gate with the right value. That is the exact path Friday
+        needs — stop opening at 15:00 ET, keep managing exits.
+        """
         interval = interval or config.POLL_SECONDS
-        log.info("starting loop, interval %ss", interval)
+        log.info("starting loop, interval %ss, allow_new=%s", interval, allow_new)
         while True:
             try:
-                self.run_once()
+                self.run_once(allow_new=allow_new)
             except KeyboardInterrupt:
                 log.info("stopped by user")
                 return

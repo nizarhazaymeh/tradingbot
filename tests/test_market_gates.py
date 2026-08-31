@@ -64,3 +64,37 @@ def test_before_the_cutoff_allow_new_passes():
         hh, mm = (int(x) for x in cutoff.split(":"))
         n.return_value.time.return_value = dtime(hh, max(0, mm - 5))
         assert RK.market_gates(OPEN, allow_new=True)
+
+
+# --------------------------------------------------- the loop path, not just the gate
+def test_run_forever_passes_allow_new_through():
+    """market_gates() honouring allow_new is useless if the loop never sends it.
+
+    run_forever() called self.run_once() with no arguments, so allow_new
+    defaulted to True on every cycle and `run.py loop --no-new` silently ignored
+    the flag. The gate was fixed this morning; the loop never reached it with the
+    right value. Friday's plan depends on exactly this path — stop opening at
+    15:00 ET while still managing exits.
+
+    Asserted on the signature and the call site rather than by running a cycle,
+    which would need live credentials.
+    """
+    import inspect
+    from agent.cycle import Agent
+
+    sig = inspect.signature(Agent.run_forever)
+    assert "allow_new" in sig.parameters, "run_forever lost its allow_new parameter"
+
+    src = inspect.getsource(Agent.run_forever)
+    assert "run_once(allow_new=allow_new)" in src, (
+        "run_forever calls run_once without forwarding allow_new, so --no-new "
+        "is silently ignored in loop mode")
+
+
+def test_run_py_forwards_no_new_to_the_loop():
+    """The CLI half of the same bug."""
+    from pathlib import Path
+    src = Path(__file__).resolve().parent.parent / "run.py"
+    text = src.read_text()
+    assert "run_forever(interval=a.interval, allow_new=not a.no_new)" in text, (
+        "run.py does not forward --no-new to run_forever")
