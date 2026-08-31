@@ -211,8 +211,17 @@ class Store:
                        (order or {}).get("status"), json.dumps(body)))
 
     def orders_since(self, iso_ts: str) -> int:
+        """Real orders sent to the broker since iso_ts.
+
+        Dry runs are excluded. Executor.open_spread() logs them here too, with
+        status 'dry_run', so counting every row let a rehearsal consume the live
+        MAX_ORDERS_PER_HOUR budget and trip the g_order_rate circuit breaker.
+        Since `run.py once` is dry by default, rehearsing before a live session
+        could halt the agent before it placed a single order.
+        """
         with self._conn() as c:
-            r = c.execute("SELECT COUNT(*) n FROM orders_log WHERE ts >= ?",
+            r = c.execute("""SELECT COUNT(*) n FROM orders_log
+                             WHERE ts >= ? AND COALESCE(status,'') != 'dry_run'""",
                           (iso_ts,)).fetchone()
         return r["n"]
 

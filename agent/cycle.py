@@ -340,7 +340,15 @@ class Agent:
         if not cb:
             log.critical("CIRCUIT BREAKER [%s]: %s", cb.gate, cb.reason)
             res = self.ex.halt_everything(cb.reason)
-            HALT_FILE.write_text(f"{utcnow()} {cb.gate}: {cb.reason}\n")
+            # Only a real run may engage the persistent kill switch. halt_everything()
+            # already no-ops when dry, but this write was unguarded — so a rehearsal
+            # left a HALTED file behind and g_kill_switch then blocked every LIVE
+            # cycle until someone deleted it by hand.
+            if self.ex.dry_run:
+                log.warning("dry run — not writing %s; a live cycle would halt here",
+                            HALT_FILE.name)
+            else:
+                HALT_FILE.write_text(f"{utcnow()} {cb.gate}: {cb.reason}\n")
             self.store.log_decision(cycle=self.cycle_n, underlying="*", regime="-", view={},
                                     proposal="", decision="halt", gate=cb.gate,
                                     reason=cb.reason, payload=res)

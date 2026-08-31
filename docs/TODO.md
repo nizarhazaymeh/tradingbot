@@ -157,10 +157,42 @@ request"`. Crash recovery confirmed the exit plan survives an unclean restart,
 and reconciliation detects both ghosts and orphans. See
 [`SAFETY_TESTS.md`](SAFETY_TESTS.md).
 
-### T7 — Rate-limit headroom untested under load
-The governor reads `X-RateLimit-*` headers and throttles correctly in testing,
-but we have never run a full session with 3 underlyings on a 5-minute loop for
-6.5 hours. Budget is 200 requests/min; a cycle uses roughly 25–30.
+### ✅ T7 — MEASURED: 2% of the rate budget
+Instrumented `AlpacaClient._request` and ran three consecutive cycles.
+
+| | |
+|---|---|
+| Requests per cycle | **23** (estimate was 25–30), identical across 3 cycles |
+| Cycle wall time | 24–29s |
+| `POLL_SECONDS` | 300 → 0.2 cycles/min |
+| Sustained load | **5 of 200 req/min = 2%** |
+
+Mix per cycle: 8× `/v2/options/contracts`, 4× `/v2/account`, 3× `/v2/stocks/snapshots`,
+3× `/v2/stocks/bars`, 1× `/v2/clock`, 1× `/v2/positions`. `rate_remaining` never
+moved off 199. The 6.5-hour concern was unfounded — there is ~40× headroom.
+
+### 🔴 T10 — FIXED: a dry run could halt the live agent
+
+Found while measuring T7. Two bugs, either of which would have halted the 16:30
+session before it placed an order.
+
+**1. Dry runs consumed the live order-rate budget.** `Executor.open_spread()`
+logs dry-run orders to `orders_log` with `status='dry_run'`, but
+`Store.orders_since()` counted every row. Rehearsing burned
+`MAX_ORDERS_PER_HOUR` (12) and tripped `g_order_rate`. Since `run.py once` is dry
+by default, this was the normal path.
+
+**2. A dry run wrote the persistent kill switch.** On a breaker trip
+`cycle.py` writes a `HALTED` file. `halt_everything()` correctly no-ops when dry,
+but that write was unguarded — so the rehearsal in (1) left the file behind and
+`g_kill_switch` then blocked every **live** cycle until it was deleted by hand.
+
+Both fixed; `HALTED` is now gitignored too, since a committed one would halt the
+agent from a fresh clone. `tests/test_order_rate.py` — 6 tests, 3 of which fail
+against the old code.
+
+**If you see `CIRCUIT BREAKER [g_kill_switch]` at 16:30:** check for a `HALTED`
+file at the repo root and read it. It records which gate wrote it and when.
 
 ### ✅ T8 — DONE: equity curve archived
 `scripts/export_equity_curve.py` fetches `/v2/account/portfolio/history` and
@@ -194,7 +226,7 @@ the provenance is unambiguous.
 
 | Day | Focus |
 |---|---|
-| **Mon 31 Aug** | 16:30 local — `t1_fill_test.py --live` on DEV, watch the fill. Switch to COMP if clean. ✅ T6, T8, T9 done pre-market. |
+| **Mon 31 Aug** | 16:30 local — `t1_fill_test.py --live` on DEV, watch the fill. Switch to COMP if clean. ✅ T6, T7, T8, T9, T10 done pre-market. |
 | **Tue 1 Sep** | Demo website (Ali). Fix whatever Monday exposed. MCP transcript (T5). |
 | **Wed 2 Sep** | 🔴 Record video + slides. Do NOT leave this to Friday. |
 | **Thu 3 Sep** | 15:00 ET stop opening new positions. Write-up, cover image, final checks. |

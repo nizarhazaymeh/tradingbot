@@ -22,3 +22,6 @@ searching_docs/09_raw_sources/
 # Per-developer Claude Code settings. The shared .claude/settings.json, if one is
 # ever added, stays tracked.
 .claude/settings.local.json
+# Runtime kill switch written by a live circuit-breaker trip. Local state, never
+# committed — a HALTED file in the repo would halt the agent from a fresh clone.
+HALTED
