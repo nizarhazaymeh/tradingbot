@@ -232,10 +232,10 @@
 <!-- 8 -->
 <section class="s"><div class="grid"></div><div class="in">
   <div class="eyebrow">Evidence</div>
-  <h2>Each filter earns its place</h2>
+  <h2>What the filters actually did</h2>
   <p class="lede">We replayed real historical option prices through the live exit logic,
-    then added the agent's filters one at a time. The naive version loses money despite a
-    69% win rate — the losses are simply bigger than the wins.</p>
+    then added the agent's filters one at a time. In this window each one improves the
+    outcome — and we then checked whether that holds elsewhere. It does not.</p>
   <div class="body">
     <table><thead><tr><th>Configuration</th><th class="num">Trades</th><th class="num">Win%</th>
       <th class="num">Net</th><th class="num">Profit factor</th><th class="num">Per trade</th></tr></thead>
@@ -255,14 +255,17 @@
       win rate — they remove the specific trades that were losing. Expectancy per trade moves
       from <span class="mono r">−$2.82</span> to <span class="mono g">+$18.25</span> while the
       trade count falls from 85 to 36.</p>
-    <div class="quote" style="border-left-color:#8b949e;background:rgba(139,148,158,.05)">
-      <strong>Stated honestly.</strong> Daily bars only, so exits trigger on closes and
-      intraday paths are invisible; strikes chosen by percentage distance because historical
-      Greeks are unavailable from the bars endpoint; no commissions. The trend and EV filters
-      were tuned with some awareness of this data — the VRP filter was not, it predates the
-      backtest. This tests the <strong>logic</strong>; it is not a performance claim.</div>
-    <p class="foot" style="margin-top:14px">Corroborating: 85 replayed trades across 6 expiry
-      cycles · 21/21 safety tests against the live broker · 92 unit tests · 23 API requests
+    <div class="quote" style="border-left-color:#FF3B30;background:rgba(255,59,48,.05)">
+      <strong>Stated honestly — this window only.</strong> Re-running the same ladder over
+      three other periods, the filters <em>hurt</em>: Aug 2024 turns +$157 into −$978, and
+      Mar 2026 gives up $1,251 of a profitable naive run. The trend and EV filters were tuned
+      with some awareness of this data. Daily bars only, so intraday paths are invisible;
+      strikes by percentage distance because historical Greeks are unavailable; no
+      commissions. <strong>The defensible claim is that the agent refuses to trade when
+      implied vol does not exceed realised — not that these filters generalise.</strong></div>
+    <p class="foot" style="margin-top:14px">Reproduce: <span class="mono">python
+      scripts/filter_ladder.py</span>. Corroborating: 85 replayed trades across 6 expiry
+      cycles · 21/21 safety tests against the live broker · 123 unit tests · 23 API requests
       per cycle, 2% of the rate budget.</p>
   </div>
 </div><div class="n">08</div></section>

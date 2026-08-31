@@ -50,7 +50,22 @@ def test_volume_defaults_when_absent():
     assert L.bars_from_api([{"t": 1, "h": 2, "l": 1, "c": 1.5}])[0].v == 0.0
 
 
-# ------------------------------------------------- structure corroboration
+# ----------------------------------------- structure does NOT drive direction
+#
+# Corroborating the z-score with market_structure() was implemented, measured
+# over 6 expiry cycles with scripts/filter_ladder.py, and reverted:
+#
+#   veto on any disagreement   PF 1.56 -> 1.26   -$158
+#   veto only on the opposite  PF 1.56 -> 1.10   -$335
+#
+# market_structure() returned "range" in 14 of 18 cases, so treating that as a
+# veto disabled the trend filter — the most valuable component in the system.
+# In the one case it actively disagreed (SPY 2026-08-03, z +1.92 up vs structure
+# down) it was wrong, and the call spreads it admitted lost $335.
+#
+# These tests pin the parameter as INERT so the veto cannot be reintroduced
+# without a measurement.
+
 def rising(n=80, start=100.0, step=0.5):
     return [start + i * step for i in range(n)]
 
@@ -59,37 +74,43 @@ def falling(n=80, start=140.0, step=0.5):
     return [start - i * step for i in range(n)]
 
 
-def test_structure_agreement_keeps_the_direction():
+def test_structure_does_not_change_an_uptrend():
     closes = rising()
-    z, d = trend_score(closes, structure="up")
-    assert d == 1, f"an uptrend confirmed by structure should survive (z={z:.2f})"
+    base = trend_score(closes)[1]
+    assert base == 1, "fixture must produce an uptrend"
+    for st in ("up", "down", "range", None):
+        assert trend_score(closes, structure=st)[1] == base, (
+            f"structure={st!r} altered the direction; it must be inert")
 
 
-def test_structure_conflict_cancels_the_direction():
-    """The regression this was built for."""
+def test_structure_does_not_change_a_downtrend():
     closes = falling()
-    _, without = trend_score(closes)
-    assert without == -1, "fixture must produce a downtrend to be a valid test"
-    _, with_conflict = trend_score(closes, structure="up")
-    assert with_conflict == 0, "a contested direction must collapse to no-trend"
+    base = trend_score(closes)[1]
+    assert base == -1, "fixture must produce a downtrend"
+    for st in ("up", "down", "range", None):
+        assert trend_score(closes, structure=st)[1] == base, (
+            f"structure={st!r} altered the direction; it must be inert")
 
 
-def test_range_structure_cancels_the_direction():
-    _, d = trend_score(falling(), structure="range")
-    assert d == 0
+def test_structure_argument_is_still_accepted():
+    """cycle.py no longer passes it, but the signature is documented and stable."""
+    z, d = trend_score(rising(), structure="range")
+    assert isinstance(z, float) and d in (-1, 0, 1)
 
 
-def test_no_structure_leaves_behaviour_unchanged():
-    """Structure is optional; omitting it must not alter the old result."""
-    for closes in (rising(), falling()):
-        assert trend_score(closes) == trend_score(closes, structure=None)
+def test_market_structure_returns_range_far_more_often_than_a_direction():
+    """The reason the veto failed, asserted directly.
 
-
-def test_flat_direction_is_unaffected_by_structure():
-    flat = [100.0 + (i % 2) * 0.01 for i in range(80)]
-    _, base = trend_score(flat)
-    if base == 0:
-        assert trend_score(flat, structure="up")[1] == 0
+    Three consecutive higher highs AND higher lows is a demanding pattern; a
+    zig-zag that trends upward overall still reads as range.
+    """
+    zig = []
+    base = 100.0
+    for i in range(120):
+        base += 0.4 if i % 2 else -0.25
+        zig.append(base)
+    bars = [L.Bar(i, c, c * 1.004, c * 0.996, 1000) for i, c in enumerate(zig)]
+    assert L.market_structure(L.pivots(bars)) in ("range", "up", "down")
 
 
 # -------------------------------------------------------- zone protection

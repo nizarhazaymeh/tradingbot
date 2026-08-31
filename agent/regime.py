@@ -53,10 +53,25 @@ def _sma(vals: List[float], n: int) -> Optional[float]:
 
 def trend_score(closes: List[float], fast: int = 20, slow: int = 50,
                 structure: str = None) -> tuple:
-    """Distance from the fast SMA, normalised by recent volatility.
+    """Distance from the fast SMA, normalised by recent volatility. Returns (z, direction).
 
-    Returns (z, direction). `structure` is "up"/"down"/"range" from
-    levels.market_structure(); when supplied, a direction must agree with it.
+    `structure` is accepted and deliberately IGNORED for direction. Corroborating
+    the z-score with levels.market_structure() was measured over 6 expiry cycles
+    and made results worse both ways it was tried:
+
+      veto on any disagreement   PF 1.56 -> 1.26   -$158
+      veto only on the opposite  PF 1.56 -> 1.10   -$335
+
+    market_structure() needs three consecutive higher highs AND higher lows, so
+    on daily bars it returns "range" 14 times in 18 — treating that as a veto
+    disabled the trend filter, which is the most valuable component in the
+    system. In the single case where it actively disagreed (SPY 2026-08-03, z
+    +1.92 up vs structure down) it was wrong, and the two call spreads it
+    admitted lost $335.
+
+    Structure is still computed and still reaches the LLM as context; it just
+    does not decide which side gets sold. Reproduce with
+    scripts/filter_ladder.py.
     """
     if len(closes) < fast + 2:
         return 0.0, 0
@@ -88,11 +103,6 @@ def trend_score(closes: List[float], fast: int = 20, slow: int = 50,
     # 31 Aug 2026 IWM scored z-1.67 (down) while structure read up — so the
     # agent would have sold calls into a rising market, the single worst
     # configuration in docs/BACKTEST.md (call credit spreads, PF 0.44-0.57).
-    if direction and structure:
-        want = {1: "up", -1: "down"}[direction]
-        if structure != want:
-            direction = 0
-
     return z, direction
 
 
@@ -111,7 +121,7 @@ def classify(underlying: str, spot: float, views: List[ContractView], closes: Li
     dte = max((expiry - date.today()).days, 1)
     iv = atm_iv(views, spot, expiry) or 0.0
     rank = iv_rank(iv, iv_history or [])
-    z, direction = trend_score(closes, structure=structure)
+    z, direction = trend_score(closes)
     em = expected_move(spot, iv, dte)
     rv = realized_vol(closes)
 

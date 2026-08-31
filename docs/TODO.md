@@ -231,7 +231,7 @@ the provenance is unambiguous.
 
 ---
 
-### ✅ T11 — DONE: the technical-analysis layer is wired in
+### ⚠️ T11 — the TA layer is wired in; the trend veto was measured and REVERTED
 
 `agent/levels.py` (swing pivots, supply/demand zones, Fibonacci) and
 `agent/indicators.py` (SMA, EMA, ATR, ADX, RSI) were **374 lines of unreachable
@@ -242,24 +242,51 @@ missing piece was the `Bar` namedtuple, which lived in the pre-refactor root
 The agent also fetched 90 daily bars and read only the close, discarding every
 high, low and volume. It now takes 300 bars (still one request) and uses them.
 
-**The behavioural change is trend corroboration.** `trend_dir` decides which side
-gets sold — `strategy.candidates()` sells only the side the trend moves away
-from. A direction now has to survive two independent reads: the z-score *and*
-swing structure (higher highs / higher lows).
+**The trend veto was tried, measured, and reverted.** `trend_dir` decides which
+side gets sold, so making a direction survive both the z-score *and* swing
+structure looked like a clear improvement — and on the live cycle it did exactly
+what was intended, stopping IWM from selling calls against an uptrend.
 
-Measured on 31 Aug 2026, IWM:
+Then it was backtested. It lost money both ways it was tried:
 
-| | Regime | Trade |
-|---|---|---|
-| Before | `HIGH_IV_TREND` "trend down" | **bear_call** — selling calls into an uptrend |
-| After | `HIGH_IV_RANGE` "no trend" | **iron_condor**, delta-neutral |
+| Rule | Trades | Net | PF | vs z-score alone |
+|---|---:|---:|---:|---:|
+| z-score only | 47 | **+$448** | **1.56** | — |
+| veto on any disagreement | 57 | +$290 | 1.26 | **−$158** |
+| veto only on the opposite reading | 49 | +$113 | 1.10 | **−$335** |
 
-The z-score read −1.67 (down) while structure read up. Under the old code the
-agent sold calls into a rising market — the worst configuration in
-[`BACKTEST.md`](BACKTEST.md) (call credit spreads, PF 0.44–0.57, −$467 and −$197
-naive). Now the contested direction collapses to no-trend and it takes a neutral
-condor instead. Still 3 submits; no loss of activity. Rate cost unchanged at 23
-requests/cycle.
+`market_structure()` needs three consecutive higher highs **and** higher lows, so
+on daily bars it returned **"range" in 14 of 18** entry dates. Treating that as a
+veto disabled the trend filter entirely. In the one case it actively disagreed
+(SPY 2026-08-03, z +1.92 up vs structure "down") **structure was wrong** and the
+call spreads it admitted lost $335.
+
+Reverted. `trend_score()` still accepts `structure` and deliberately ignores it,
+with tests pinning it inert so the veto cannot return without a measurement.
+Rate cost unchanged at 23 requests/cycle.
+
+### 🔴 T12 — the filter ladder does not generalise beyond one window
+
+Found while measuring T11. `scripts/filter_ladder.py` now reproduces the ladder
+in code (it was previously computed outside the repo and unreproducible). Run
+over all four recorded windows:
+
+| Window | naive | + VRP | + trend | verdict |
+|---|---:|---:|---:|---|
+| **Jul–Aug 2026** (the documented one) | −$240 · 0.91 | +$290 · 1.26 | **+$556 · 1.70** | filters help |
+| **Aug 2024** | **+$157** · 1.05 | −$172 · 0.92 | **−$978 · 0.56** | filters destroy it |
+| **Apr 2025** | −$695 · 0.80 | −$445 · 0.80 | −$445 · 0.80 | helps, still loses |
+| **Mar 2026** | **+$3,479** · 7.70 | +$2,228 · 7.02 | +$2,228 · 7.02 | filters cost $1,251 |
+
+The filters improve results only in the window `BACKTEST.md` was written from.
+Softening factors, neither of which dissolves it: the "VRP filter" row is a
+`--vrp-exclude QQQ` stand-in (the recorded trades carry no per-entry IV), and
+samples are 12–18 entry dates per window.
+
+**Action taken:** `submission/slides.pdf` slide 8 retitled and its caveat
+rewritten to say so on the slide. The defensible claim is *"the agent refuses to
+trade when implied vol does not exceed realised, and that logic is tested"* — not
+*"the filters add $897"*. See the addendum in [`BACKTEST.md`](BACKTEST.md).
 
 **Also wired:** structure, and the distance to the nearest supply/demand zone in
 units of 1σ, are now in the LLM context (`brain.py`) with the prompt explaining

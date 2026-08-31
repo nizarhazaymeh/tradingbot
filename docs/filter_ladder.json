@@ -1,0 +1,143 @@
+{
+  "source": "docs/backtest_results.json",
+  "context": {
+    "IWM|2026-07-20": {
+      "z": -2.13,
+      "zdir": 0,
+      "structure": "range",
+      "cdir": 0
+    },
+    "IWM|2026-07-27": {
+      "z": -1.26,
+      "zdir": 0,
+      "structure": "range",
+      "cdir": 0
+    },
+    "IWM|2026-08-03": {
+      "z": 0.87,
+      "zdir": 0,
+      "structure": "down",
+      "cdir": 0
+    },
+    "IWM|2026-08-10": {
+      "z": 1.77,
+      "zdir": 1,
+      "structure": "range",
+      "cdir": 0
+    },
+    "IWM|2026-08-17": {
+      "z": 2.47,
+      "zdir": 1,
+      "structure": "range",
+      "cdir": 0
+    },
+    "IWM|2026-08-24": {
+      "z": -0.3,
+      "zdir": 0,
+      "structure": "range",
+      "cdir": 0
+    },
+    "QQQ|2026-07-20": {
+      "z": -1.86,
+      "zdir": -1,
+      "structure": "down",
+      "cdir": -1
+    },
+    "QQQ|2026-07-27": {
+      "z": -2.79,
+      "zdir": -1,
+      "structure": "down",
+      "cdir": -1
+    },
+    "QQQ|2026-08-03": {
+      "z": 0.02,
+      "zdir": 0,
+      "structure": "down",
+      "cdir": 0
+    },
+    "QQQ|2026-08-10": {
+      "z": 1.85,
+      "zdir": 1,
+      "structure": "range",
+      "cdir": 0
+    },
+    "QQQ|2026-08-17": {
+      "z": 2.34,
+      "zdir": 1,
+      "structure": "range",
+      "cdir": 0
+    },
+    "QQQ|2026-08-24": {
+      "z": -0.4,
+      "zdir": 0,
+      "structure": "range",
+      "cdir": 0
+    },
+    "SPY|2026-07-20": {
+      "z": -0.5,
+      "zdir": 0,
+      "structure": "up",
+      "cdir": 0
+    },
+    "SPY|2026-07-27": {
+      "z": -1.51,
+      "zdir": -1,
+      "structure": "range",
+      "cdir": 0
+    },
+    "SPY|2026-08-03": {
+      "z": 1.92,
+      "zdir": 1,
+      "structure": "down",
+      "cdir": 0
+    },
+    "SPY|2026-08-10": {
+      "z": 3.38,
+      "zdir": 1,
+      "structure": "range",
+      "cdir": 0
+    },
+    "SPY|2026-08-17": {
+      "z": 2.39,
+      "zdir": 1,
+      "structure": "range",
+      "cdir": 0
+    },
+    "SPY|2026-08-24": {
+      "z": -0.01,
+      "zdir": 0,
+      "structure": "range",
+      "cdir": 0
+    }
+  },
+  "ladder": {
+    "naive": {
+      "trades": 85,
+      "net": -240.0,
+      "win": 0.6941176470588235,
+      "pf": 0.91,
+      "exp": -2.82
+    },
+    "vrp": {
+      "trades": 57,
+      "net": 290.0,
+      "win": 0.7368421052631579,
+      "pf": 1.26,
+      "exp": 5.09
+    },
+    "trend_z": {
+      "trades": 47,
+      "net": 448.0,
+      "win": 0.7446808510638298,
+      "pf": 1.56,
+      "exp": 9.53
+    },
+    "trend_z_structure": {
+      "trades": 57,
+      "net": 290.0,
+      "win": 0.7368421052631579,
+      "pf": 1.26,
+      "exp": 5.09
+    }
+  }
+}

@@ -290,3 +290,87 @@ purely fitted:
 
 What is fitted and should be treated with suspicion: the exact thresholds — 35%,
 3 DTE, 18% volatility, 0.55% risk.
+
+
+---
+
+# Addendum, 31 Aug 2026 — the ladder is now reproducible, and two findings
+
+`scripts/backtest.py` runs all five strategies at every expiry unconditionally
+and records every result. The filter ladder above was computed **outside the
+repo**, so it could not be re-run. `scripts/filter_ladder.py` is that
+computation as code, applying the filters post-hoc to the recorded trades with
+market context rebuilt from bars **up to and including each entry date** (no
+lookahead).
+
+```
+python scripts/filter_ladder.py                          # this window
+python scripts/filter_ladder.py --in docs/backtest_aug2024.json --rule calls
+```
+
+Two caveats on the reproduction itself, stated before the results:
+
+1. **It does not match the table above exactly.** On this window my trend filter
+   admits 49 trades for +$556 (PF 1.70); the table reports 36 for +$657 (PF 2.52).
+   Same direction, different filter. Mine models `strategy.candidates()`; the
+   original was computed by hand and its exact rule is not recorded.
+2. **The "VRP filter" row is `--vrp-exclude QQQ`,** because the recorded trades
+   carry no per-entry implied vol. Dropping QQQ was correct *for this window*,
+   where its IV sat below realised. It is a window-specific stand-in, not the
+   real VRP test, and that matters below.
+
+## Finding 1 — swing structure does not corroborate the trend usefully
+
+`agent/levels.market_structure()` was wired into `regime.trend_score()` so a
+direction had to survive both the z-score and swing structure. It was tried two
+ways and reverted:
+
+| Corroboration rule | Trades | Net | PF | vs z-score alone |
+|---|---:|---:|---:|---:|
+| z-score only | 47 | **+$448** | **1.56** | — |
+| veto on any disagreement | 57 | +$290 | 1.26 | **−$158** |
+| veto only on the opposite reading | 49 | +$113 | 1.10 | **−$335** |
+
+`market_structure()` requires three consecutive higher highs **and** higher lows.
+On daily bars it returned **"range" in 14 of 18** entry dates, so treating that as
+a veto silently disabled the trend filter — the most valuable component in the
+system. In the single case where it actively disagreed (SPY 2026-08-03, z +1.92
+up against structure "down") **structure was wrong**, and the two call spreads the
+veto admitted lost $271 and $64.
+
+Reverted. Structure is still computed, still logged, and still reaches the LLM as
+context — it just does not decide which side gets sold. `regime.trend_score()`
+still accepts the argument and deliberately ignores it, with tests pinning it
+inert so the veto cannot return without a measurement.
+
+## Finding 2 — 🔴 the filters do not generalise beyond this window
+
+Running the same ladder over all four recorded windows, using the documented
+"no short calls into an uptrend" rule:
+
+| Window | naive | + VRP (drop QQQ) | + trend | verdict |
+|---|---:|---:|---:|---|
+| **Jul–Aug 2026** (this doc) | −$240 · PF 0.91 | +$290 · 1.26 | **+$556 · 1.70** | filters help |
+| **Aug 2024** | **+$157** · 1.05 | −$172 · 0.92 | **−$978 · 0.56** | filters destroy it |
+| **Apr 2025** | −$695 · 0.80 | −$445 · 0.80 | −$445 · 0.80 | helps, still loses |
+| **Mar 2026** | **+$3,479** · 7.70 | +$2,228 · 7.02 | **+$2,228 · 7.02** | filters cost $1,251 |
+
+The filters improve results **only in the window this document was written from.**
+In Aug 2024 they turn a $157 profit into a $978 loss. In Mar 2026 they give up
+$1,251 of a very profitable naive run.
+
+This is consistent with what §Caveats already admits — *"the trend and EV filters
+were tuned with some awareness of this data"* — but it is stronger than that
+wording suggests. Two things soften it and neither dissolves it:
+
+* The QQQ exclusion is a stand-in for the VRP filter and is only right for this
+  window. Much of the damage in Mar 2026 (−$1,251) is that exclusion, not the
+  trend rule.
+* Samples are small: 12–18 entry dates and 60–85 trades per window, and Mar 2026's
+  naive PF of 7.70 is not a normal market.
+
+**What to do with this.** Do not present the ladder as evidence the filters
+generalise. The defensible claim is narrower and still real: *the agent refuses
+trades when implied vol does not exceed realised, and that logic is sound and
+tested* — not *the filters add $897 per window*. `docs/WRITEUP.md` and
+`submission/slides.pdf` should say the former.
