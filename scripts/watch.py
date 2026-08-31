@@ -56,6 +56,8 @@ def main():
     ap.add_argument("--interval", type=int, default=30)
     ap.add_argument("--heartbeat", type=int, default=20,
                     help="emit a heartbeat every N polls (0 to disable)")
+    ap.add_argument("--equity-threshold", type=float, default=25.0,
+                    help="minimum equity move worth reporting (default 25)")
     a = ap.parse_args()
 
     c = AlpacaClient()
@@ -72,6 +74,7 @@ def main():
     for p in pos.values():
         say("  HOLDING", leg_line(p))
 
+    last_reported_equity = float(acct.get("equity") or 0)
     seen_halt = HALT_FILE.exists()
     if seen_halt:
         say("HALT FILE PRESENT —", HALT_FILE.read_text().strip()[:120])
@@ -119,10 +122,17 @@ def main():
                     f"{legs[0]['symbol'] if legs else o.get('symbol','')}")
 
         # ---- equity ----
-        oe = float(acct.get("equity") or 0)
+        # Only moves worth a notification. An open option position marks against
+        # the bid/ask every poll, so a $1 floor reported pure flicker: two SPY
+        # legs oscillated +$2/-$2 between consecutive polls and buried the
+        # OPENED/CLOSED lines this exists to surface. Compared against the last
+        # REPORTED equity, not the last poll, so a slow drift still accumulates
+        # into one line instead of never crossing the threshold.
         ne = float(nacct.get("equity") or 0)
-        if oe and abs(ne - oe) >= 1.0:
-            say(f"EQUITY   ${oe:,.2f} -> ${ne:,.2f}  ({ne-oe:+.2f})")
+        if last_reported_equity and abs(ne - last_reported_equity) >= a.equity_threshold:
+            say(f"EQUITY   ${last_reported_equity:,.2f} -> ${ne:,.2f}  "
+                f"({ne-last_reported_equity:+.2f})")
+            last_reported_equity = ne
 
         # ---- halt ----
         now_halt = HALT_FILE.exists()
