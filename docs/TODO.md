@@ -17,7 +17,7 @@ Deadline: **Fri 4 Sep 2026, 11:00 ET / 18:00 GMT+3**
 |---|---|---|---|
 | B1 | ✅ **Repo is PUBLIC** — verified by unauthenticated HTTP 200 and a token-free anonymous clone. Full 20-commit history scanned first: no credentials in any commit | **Nizar** | ✅ |
 | B2 | ✅ **Live demo URL** — https://nizarhazaymeh.github.io/tradingbot/ · GitHub Pages from `main` root, serves `index.html` + `public/dashboard.json`, verified HTTP 200 unauthenticated. Ali can still ship the Streamlit version; this is the zero-infrastructure fallback | Ali / done | ✅ |
-| B3 | **Video**, MP4, 3:00–5:00 (under 3 min scores a 2 on their rubric) | Mahdi | ☐ |
+| B3 | **Video**, MP4, 3:00–5:00. Shot list ready at [`VIDEO_SCRIPT.md`](VIDEO_SCRIPT.md) — every command in it is verified to run. Only the recording itself is left | Mahdi | ☐ record |
 | B4 | ✅ **Slides** — [`submission/slides.pdf`](../submission/slides.pdf), 10 pages, 16:9. Includes the competitive analysis and TAM/SAM + revenue model that `02_judging_and_scoring.md` flags as scored-but-unlisted. Source is `submission/slides.html`; regenerate rather than editing the PDF | Mahdi | ✅ |
 | B5 | ✅ **One-page write-up** — drafted at `docs/WRITEUP.md`; results table filled in after the window | Mahdi | ✅ |
 | B6 | ✅ **Cover image** — [`submission/cover.png`](../submission/cover.png), 1920×1080, exactly 16:9 | Ali / done | ✅ |
@@ -255,7 +255,7 @@ the provenance is unambiguous.
 | **Tue 1 Sep** | Demo website (Ali). Fix whatever Monday exposed. MCP transcript (T5). |
 | **Wed 2 Sep** | 🔴 Record video + slides. Do NOT leave this to Friday. |
 | **Thu 3 Sep** | 15:00 ET stop opening new positions. Write-up, cover image, final checks. |
-| **Fri 4 Sep** | 09:30 ET flatten everything. Submit by **10:45 ET / 17:45 local**. |
+| **Fri 4 Sep** | 09:30 ET flatten everything. Run `ACCOUNT=comp python scripts/comp_preflight.py --regenerate` before submitting. Submit by **10:45 ET / 17:45 local**. |
 
 ---
 
