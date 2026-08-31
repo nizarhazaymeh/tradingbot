@@ -231,6 +231,50 @@ the provenance is unambiguous.
 
 ---
 
+### ✅ T11 — DONE: the technical-analysis layer is wired in
+
+`agent/levels.py` (swing pivots, supply/demand zones, Fibonacci) and
+`agent/indicators.py` (SMA, EMA, ATR, ADX, RSI) were **374 lines of unreachable
+code** — `levels` imported `indicators`, and nothing imported `levels`. The
+missing piece was the `Bar` namedtuple, which lived in the pre-refactor root
+`strategy.py` and disappeared with it. `levels.bars_from_api()` is that adapter.
+
+The agent also fetched 90 daily bars and read only the close, discarding every
+high, low and volume. It now takes 300 bars (still one request) and uses them.
+
+**The behavioural change is trend corroboration.** `trend_dir` decides which side
+gets sold — `strategy.candidates()` sells only the side the trend moves away
+from. A direction now has to survive two independent reads: the z-score *and*
+swing structure (higher highs / higher lows).
+
+Measured on 31 Aug 2026, IWM:
+
+| | Regime | Trade |
+|---|---|---|
+| Before | `HIGH_IV_TREND` "trend down" | **bear_call** — selling calls into an uptrend |
+| After | `HIGH_IV_RANGE` "no trend" | **iron_condor**, delta-neutral |
+
+The z-score read −1.67 (down) while structure read up. Under the old code the
+agent sold calls into a rising market — the worst configuration in
+[`BACKTEST.md`](BACKTEST.md) (call credit spreads, PF 0.44–0.57, −$467 and −$197
+naive). Now the contested direction collapses to no-trend and it takes a neutral
+condor instead. Still 3 submits; no loss of activity. Rate cost unchanged at 23
+requests/cycle.
+
+**Also wired:** structure, and the distance to the nearest supply/demand zone in
+units of 1σ, are now in the LLM context (`brain.py`) with the prompt explaining
+how to read them.
+
+**Deliberately NOT wired:** zone-protected strike selection.
+`levels.protects_short()` records, per short leg, whether a zone stands between
+spot and the strike — but only as a diagnostic in `meta`. Strike distance is
+already governed by `MIN_SHORT_SIGMA` and the EV test, so an unvalidated
+structural preference would double-count distance. Today every entry logged
+**0/N protected** — as a hard gate it would have blocked all trading. Validate it
+against realised outcomes before letting it move strikes.
+
+---
+
 ## 🟡 NICE TO HAVE — only if time allows
 
 - News-driven entries (Alpaca's real-time news stream is free and unused)

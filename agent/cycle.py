@@ -17,6 +17,7 @@ from . import config
 from . import brain, monitor, options as O, regime as R, risk as RK, spreads as S, strategy as ST
 from .client import AlpacaClient, AlpacaError
 from .executor import Executor, price_ladder
+from . import levels as L
 from .notifier import notify
 from .state import Store, utcnow
 
@@ -62,6 +63,51 @@ class Agent:
         # prefer the expiry closest to TARGET_DTE, not simply the nearest —
         # very short DTE has unstable Greeks and violent gamma.
         return min(candidates, key=lambda d: abs((d - today).days - config.TARGET_DTE))
+
+    def _structure(self, ohlc) -> tuple:
+        """(market_structure, zones, fib) from daily bars — all best-effort.
+
+        Structure is a second opinion on trend direction; zones say where price
+        has previously turned. Anything here failing must degrade to "no
+        opinion" rather than stop a cycle, so the whole thing is guarded.
+        """
+        if len(ohlc) < 45:                      # find_zones needs atr_period*3
+            return None, [], None
+        try:
+            pv = L.pivots(ohlc)
+            struct = L.market_structure(pv)
+            zones = L.find_zones(ohlc)
+            imp = L.last_impulse(ohlc, pv)
+            fib = L.fibonacci(*imp) if imp else None
+            return struct, zones, fib
+        except Exception as e:                  # never let structure break a cycle
+            log.warning("structure analysis failed: %s: %s", type(e).__name__, e)
+            return None, [], None
+
+    def _structure_context(self, reg, spot: float, zones, fib, structure) -> dict:
+        """Structure as scalars the model can compare, not raw objects.
+
+        Distances are in units of the 1-sigma expected move rather than dollars,
+        because "3% away" means something different on IWM than on SPY, while
+        "1.2 sigma" is the same statement about reachability on both.
+        """
+        sigma = reg.expected_move or 0.0
+        ctx = {"structure": structure}
+
+        def describe(zone, key):
+            if not zone or not sigma:
+                ctx[f"{key}_sigma"] = None
+                return
+            ctx[f"{key}_sigma"] = round(abs(zone.mid - spot) / sigma, 2)
+            ctx[f"{key}_touches"] = zone.touches
+            ctx[f"{key}_strength_atr"] = round(zone.strength, 1)
+
+        describe(L.nearest_zone(zones, spot, "supply", below=False), "resistance")
+        describe(L.nearest_zone(zones, spot, "demand", below=True), "support")
+
+        if fib:
+            ctx["in_golden_pocket"] = fib.in_golden_pocket(spot)
+        return ctx
 
     def _chain(self, underlying: str, spot: float, expiry: date, span=0.10):
         chain = self.c.option_chain(underlying, exp=expiry.isoformat(),
@@ -228,17 +274,27 @@ class Agent:
 
         snaps = self.c.stock_snapshots([underlying])
         spot = ((snaps.get(underlying) or {}).get("latestTrade") or {}).get("p")
-        bars = self.c.stock_bars([underlying], timeframe="1Day", limit=90)
-        closes = [b["c"] for b in bars.get(underlying, [])]
+        # 300 daily bars rather than 90: still one request, but find_zones() needs
+        # real history behind it and its lookback is 300.
+        bars = self.c.stock_bars([underlying], timeframe="1Day", limit=300)
+        rows = bars.get(underlying, [])
+        closes = [b["c"] for b in rows]
         if not spot and closes:
             spot = closes[-1]
         if not spot or len(closes) < 25:
             out["reason"] = "insufficient price history"
             return out
 
+        # Swing structure, supply/demand zones and the last impulse. Highs and
+        # lows were previously fetched and thrown away — only the close was read.
+        ohlc = L.bars_from_api(rows)
+        structure, zones, fib = self._structure(ohlc)
+        out["structure"] = structure
+
         views, rejects = self._chain(underlying, spot, expiry)
         iv_hist = self.store.iv_history(underlying)
-        reg = R.classify(underlying, spot, views, closes, expiry=expiry, iv_history=iv_hist)
+        reg = R.classify(underlying, spot, views, closes, expiry=expiry,
+                         iv_history=iv_hist, structure=structure)
 
         if reg.iv > 0:
             self.store.record_iv(underlying, date.today(), reg.iv)
@@ -255,7 +311,8 @@ class Agent:
                 news = self.c.news([underlying], limit=6)
             except AlpacaError:
                 pass
-            v = brain.view(reg, news=news)
+            v = brain.view(reg, news=news,
+                           extra=self._structure_context(reg, spot, zones, fib, structure))
             log.info("    view: %s (conf %.2f) — %s", v.direction, v.confidence, v.thesis[:90])
 
         budget = config.RISK_PER_TRADE_PCT * book.equity
@@ -268,6 +325,26 @@ class Agent:
                                     regime=reg.name, view=asdict(v), proposal="",
                                     decision="hold", reason=why)
             return out
+
+        # Record, per short leg, whether a supply/demand zone stands between spot
+        # and the strike. Diagnostic only — it does not influence selection yet.
+        # Strike distance is already governed by MIN_SHORT_SIGMA and the EV test,
+        # so letting an unvalidated structural preference push strikes around
+        # would double-count distance. Logging it first means it can be checked
+        # against realised outcomes before it is trusted with a decision.
+        prot = {}
+        for leg in sp.legs:
+            if leg.side == "sell" and leg.view is not None:
+                z = L.protects_short(zones, spot, leg.view.strike, leg.view.kind)
+                prot[f"{leg.view.strike:.0f}{leg.view.kind}"] = (
+                    {"low": z.low, "high": z.high, "touches": z.touches,
+                     "strength_atr": round(z.strength, 1)} if z else None)
+        if prot:
+            sp.meta["zone_protection"] = prot
+            sp.meta["structure"] = structure
+            n_prot = sum(1 for v_ in prot.values() if v_)
+            log.info("    structure=%s · %d/%d short strikes behind a zone",
+                     structure, n_prot, len(prot))
 
         gate = RK.evaluate(sp, book)
         out["proposal"] = sp.describe()

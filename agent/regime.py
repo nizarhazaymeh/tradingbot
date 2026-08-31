@@ -51,8 +51,13 @@ def _sma(vals: List[float], n: int) -> Optional[float]:
     return sum(vals[-n:]) / n if len(vals) >= n else None
 
 
-def trend_score(closes: List[float], fast: int = 20, slow: int = 50) -> tuple:
-    """Distance from the fast SMA, normalised by recent volatility. Returns (z, direction)."""
+def trend_score(closes: List[float], fast: int = 20, slow: int = 50,
+                structure: str = None) -> tuple:
+    """Distance from the fast SMA, normalised by recent volatility.
+
+    Returns (z, direction). `structure` is "up"/"down"/"range" from
+    levels.market_structure(); when supplied, a direction must agree with it.
+    """
     if len(closes) < fast + 2:
         return 0.0, 0
     spot = closes[-1]
@@ -73,6 +78,21 @@ def trend_score(closes: List[float], fast: int = 20, slow: int = 50) -> tuple:
             direction = 0
         if direction < 0 and spot > sma_s:
             direction = 0
+
+    # Swing structure is a second, independent read of the same question, built
+    # from higher-highs/higher-lows rather than a mean and a standard deviation.
+    # A direction only survives if both agree.
+    #
+    # This matters because trend_dir decides WHICH SIDE gets sold:
+    # strategy.candidates() sells only the side the trend moves away from. On
+    # 31 Aug 2026 IWM scored z-1.67 (down) while structure read up — so the
+    # agent would have sold calls into a rising market, the single worst
+    # configuration in docs/BACKTEST.md (call credit spreads, PF 0.44-0.57).
+    if direction and structure:
+        want = {1: "up", -1: "down"}[direction]
+        if structure != want:
+            direction = 0
+
     return z, direction
 
 
@@ -86,11 +106,12 @@ def realized_vol(closes: List[float], window: int = 20) -> Optional[float]:
 
 def classify(underlying: str, spot: float, views: List[ContractView], closes: List[float],
              *, expiry: date, iv_history: List[float] = None,
-             has_catalyst: bool = False, catalyst_note: str = "") -> Regime:
+             has_catalyst: bool = False, catalyst_note: str = "",
+             structure: str = None) -> Regime:
     dte = max((expiry - date.today()).days, 1)
     iv = atm_iv(views, spot, expiry) or 0.0
     rank = iv_rank(iv, iv_history or [])
-    z, direction = trend_score(closes)
+    z, direction = trend_score(closes, structure=structure)
     em = expected_move(spot, iv, dte)
     rv = realized_vol(closes)
 

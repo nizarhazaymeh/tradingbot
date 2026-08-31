@@ -14,10 +14,35 @@ Three ideas, all built on the same swing detection:
 
 Everything takes Bar(t, c, h, l, v) sequences, oldest first.
 """
+from collections import namedtuple
 from dataclasses import dataclass, field
 from typing import List, Optional, Sequence, Tuple
 
 from . import indicators as ind
+
+# The contract every function here expects, oldest bar first. This lived in the
+# pre-refactor root strategy.py; without it nothing could feed this module, which
+# is why it sat unused.
+Bar = namedtuple("Bar", "t c h l v")
+
+
+def bars_from_api(rows: Sequence[dict]) -> List[Bar]:
+    """Alpaca /v2/stocks/bars rows -> Bar sequence.
+
+    Rows arrive as dicts with t/o/h/l/c/v. Bars missing a high or low are
+    dropped rather than back-filled from the close: a synthetic zero-range bar
+    would suppress the ATR and manufacture impulses that never happened.
+    """
+    out: List[Bar] = []
+    for r in rows or []:
+        try:
+            h, l, c = float(r["h"]), float(r["l"]), float(r["c"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if h <= 0 or l <= 0 or h < l:
+            continue
+        out.append(Bar(r.get("t"), c, h, l, float(r.get("v") or 0)))
+    return out
 
 
 # --------------------------------------------------------------------------- #
@@ -219,3 +244,28 @@ def fibonacci(low: float, high: float) -> Fib:
         retracements={r: high - span * r for r in RETRACEMENTS},
         extensions={e: low + span * e for e in EXTENSIONS},
     )
+
+
+def protects_short(zones: List[Zone], spot: float, strike: float, kind: str,
+                   max_touches: int = 3) -> Optional[Zone]:
+    """The zone standing between spot and a short strike, if there is one.
+
+    A short call is threatened only if price rises to its strike, so a supply
+    zone between spot and that strike is a barrier price must break first. The
+    mirror holds for a short put and a demand zone.
+
+    Zones worked more than `max_touches` times are ignored — find_zones() ages
+    them for exactly this reason, and a level that has already failed four times
+    is not protection.
+
+    Returns the zone, or None. This is a diagnostic: it is recorded against
+    every entry so protection can be validated against realised outcomes before
+    it is allowed to influence strike choice.
+    """
+    if kind == "C":
+        cands = [z for z in zones if z.kind == "supply"
+                 and spot < z.mid < strike and z.touches <= max_touches]
+        return min(cands, key=lambda z: z.mid) if cands else None
+    cands = [z for z in zones if z.kind == "demand"
+             and strike < z.mid < spot and z.touches <= max_touches]
+    return max(cands, key=lambda z: z.mid) if cands else None

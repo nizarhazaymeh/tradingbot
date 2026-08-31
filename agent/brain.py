@@ -194,6 +194,11 @@ Rules:
 - "neutral" is a legitimate and often correct answer. Prefer it when signals conflict.
 - confidence below 0.55 means "no strong opinion" and will be treated as neutral.
 - Base the view on the supplied data only. Do not invent news or price levels.
+- "structure" is swing structure (higher highs/lows). If it disagrees with
+  trend_z, that is a genuine conflict — prefer neutral.
+- "resistance_sigma"/"support_sigma" are distances to the nearest supply/demand
+  zone in units of the 1-sigma expected move. Under ~1.0 means price could
+  reach it inside the option's life. "touches" above ~3 means a worked, weak zone.
 - Be conservative: capital preservation outranks being interesting."""
 
 
@@ -214,6 +219,8 @@ def view(reg: Regime, *, news: List[dict] = None, extra: Dict[str, Any] = None) 
         "expected_move_pct": round(reg.expected_move / reg.spot, 4) if reg.spot else None,
         "recent_headlines": headlines,
     }
+    # Swing structure and the nearest levels. Supplied as data only — the model
+    # still returns a view, and deterministic code still picks every strike.
     if extra:
         ctx.update(extra)
 
