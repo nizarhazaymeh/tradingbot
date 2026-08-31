@@ -64,6 +64,46 @@ class Agent:
         # very short DTE has unstable Greeks and violent gamma.
         return min(candidates, key=lambda d: abs((d - today).days - config.TARGET_DTE))
 
+    def _clear_never_filled(self) -> list:
+        """Close tracked rows whose opening order died without ever filling.
+
+        cycle.consider() records a position the moment an order is ACCEPTED, not
+        when it fills — deliberately, because a crash between submit and fill
+        would otherwise leave a real position with no exit plan. The cost is that
+        an order which never fills stays on the books forever.
+
+        That is not cosmetic. Book.from_account() derives portfolio heat from
+        tracked positions, so an unfilled structure consumes risk budget that is
+        not at risk. On 31 Aug two cancelled orders held $572 of the $1,145 the
+        agent believed was live, half of SPY's per-underlying cap.
+
+        The broker's own order status settles it, so no guessing from symbol
+        overlap: terminal status with filled_qty 0 means the position never
+        existed. Anything still working is left alone.
+        """
+        cleared = []
+        for pos in self.store.open_positions():
+            oid = pos.get("open_order_id")
+            if not oid:
+                continue
+            try:
+                o = self.c.get_order(oid)
+            except AlpacaError as e:
+                log.warning("could not verify order %s for %s: [%s] %s",
+                            str(oid)[:8], pos["signature"][:40], e.status, e.message[:60])
+                continue
+            if o.get("status") not in ("canceled", "expired", "rejected"):
+                continue
+            if float(o.get("filled_qty") or 0) > 0:
+                continue          # partially filled: a real position, leave it
+            self.store.close_position(pos["signature"], realized_pnl=0.0,
+                                      reason=f"never filled (order {o.get('status')})",
+                                      close_order_id=str(oid))
+            cleared.append(pos["signature"])
+            log.info("    cleared never-filled %s (order %s)",
+                     pos["signature"][:52], o.get("status"))
+        return cleared
+
     def _structure(self, ohlc) -> tuple:
         """(market_structure, zones, fib, breaks) from daily bars — all best-effort.
 
@@ -432,9 +472,14 @@ class Agent:
         obs = self.observe()
         acct, clock = obs["account"], obs["clock"]
 
+        # Drop never-filled rows BEFORE reconciling, so the picture reconcile
+        # reports — and the heat the risk gates compute — reflects the broker.
+        cleared = self._clear_never_filled()
         rec = monitor.reconcile(self.store, obs["positions"])
+        rec["cleared_never_filled"] = cleared
         if not rec["clean"]:
-            log.warning("RECONCILE: ghosts=%s orphans=%s", rec["ghosts"], rec["orphans"])
+            log.warning("RECONCILE: ghosts=%s partial=%s orphans=%s",
+                        rec["ghosts"], rec.get("partial"), rec["orphans"])
 
         book = RK.Book.from_account(acct, self.store.tracked_for_book())
         book.orders_last_hour = self._orders_last_hour()

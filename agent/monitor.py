@@ -156,13 +156,24 @@ def reconcile(store, broker_positions: List[dict]) -> dict:
         tracked_by_sig[pos["signature"]] = syms
         tracked_syms |= syms
 
-    ghost_sigs = [sig for sig, syms in tracked_by_sig.items() if not (syms & held)]
+    # Classified on FULL coverage, not overlap. `syms & held` treated a structure
+    # as live if any single leg matched, so a cancelled near-duplicate sharing two
+    # legs with a real position read as real — on 31 Aug a cancelled SPY condor
+    # sharing 775C/777C with a filled one was never flagged.
+    ghost_sigs, partial_sigs = [], []
+    for sig, syms in tracked_by_sig.items():
+        hit = syms & held
+        if not hit:
+            ghost_sigs.append(sig)
+        elif hit != syms:
+            partial_sigs.append(sig)
     orphan_syms = sorted(held - tracked_syms)
 
     return {
         "broker_option_legs": len(held),
         "tracked_structures": len(tracked_by_sig),
-        "ghosts": ghost_sigs,          # we think we hold it; broker disagrees
+        "ghosts": ghost_sigs,          # we think we hold it; broker holds no leg
+        "partial": partial_sigs,       # some legs held, some not — never auto-acted on
         "orphans": orphan_syms,        # broker holds it; we have no exit plan
-        "clean": not ghost_sigs and not orphan_syms,
+        "clean": not ghost_sigs and not partial_sigs and not orphan_syms,
     }
