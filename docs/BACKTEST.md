@@ -374,3 +374,87 @@ generalise. The defensible claim is narrower and still real: *the agent refuses
 trades when implied vol does not exceed realised, and that logic is sound and
 tested* — not *the filters add $897 per window*. `docs/WRITEUP.md` and
 `submission/slides.pdf` should say the former.
+
+
+---
+
+# Addendum 2, 31 Aug 2026 — training on this data makes the bot worse
+
+The request was to fit entries, take-profits and stop-losses to the historical
+data so the agent "understands the structure of the market". That was built and
+measured, and the answer is no: **the parameters chosen by judgement beat every
+fitted alternative out of sample, in all four regimes.**
+
+`scripts/sweep.py` fits across all four regimes **pooled** and reports the best —
+in-sample fitting, which is how the filters in Addendum 1 came to work only in
+their own window. `scripts/walk_forward.py` asks the honest question instead:
+fit on three regimes, measure on the held-out fourth. Every number below was
+produced by parameters that never saw the window they are scored on.
+
+```
+python scripts/walk_forward.py            # 48 parameter sets, leave-one-out
+python scripts/walk_forward.py --quick    # 4 sets, smoke test
+```
+
+Grid: take-profit ∈ {0.25, 0.35, 0.50, 0.65} × stop multiple ∈ {1.0, 1.5, 2.0, 2.5}
+× strike offset ∈ {1.5%, 2.2%, 3.0%}, DTE fixed at 4.
+
+## Result
+
+| Test regime | shipped | fitted (out-of-sample) | oracle (knows the future) |
+|---|---:|---:|---:|
+| calm/rising | **+$359** · PF 3.48 | +$326 · 2.83 | +$502 · 2.81 |
+| vol spike 46% | **+$789** · 100% win | +$351 · 4.16 | +$885 |
+| selloff −7.7% | **+$364** · PF 4.83 | +$16 · 1.04 | +$368 · 4.87 |
+| carry unwind | **+$246** · PF 8.24 | +$246 · 8.24 | +$445 · 18.80 |
+| **total** | **+$1,758** | **+$939** | +$2,200 |
+
+**Fitting beat the shipped config in 0 of 4 regimes**, and cost $819 overall.
+
+The clearest evidence that this is overfitting rather than bad luck: enlarging the
+grid made it worse.
+
+| Grid | Fitted, out-of-sample | vs shipped |
+|---|---:|---:|
+| 4 combinations | +$1,340 | −$418 |
+| 48 combinations | +$939 | **−$819** |
+
+More search capacity, worse results. That only happens when the search is fitting
+noise.
+
+## Why — the arithmetic
+
+| | |
+|---|---|
+| Total structures | 165 |
+| Test fold | 12–17 trades |
+| Training fold | ~41 trades at one offset |
+| Parameter combinations | 48 |
+| **Training trades per combination** | **0.85** |
+
+Less than one trade of evidence per candidate parameter set. No fitting procedure
+recovers a real signal from that, and any winner it names is the luckiest sample,
+not the best rule.
+
+## What this says about the shipped config
+
+It is close to the ceiling already. In the selloff it scores +$364 against an
+oracle of +$368 — within 1%. In the carry unwind it *is* what fitting selects.
+`TAKE_PROFIT_CREDIT = 0.35` and `STOP_CREDIT_MULT = 1.50` should stay where they
+are, and the comment in `config.py` recording the original judgement should stay
+with them.
+
+## What would actually help
+
+Not more fitting on this data.
+
+1. **More data.** Four windows is not a sample. The same harness with 30+ expiry
+   cycles would make fitting meaningful; that is a data-collection job, not a
+   modelling one.
+2. **Fewer free parameters.** Three parameters over 48 combinations on 41 trades
+   is hopeless; one parameter over 4 values might not be.
+3. **Live results.** Every trade the agent takes on the competition account is a
+   real out-of-sample observation. That is the sample worth growing.
+
+**Do not present fitted parameters as an improvement.** The measured claim is the
+opposite, and `scripts/walk_forward.py` reproduces it.
