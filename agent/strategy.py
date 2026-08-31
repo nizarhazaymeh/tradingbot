@@ -357,16 +357,38 @@ def propose(reg: Regime, views: List[O.ContractView], expiry: date,
         return None, "could not compute expected value for any candidate"
 
     scored.sort(key=lambda t: t[0], reverse=True)
-    best_ratio, best_ev, best = scored[0]
+
+    # Take the highest-EV candidate that ALSO passes the quality gates.
+    #
+    # This used to test scored[0] alone and abandon the underlying if it failed.
+    # That is the common case, not the rare one: EV rises as the short strike
+    # moves toward spot (more premium collected), while MIN_SHORT_SIGMA requires
+    # the opposite, so the top-EV structure is systematically the one the gate
+    # rejects. Measured on the 2026-09-04 expiry, 31 Aug: SPY had 27 of 36
+    # candidates passing every gate and traded none of them; QQQ 16 of 36. The
+    # first passing candidate was rank 1 in both cases, costing 0.0059 and
+    # 0.0032 of EV ratio — far less than standing aside.
+    best_ratio = best_ev = best = None
+    best_rank = -1
+    top_reason = None
+    for rank, (ratio, ev, sp) in enumerate(scored):
+        bad = quality_gate(sp, reg, view)
+        if bad is None:
+            best_ratio, best_ev, best, best_rank = ratio, ev, sp, rank
+            break
+        if top_reason is None:
+            top_reason = bad
+
+    if best is None:
+        return None, (f"all {len(scored)} candidates rejected; "
+                      f"best-EV one because: {top_reason}")
+
     best.meta["candidates_considered"] = len(scored)
-
-    bad = quality_gate(best, reg, view)
-    if bad:
-        return None, (f"best of {len(scored)} candidates rejected: {bad}")
-
+    best.meta["candidate_rank"] = best_rank
     best.meta.update(view_direction=view.direction, view_confidence=view.confidence,
                      view_source=view.source,
-                     why=f"best EV of {len(scored)} candidates: {best_ev.summary()}")
+                     why=(f"best acceptable EV of {len(scored)} candidates "
+                          f"(rank {best_rank}): {best_ev.summary()}"))
     return best, best.meta["why"]
 
 
