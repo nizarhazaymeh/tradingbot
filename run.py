@@ -8,15 +8,15 @@
   python run.py flatten         close everything (needs --live)
 """
 import argparse
-import logging
 import json
 import sys
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)-7s %(message)s",
-                    datefmt="%H:%M:%S")
-
-from agent import config
+from agent import config, logsetup
 from agent.cycle import Agent
+
+# Console + rotating file. Must happen before Agent() so nothing logs into the
+# void, and before any handler basicConfig() might otherwise install.
+LOG_PATH = logsetup.setup()
 
 
 def main():
@@ -54,7 +54,10 @@ def main():
 
     if a.rehearse and a.live:
         sys.exit("refusing to combine --rehearse with --live")
+    logsetup.banner(a.command, dry_run=dry)
     ag = Agent(dry_run=dry, use_llm=not a.no_llm, rehearse=a.rehearse)
+    if LOG_PATH:
+        print(f"logging to {LOG_PATH}")
     if dry:
         print("🟡 DRY RUN — no orders will be placed. Use --live to trade.\n")
     else:

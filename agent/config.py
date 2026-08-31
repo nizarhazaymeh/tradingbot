@@ -184,6 +184,11 @@ DRY_RUN = _b("DRY_RUN", True)
 STATE_DB = str(ROOT / "state" / "agent.db")
 LOG_DIR = ROOT / "logs"
 LOG_DIR.mkdir(exist_ok=True)
+# Console stays terse; the file keeps the full record. See agent/logsetup.py.
+LOG_LEVEL = _s("LOG_LEVEL", "INFO").upper()
+LOG_FILE = str(LOG_DIR / "agent.log")
+LOG_FILE_MAX_MB = _i("LOG_FILE_MAX_MB", 5)
+LOG_FILE_KEEP = _i("LOG_FILE_KEEP", 7)
 
 
 # ---------------------------------------------------------------- notifications
