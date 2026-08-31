@@ -298,27 +298,88 @@ def test_the_bonus_cannot_admit_a_structure_the_gates_reject():
             == plain.meta["candidates_considered"])
 
 
-def test_a_barrier_reorders_which_acceptable_structure_wins():
-    """The bonus has to actually DO something, or it is dead code.
+def test_the_bonus_can_flip_the_ranking_when_the_gap_is_smaller_than_it():
+    """The bonus has to be able to DO something, or it is dead code.
 
-    A barrier placed in front of one specific strike, and nowhere else, should be
-    able to lift that structure over a rival it was narrowly behind.
+    Tested on the ranking arithmetic rather than end to end, because this chain
+    cannot express the case and the reason is worth recording: a barrier is not
+    strike-specific. A level between spot and a far strike also sits between spot
+    and every NEARER strike on that side, so a barrier can only favour a rival
+    that is FURTHER out than the incumbent. In this fixture the highest-EV
+    candidate (752, 17 points from spot) is already the furthest, so any barrier
+    that covers the 755 rival covers 752 as well and the higher EV wins.
+
+    That is not a bug — it means the preference pushes toward further-out short
+    strikes, the same direction MIN_SHORT_SIGMA pushes. It does mean an
+    end-to-end promotion needs a chain where a nearer strike wins on EV.
+    """
+    B = config.RETEST_BARRIER_BONUS
+    assert B > 0, "bonus disabled; nothing to test"
+
+    # (ev, bonus) pairs exactly as propose() builds them, sorted the same way
+    def order(pairs):
+        return [i for i, _ in sorted(enumerate(pairs), key=lambda t: t[1][0] + t[1][1],
+                                     reverse=True)]
+
+    # gap smaller than the bonus -> the covered candidate is promoted
+    assert order([(0.0236, 0.0), (0.0210, B)])[0] == 1, (
+        "a covered candidate within one bonus must overtake")
+    # gap larger than the bonus -> ordering is unchanged
+    assert order([(0.0300, 0.0), (0.0210, B)])[0] == 0, (
+        "the bonus must not overturn a lead bigger than itself")
+    # equal EV, one covered -> covered wins
+    assert order([(0.0210, 0.0), (0.0210, B)])[0] == 1
+
+
+def test_the_incumbent_is_already_the_furthest_strike_in_this_chain():
+    """Pins the reason the test above is not end to end, so it is not mistaken
+    for the bonus being broken if someone changes the fixture."""
+    views, reg = chain(), regime()
+    acc = [(r, sp) for r, sp in _scored(reg, views)
+           if quality_gate(sp, reg, View()) is None and shorts_of(sp)]
+    assert len(acc) >= 2
+    winner = abs(shorts_of(acc[0][1])[0] - SPOT)
+    others = [abs(shorts_of(sp)[0] - SPOT) for _, sp in acc[1:]]
+    assert winner >= max(others), (
+        "fixture now offers a further-out rival — the end-to-end promotion test "
+        "is reachable and should be written")
+
+
+def test_retest_barrier_is_false_when_no_strike_is_covered():
+    """meta["retest_barrier"] used to be bool() of a dict whose values were None.
+
+    _retest_bonus() records an entry for every short leg, None where it found
+    nothing, so {"755P": None} is a truthy dict. The flag read True with nothing
+    behind any strike — True on 4 of 4 live positions on 31 Aug 2026, two of them
+    with no barriers at all. The field exists so live fills can be scored against
+    the barrier read; a constant cannot be scored against anything.
     """
     views = chain()
-    plain, _ = propose(regime(), views, E, View(), BUDGET)
-    chosen = shorts_of(plain)[0]
-    # find an acceptable structure with a DIFFERENT short strike to promote
-    rivals = [sp for _, sp in _scored(regime(), views)
-              if shorts_of(sp) and shorts_of(sp)[0] != chosen
-              and quality_gate(sp, regime(), View()) is None]
-    if not rivals:
-        return                                  # fixture offers only one strike
-    target = shorts_of(rivals[0])[0]
-    boosted, _ = propose(with_breaks(regime(), [confirmed_at(between_spot_and(target))]),
-                         views, E, View(), BUDGET)
-    assert quality_gate(boosted, regime(), View()) is None
-    assert boosted.meta.get("retest_levels") is not None, (
-        "the barrier read must be recorded on whatever structure is chosen")
+    # breaks exist, but all of them sit beyond the strikes, so none is a barrier
+    far = [confirmed_at(SPOT * 3), confirmed_at(SPOT / 3)]
+    sp, _ = propose(with_breaks(regime(), far), views, E, View(), BUDGET)
+    assert sp is not None
+    assert sp.meta.get("retest_levels"), "the read should still be recorded"
+    assert not any(sp.meta["retest_levels"].values()), "fixture found a barrier"
+    assert sp.meta["retest_barrier"] is False, (
+        "flag says a barrier exists while every entry is None")
+
+
+def test_retest_barrier_is_false_when_only_some_strikes_are_covered():
+    """Half a protected condor is an exposed condor — the flag must agree with
+    the bonus, which already requires every short leg to be covered."""
+    views, reg = chain(), regime()
+    multi = next((sp for _, sp in _scored(reg, views)
+                  if len(shorts_of(sp)) >= 2
+                  and quality_gate(sp, reg, View()) is None), None)
+    if multi is None:
+        return                                  # fixture offers no multi-short structure
+    ks = shorts_of(multi)
+    bonus = _retest_bonus(multi, SPOT, [confirmed_at(between_spot_and(ks[0]))])
+    assert bonus == 0.0, "partial coverage must not earn the bonus"
+    rt = multi.meta["retest_levels"]
+    assert not (bool(rt) and all(rt.values())), (
+        "the flag expression must be False under partial coverage")
 
 
 def test_a_zero_bonus_disables_the_preference():

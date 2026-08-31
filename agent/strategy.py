@@ -423,7 +423,15 @@ def propose(reg: Regime, views: List[O.ContractView], expiry: date,
                       f"best-EV one because: {top_reason}")
 
     best.meta["candidates_considered"] = len(scored)
-    best.meta["retest_barrier"] = bool(best.meta.get("retest_levels"))
+    # bool() on the dict was wrong: _retest_bonus() records an entry for EVERY
+    # short leg, with None where no barrier was found, so {"755P": None} is a
+    # truthy dict and the flag read True with nothing behind any strike. It was
+    # True on 4 of 4 live positions on 31 Aug, two of them with no barriers at
+    # all. This field exists so live fills can be scored against the barrier
+    # read, and a constant cannot be scored against anything. all({}) is True,
+    # hence the explicit emptiness check.
+    _rt = best.meta.get("retest_levels") or {}
+    best.meta["retest_barrier"] = bool(_rt) and all(_rt.values())
     best.meta["candidate_rank"] = best_rank
     best.meta.update(view_direction=view.direction, view_confidence=view.confidence,
                      view_source=view.source,
