@@ -170,6 +170,21 @@ LOG_DIR = ROOT / "logs"
 LOG_DIR.mkdir(exist_ok=True)
 
 
+# ---------------------------------------------------------------- notifications
+# Read by agent/notifier.py. All optional: an empty token or host disables that
+# channel silently, so the agent runs unchanged with none of these set.
+TELEGRAM_BOT_TOKEN = _s("TELEGRAM_BOT_TOKEN")
+TELEGRAM_CHAT_ID = _s("TELEGRAM_CHAT_ID")
+SMTP_HOST = _s("SMTP_HOST")
+SMTP_PORT = _i("SMTP_PORT", 587)
+SMTP_USER = _s("SMTP_USER")
+# Not _s(): that strips, and an App Password is displayed in 4 space-separated
+# groups ("abcd efgh ijkl mnop"). Read raw so it is passed through verbatim.
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
+EMAIL_FROM = _s("EMAIL_FROM")
+EMAIL_TO = _s("EMAIL_TO")
+
+
 def summary() -> dict:
     return {
         "account": ACCOUNT,

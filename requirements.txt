@@ -1,2 +1,5 @@
 python-dotenv==1.0.1
 openai>=1.40.0
+
+# Tests only — `python -m pytest tests/`
+pytest>=8.0.0
