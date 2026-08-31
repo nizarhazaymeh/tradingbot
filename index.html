@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Options Alpha Agent — Alpaca Hackathon 2026</title>
+<meta name="description" content="An autonomous options-trading agent on Alpaca. It measures whether the market is paying enough for risk, and refuses to trade when it isn't.">
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --line:#262d36;
+    --ink:#e6edf3; --dim:#8b949e; --faint:#6e7681;
+    --up:#00C805; --down:#FF3B30; --flat:#8b949e; --accent:#4c8eff;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--sans);
+       -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1100px;margin:0 auto;padding:28px 18px 64px}
+  a{color:var(--accent)}
+
+  header{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:26px}
+  h1{margin:0 0 6px;font-size:26px;letter-spacing:-.02em}
+  .sub{color:var(--dim);font-size:13px}
+  .sub code{font-family:var(--mono);color:var(--ink)}
+  .badge{display:inline-block;padding:2px 8px;border:1px solid var(--line);
+         border-radius:999px;font-size:11px;color:var(--dim);
+         font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em;
+         vertical-align:2px;margin-left:6px}
+
+  h2{font-size:13px;text-transform:uppercase;letter-spacing:.09em;color:var(--dim);
+     margin:34px 0 12px;font-weight:600}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px}
+  .note{color:var(--faint);font-size:13px;margin:10px 2px 0;max-width:62ch}
+  .empty{color:var(--faint);font-size:14px;padding:8px 2px;font-style:italic}
+
+  /* panel 1 */
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
+  .card .k{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--dim)}
+  .card .v{font-family:var(--mono);font-size:30px;font-weight:600;margin-top:8px;
+           letter-spacing:-.02em;line-height:1.1}
+  .card .s{font-family:var(--mono);font-size:12px;color:var(--faint);margin-top:4px}
+  .up{color:var(--up)} .down{color:var(--down)} .flat{color:var(--flat)}
+
+  /* panel 2 */
+  svg{display:block;width:100%;height:auto;overflow:visible}
+  .axis{fill:var(--faint);font-family:var(--mono);font-size:10px}
+
+  /* panel 3 */
+  .edge+.edge{border-top:1px solid var(--line);margin-top:16px;padding-top:16px}
+  .edge .top{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .edge .sym{font-family:var(--mono);font-size:17px;font-weight:600}
+  .edge .spot{font-family:var(--mono);font-size:12px;color:var(--faint)}
+  .verdict{margin-left:auto;font-family:var(--mono);font-size:11px;padding:3px 9px;
+           border-radius:999px;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+  .v-trade{background:rgba(0,200,5,.13);color:var(--up);border:1px solid rgba(0,200,5,.3)}
+  .v-skip{background:rgba(139,148,158,.12);color:var(--dim);border:1px solid var(--line)}
+  .bars{margin-top:12px;display:grid;grid-template-columns:auto 1fr auto;
+        gap:7px 10px;align-items:center}
+  .bl{font-size:12px;color:var(--dim);white-space:nowrap}
+  .bt{height:9px;background:#0b0f14;border-radius:5px;overflow:hidden}
+  .bf{height:100%;border-radius:5px}
+  .bv{font-family:var(--mono);font-size:12px;text-align:right;white-space:nowrap}
+  .edge .concl{margin-top:11px;font-size:13px;color:var(--dim)}
+  .edge .concl b{font-family:var(--mono)}
+
+  /* tables */
+  .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+  th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.07em;
+     color:var(--dim);font-weight:600;padding:0 12px 9px 0;border-bottom:1px solid var(--line);
+     white-space:nowrap}
+  td{padding:11px 12px 11px 0;border-bottom:1px solid var(--line);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  .num{font-family:var(--mono);white-space:nowrap}
+  .plain{color:var(--dim);min-width:220px}
+
+  /* panel 5 */
+  .log{font-family:var(--mono);font-size:12.5px}
+  .log .row{display:grid;grid-template-columns:64px 46px 96px 1fr;gap:10px;
+            padding:8px 0;border-bottom:1px solid var(--line);align-items:start}
+  .log .row:last-child{border-bottom:none}
+  .log .t{color:var(--faint)}
+  .log .tag{font-size:10.5px;letter-spacing:.05em}
+  .log .why{font-family:var(--sans);color:var(--dim);word-break:break-word}
+  .gates{margin-top:8px;display:grid;grid-template-columns:auto 1fr auto;gap:6px 10px;align-items:center}
+  .gname{font-family:var(--mono);font-size:12px;color:var(--dim);white-space:nowrap}
+
+  .funnel{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:10px;margin-top:4px}
+  .fstep{background:#0b0f14;border:1px solid var(--line);border-radius:8px;padding:11px;text-align:center}
+  .fstep .fv{font-family:var(--mono);font-size:21px;font-weight:600}
+  .fstep .fk{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--faint);margin-top:3px}
+
+  footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--line);
+         color:var(--faint);font-size:12px;line-height:1.7}
+
+  @media(max-width:760px){
+    .wrap{padding:20px 14px 48px}
+    h1{font-size:21px}
+    .cards{grid-template-columns:repeat(2,1fr)}
+    .card .v{font-size:24px}
+    .log .row{grid-template-columns:56px 42px 84px;row-gap:4px}
+    .log .why{grid-column:1/-1}
+    .verdict{margin-left:0}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Options Alpha Agent<span class="badge" id="env">paper</span></h1>
+    <div class="sub">
+      Autonomous options agent on Alpaca · account <code id="acct">—</code>
+      · updated <span id="updated">—</span>
+    </div>
+  </header>
+
+  <div id="err" style="display:none" class="panel">
+    <strong>Could not load <code>public/dashboard.json</code>.</strong>
+    <div class="note" id="errmsg"></div>
+  </div>
+
+  <main id="app" style="display:none">
+    <div class="cards">
+      <div class="card"><div class="k">Return</div>
+        <div class="v" id="c-ret">—</div><div class="s" id="c-ret-s"></div></div>
+      <div class="card"><div class="k">Win rate</div>
+        <div class="v" id="c-win">—</div><div class="s" id="c-win-s"></div></div>
+      <div class="card"><div class="k">Trades</div>
+        <div class="v" id="c-tr">—</div><div class="s">closed</div></div>
+      <div class="card"><div class="k">Max drop</div>
+        <div class="v down" id="c-dd">—</div><div class="s">peak to trough</div></div>
+    </div>
+
+    <h2>Account value</h2>
+    <div class="panel"><div id="chart"></div></div>
+
+    <h2>Why we trade — or skip</h2>
+    <div class="panel" id="edges"></div>
+    <p class="note">
+      Selling options is like selling insurance. It only makes money when the
+      premium charged is bigger than the real risk. Our agent measures both and
+      <strong>refuses to trade when it isn't being paid enough.</strong>
+    </p>
+
+    <h2>Open positions</h2>
+    <div class="panel"><div class="scroll" id="pos"></div></div>
+
+    <h2>Decision funnel</h2>
+    <div class="panel"><div class="funnel" id="funnel"></div>
+      <p class="note" style="margin-bottom:0">Most candidates are rejected. That is the
+        system working — the gates run before any order is sent.</p></div>
+
+    <h2>Decision log</h2>
+    <div class="panel"><div class="log" id="log"></div></div>
+
+    <h2 id="gates-h" style="display:none">Why trades were rejected</h2>
+    <div class="panel" id="gates-p" style="display:none"><div class="gates" id="gates"></div></div>
+  </main>
+
+  <footer>
+    Alpaca AI Trading Agents Hackathon 2026 · paper trading simulation · not investment advice
+    <br>Source: <a href="https://github.com/nizarhazaymeh/tradingbot">github.com/nizarhazaymeh/tradingbot</a>
+  </footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const nz = v => v !== null && v !== undefined && !Number.isNaN(v);
+const money = v => (v < 0 ? "-" : "") + "$" + Math.abs(v).toLocaleString("en-US",
+                    {minimumFractionDigits:2, maximumFractionDigits:2});
+const sign = v => (v >= 0 ? "+" : "") + v.toFixed(2);
+const pct = (v, d=2) => (v >= 0 ? "+" : "") + (v * 100).toFixed(d) + "%";
+const cls = v => v > 0 ? "up" : v < 0 ? "down" : "flat";
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c =>
+                  ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const hhmm = ts => { const d = new Date(ts);
+  return isNaN(d) ? "--:--" : d.toISOString().slice(11,16); };
+
+function headline(a){
+  const r = a.total_pnl_pct ?? 0;
+  $("c-ret").textContent = pct(r);
+  $("c-ret").className = "v " + cls(r);
+  $("c-ret-s").textContent = money(a.total_pnl ?? 0);
+  // win_rate is null until the first trade closes; do not render "0%" as if real
+  $("c-win").textContent = nz(a.win_rate) ? Math.round(a.win_rate*100) + "%" : "—";
+  $("c-win-s").textContent = nz(a.win_rate) ? "" : "no closed trades yet";
+  $("c-tr").textContent = a.closed_trades ?? 0;
+  const dd = a.max_drawdown_pct ?? 0;
+  $("c-dd").textContent = (dd*100).toFixed(1) + "%";
+  $("c-dd").className = "v " + (dd < 0 ? "down" : "flat");
+}
+
+function chart(curve, start){
+  const el = $("chart");
+  if(!curve || curve.length < 2){
+    el.innerHTML = '<div class="empty">Not enough data points yet — the curve appears once the agent has run through a session.</div>';
+    return;
+  }
+  const W=1000, H=260, P={t:16,r:56,b:26,l:8};
+  const ys = curve.map(p => p.equity).concat([start]);
+  let lo = Math.min(...ys), hi = Math.max(...ys);
+  if(hi - lo < 1){ lo -= 50; hi += 50; }            // flat line: give it room
+  const pad = (hi-lo)*0.12; lo -= pad; hi += pad;
+  const X = i => P.l + i*(W-P.l-P.r)/(curve.length-1);
+  const Y = v => P.t + (hi-v)/(hi-lo)*(H-P.t-P.b);
+  const line = curve.map((p,i) => (i?"L":"M")+X(i).toFixed(1)+" "+Y(p.equity).toFixed(1)).join(" ");
+  const area = line + ` L${X(curve.length-1).toFixed(1)} ${Y(lo).toFixed(1)} L${X(0).toFixed(1)} ${Y(lo).toFixed(1)} Z`;
+  const last = curve[curve.length-1].equity;
+  const col = last > start ? "var(--up)" : last < start ? "var(--down)" : "var(--flat)";
+  el.innerHTML = `
+  <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Account value over time">
+    <defs><linearGradient id="g" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="${col}" stop-opacity=".22"/>
+      <stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient></defs>
+    <path d="${area}" fill="url(#g)"/>
+    <line x1="${P.l}" x2="${W-P.r}" y1="${Y(start).toFixed(1)}" y2="${Y(start).toFixed(1)}"
+          stroke="var(--faint)" stroke-width="1" stroke-dasharray="4 4"/>
+    <text class="axis" x="${W-P.r+6}" y="${(Y(start)+3.5).toFixed(1)}">${money(start).replace(".00","")}</text>
+    <path d="${line}" fill="none" stroke="${col}" stroke-width="2"
+          stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${X(curve.length-1).toFixed(1)}" cy="${Y(last).toFixed(1)}" r="3.5" fill="${col}"/>
+    <text class="axis" x="${P.l}" y="${H-8}">${hhmm(curve[0].ts)}</text>
+    <text class="axis" x="${(W-P.r).toFixed(1)}" y="${H-8}" text-anchor="end">${hhmm(curve[curve.length-1].ts)}</text>
+  </svg>`;
+}
+
+function edges(market){
+  const el = $("edges");
+  if(!market || !market.length){ el.innerHTML = '<div class="empty">No market readings yet.</div>'; return; }
+  const scale = Math.max(0.30, ...market.flatMap(m => [m.implied_vol||0, m.realized_vol||0])) * 1.05;
+  el.innerHTML = market.map(m => {
+    const iv=m.implied_vol||0, rv=m.realized_vol||0, e=m.premium_edge ?? (iv-rv);
+    const trade = String(m.verdict||"").toLowerCase() === "trade";
+    const bar = (v,c) => `<div class="bt"><div class="bf" style="width:${(v/scale*100).toFixed(1)}%;background:${c}"></div></div>`;
+    return `<div class="edge">
+      <div class="top">
+        <span class="sym">${esc(m.underlying)}</span>
+        <span class="spot">${nz(m.spot)?money(m.spot):""}</span>
+        ${m.regime?`<span class="spot">${esc(m.regime)}</span>`:""}
+        <span class="verdict ${trade?"v-trade":"v-skip"}">${trade?"worth trading":"skipped"}</span>
+      </div>
+      <div class="bars">
+        <span class="bl">market charges</span>${bar(iv,"var(--accent)")}<span class="bv">${(iv*100).toFixed(1)}%</span>
+        <span class="bl">real risk</span>${bar(rv,"var(--flat)")}<span class="bv">${(rv*100).toFixed(1)}%</span>
+      </div>
+      <div class="concl"><b class="${cls(e)}">${pct(e,1)}</b> edge — ${esc(m.reason||"")}</div>
+    </div>`;
+  }).join("");
+}
+
+function positions(rows){
+  const el = $("pos");
+  if(!rows || !rows.length){
+    el.innerHTML = '<div class="empty">No open positions. The agent holds nothing overnight unless a structure still has time value.</div>';
+    return;
+  }
+  el.innerHTML = `<table><thead><tr>
+    <th>Underlying</th><th>Strategy</th><th>Expires</th><th>Collected</th>
+    <th>Max loss</th><th>P&amp;L now</th><th>What it means</th></tr></thead><tbody>
+    ${rows.map(p => {
+      const pl = p.unrealized_pnl ?? 0;
+      return `<tr>
+        <td class="num">${esc(p.underlying)}</td>
+        <td>${esc(String(p.kind||"").replace(/_/g," "))}</td>
+        <td class="num">${nz(p.days_to_expiry)?p.days_to_expiry+"d":"—"}</td>
+        <td class="num">${nz(p.credit_received)?money(p.credit_received):"—"}</td>
+        <td class="num">${nz(p.max_loss)?money(p.max_loss):"—"}</td>
+        <td class="num ${cls(pl)}">${sign(pl)}</td>
+        <td class="plain">${esc(p.plain_english||p.description||"")}</td></tr>`;
+    }).join("")}</tbody></table>`;
+}
+
+function funnel(f){
+  const el = $("funnel");
+  if(!f || !Object.keys(f).length){ el.innerHTML = '<div class="empty">No cycles recorded yet.</div>'; return; }
+  // key names differ between the spec and the live exporter; show whatever is present
+  const order = ["considered","passed_gates","rejected","held","submitted","filled","closed"];
+  const keys = order.filter(k => nz(f[k])).concat(Object.keys(f).filter(k => !order.includes(k)));
+  el.innerHTML = keys.map(k =>
+    `<div class="fstep"><div class="fv">${f[k]}</div><div class="fk">${esc(k.replace(/_/g," "))}</div></div>`).join("");
+}
+
+function log(rows){
+  const el = $("log");
+  if(!rows || !rows.length){ el.innerHTML = '<div class="empty">No decisions logged yet.</div>'; return; }
+  el.innerHTML = rows.slice(0,20).map(d => {
+    const dec = String(d.decision||"").toLowerCase();
+    const traded = dec === "submit" || dec === "filled";
+    return `<div class="row">
+      <span class="t">${hhmm(d.ts)}</span>
+      <span>${esc(d.underlying)}</span>
+      <span class="tag ${traded?"up":"flat"}">${traded?"TRADED":"NO TRADE"}</span>
+      <span class="why">${esc(d.reason||"")}</span></div>`;
+  }).join("");
+}
+
+function gates(g){
+  if(!g || !Object.keys(g).length) return;
+  $("gates-h").style.display = ""; $("gates-p").style.display = "";
+  const rows = Object.entries(g).sort((a,b) => b[1]-a[1]);
+  const max = rows[0][1] || 1;
+  $("gates").innerHTML = rows.map(([k,v]) =>
+    `<span class="gname">${esc(k)}</span>
+     <div class="bt"><div class="bf" style="width:${(v/max*100).toFixed(1)}%;background:var(--accent)"></div></div>
+     <span class="bv">${v}</span>`).join("");
+}
+
+fetch("public/dashboard.json", {cache:"no-store"})
+  .then(r => { if(!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+  .then(d => {
+    const a = d.account || {};
+    $("acct").textContent = a.account_id || "—";
+    $("env").textContent = a.environment === "comp" ? "competition" : (a.environment || "paper");
+    const t = new Date(d.updated_at);
+    $("updated").textContent = isNaN(t) ? esc(d.updated_at||"—")
+      : t.toISOString().replace("T"," ").slice(0,16) + " UTC";
+    headline(a);
+    chart(d.equity_curve, a.starting_equity ?? 100000);
+    edges(d.market);
+    positions(d.positions);
+    funnel(d.funnel);
+    log(d.decisions);
+    gates(d.gate_rejections);
+    $("app").style.display = "";
+  })
+  .catch(e => {
+    $("err").style.display = "";
+    $("errmsg").textContent = e.message +
+      ". If you are opening this file directly from disk, browsers block the fetch — serve it over HTTP instead (python3 -m http.server).";
+  });
+</script>
+</body>
+</html>

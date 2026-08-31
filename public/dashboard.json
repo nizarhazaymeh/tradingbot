@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-08-30T18:39:06+00:00",
+  "updated_at": "2026-08-31T10:24:14+00:00",
   "account": {
-    "account_id": "PA349BYK6I13",
+    "account_id": "PA3YD776IS6I",
     "environment": "dev",
     "equity": 100000.0,
     "starting_equity": 100000.0,
@@ -15,15 +15,23 @@
   },
   "equity_curve": [
     {
-      "ts": "2026-08-30T18:22:58+00:00",
+      "ts": "2026-08-31T09:46:26+00:00",
       "equity": 100000.0
     },
     {
-      "ts": "2026-08-30T18:23:24+00:00",
+      "ts": "2026-08-31T09:58:55+00:00",
       "equity": 100000.0
     },
     {
-      "ts": "2026-08-30T18:23:51+00:00",
+      "ts": "2026-08-31T10:02:49+00:00",
+      "equity": 100000.0
+    },
+    {
+      "ts": "2026-08-31T10:09:32+00:00",
+      "equity": 100000.0
+    },
+    {
+      "ts": "2026-08-31T10:20:43+00:00",
       "equity": 100000.0
     }
   ],
@@ -31,27 +39,27 @@
     {
       "underlying": "SPY",
       "spot": 769.28,
-      "implied_vol": 0.1079,
+      "implied_vol": 0.1191,
       "realized_vol": 0.1012,
-      "premium_edge": 0.0067,
-      "verdict": "stand aside",
-      "reason": "market charges LESS than the real risk"
+      "premium_edge": 0.0179,
+      "verdict": "trade",
+      "reason": "market charges more than the real risk"
     },
     {
       "underlying": "QQQ",
       "spot": 716.91,
-      "implied_vol": 0.1604,
+      "implied_vol": 0.178,
       "realized_vol": 0.1771,
-      "premium_edge": -0.0167,
+      "premium_edge": 0.0009,
       "verdict": "stand aside",
       "reason": "market charges LESS than the real risk"
     },
     {
       "underlying": "IWM",
       "spot": 295.73,
-      "implied_vol": 0.1565,
+      "implied_vol": 0.1721,
       "realized_vol": 0.1421,
-      "premium_edge": 0.0144,
+      "premium_edge": 0.03,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     }
@@ -59,7 +67,7 @@
   "positions": [],
   "decisions": [
     {
-      "ts": "2026-08-30T18:24:11+00:00",
+      "ts": "2026-08-31T10:21:04+00:00",
       "underlying": "IWM",
       "decision": "submit",
       "gate": "all",
@@ -67,15 +75,15 @@
       "regime": "LOW_IV_RANGE"
     },
     {
-      "ts": "2026-08-30T18:24:05+00:00",
+      "ts": "2026-08-31T10:20:58+00:00",
       "underlying": "QQQ",
-      "decision": "hold",
-      "gate": "",
-      "reason": "best of 37 candidates rejected: expected value +1.26% of risk < required 2% (P(win) 89%, VRP -0.9%)",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "dry run",
       "regime": "LOW_IV_RANGE"
     },
     {
-      "ts": "2026-08-30T18:23:58+00:00",
+      "ts": "2026-08-31T10:20:50+00:00",
       "underlying": "SPY",
       "decision": "submit",
       "gate": "all",
@@ -83,7 +91,7 @@
       "regime": "LOW_IV_RANGE"
     },
     {
-      "ts": "2026-08-30T18:23:45+00:00",
+      "ts": "2026-08-31T10:09:53+00:00",
       "underlying": "IWM",
       "decision": "submit",
       "gate": "all",
@@ -91,15 +99,15 @@
       "regime": "LOW_IV_RANGE"
     },
     {
-      "ts": "2026-08-30T18:23:40+00:00",
+      "ts": "2026-08-31T10:09:47+00:00",
       "underlying": "QQQ",
-      "decision": "hold",
-      "gate": "",
-      "reason": "best of 37 candidates rejected: expected value +1.26% of risk < required 2% (P(win) 89%, VRP -0.9%)",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "dry run",
       "regime": "LOW_IV_RANGE"
     },
     {
-      "ts": "2026-08-30T18:23:30+00:00",
+      "ts": "2026-08-31T10:09:39+00:00",
       "underlying": "SPY",
       "decision": "submit",
       "gate": "all",
@@ -107,35 +115,83 @@
       "regime": "LOW_IV_RANGE"
     },
     {
-      "ts": "2026-08-30T18:23:22+00:00",
+      "ts": "2026-08-31T10:03:08+00:00",
+      "underlying": "IWM",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "dry run",
+      "regime": "LOW_IV_RANGE"
+    },
+    {
+      "ts": "2026-08-31T10:03:02+00:00",
+      "underlying": "QQQ",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "dry run",
+      "regime": "LOW_IV_RANGE"
+    },
+    {
+      "ts": "2026-08-31T10:02:55+00:00",
+      "underlying": "SPY",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "dry run",
+      "regime": "LOW_IV_RANGE"
+    },
+    {
+      "ts": "2026-08-31T09:59:13+00:00",
+      "underlying": "IWM",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "dry run",
+      "regime": "LOW_IV_RANGE"
+    },
+    {
+      "ts": "2026-08-31T09:59:07+00:00",
+      "underlying": "QQQ",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "dry run",
+      "regime": "LOW_IV_RANGE"
+    },
+    {
+      "ts": "2026-08-31T09:59:01+00:00",
+      "underlying": "SPY",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "dry run",
+      "regime": "LOW_IV_RANGE"
+    },
+    {
+      "ts": "2026-08-31T09:46:46+00:00",
       "underlying": "IWM",
       "decision": "hold",
       "gate": "",
-      "reason": "best of 27 candidates rejected: net delta -0.37/unit exceeds \u00b10.35",
+      "reason": "best of 27 candidates rejected: short 296P is only 0.05\u03c3 from spot (need 0.9\u03c3)",
       "regime": "HIGH_IV_TREND"
     },
     {
-      "ts": "2026-08-30T18:23:16+00:00",
+      "ts": "2026-08-31T09:46:40+00:00",
       "underlying": "QQQ",
       "decision": "hold",
       "gate": "",
-      "reason": "best of 37 candidates rejected: expected value +1.26% of risk < required 2% (P(win) 89%, VRP -0.9%)",
+      "reason": "best of 37 candidates rejected: short 727C is only 0.70\u03c3 from spot (need 0.9\u03c3)",
       "regime": "LOW_IV_RANGE"
     },
     {
-      "ts": "2026-08-30T18:23:05+00:00",
+      "ts": "2026-08-31T09:46:32+00:00",
       "underlying": "SPY",
-      "decision": "submit",
-      "gate": "all",
-      "reason": "dry run",
-      "regime": "LOW_IV_RANGE"
+      "decision": "hold",
+      "gate": "",
+      "reason": "best of 36 candidates rejected: short 778C is only 0.83\u03c3 from spot (need 0.9\u03c3)",
+      "regime": "HIGH_IV_RANGE"
     }
   ],
   "funnel": {
-    "considered": 9,
+    "considered": 15,
     "rejected": 0,
-    "submitted": 5,
-    "held": 4,
+    "submitted": 12,
+    "held": 3,
     "closed": 0
   },
   "gate_rejections": {},
