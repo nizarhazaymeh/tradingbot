@@ -80,6 +80,44 @@ MAX_PER_EXPIRY_PCT = _f("MAX_PER_EXPIRY_PCT", 0.0250)
 MAX_OPEN_POSITIONS = _i("MAX_OPEN_POSITIONS", 10)
 MAX_ORDERS_PER_HOUR = _i("MAX_ORDERS_PER_HOUR", 12)
 
+# How long an unfilled order may sit at the broker before the agent cancels it.
+#
+# Nothing used to cancel a working order — the only cancel in the codebase was
+# inside a halt — so an mleg limit that never filled stayed until the session
+# ended. That is not merely untidy. Alpaca rejects a new order that trades the
+# OPPOSITE side of a contract a working order already touches:
+#
+#   403 potential wash trade detected ... opposite side market/stop order exists
+#
+# On 31 Aug a SPY condor sat unfilled at -0.34 from 20:44, and every later SPY
+# condor overlapped its strikes, so the agent re-proposed and was re-rejected
+# every cycle — spending its MAX_ORDERS_PER_HOUR budget on rejections while
+# holding the strikes hostage. It had deadlocked itself out of an underlying.
+#
+# Longer than one cycle, so an order gets a full interval to fill on its own.
+# Only orders with ZERO fills are cancelled; a partial fill is a real position
+# and is left alone, the same way monitor.reconcile() never auto-acts on one.
+ORDER_TTL_SEC = _i("ORDER_TTL_SEC", 420)        # 0 disables
+
+# How many consecutive cycles a tracked structure must be absent from the broker
+# before its row is retired.
+#
+# monitor.reconcile() has always computed ghosts exactly — tracked structures the
+# broker holds NO leg of — and then only logged them. Nothing retired the row, so
+# a structure that filled and later left the book stayed "open" forever, and
+# g_no_duplicate refused to re-enter it. On 31 Aug an IWM bear_put that the
+# broker had not held since 14:35 blocked every IWM proposal for the rest of the
+# session, six rejections and counting. A restart does not help: the row is in
+# SQLite, not in memory.
+#
+# Requiring consecutive cycles is what makes this safe against a race — a fill
+# that has not yet appeared in /v2/positions reads as a ghost for one cycle. The
+# streak is in memory, so a restart re-observes before acting, which is the
+# direction we want to be wrong in.
+#
+# A partial is still never auto-acted on. Only FULL absence counts.
+GHOST_RETIRE_CYCLES = _i("GHOST_RETIRE_CYCLES", 2)   # 0 disables
+
 DAILY_DRAWDOWN_LIMIT = _f("DAILY_DRAWDOWN_LIMIT", 0.02)  # -2%
 TOTAL_DRAWDOWN_LIMIT = _f("TOTAL_DRAWDOWN_LIMIT", 0.06)  # -6%
 

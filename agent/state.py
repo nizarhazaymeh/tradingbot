@@ -227,12 +227,22 @@ class Store:
 
     # ------------------------------------------------------------ reporting
     def stats(self) -> dict:
+        """`realized_pnl` NULL means UNKNOWN, not zero.
+
+        A retired ghost has no attributable P&L — its legs may be shared with
+        another structure, so per-symbol fills cannot be split between them. It
+        used to be coerced to 0.0, which counted it as a losing trade and dragged
+        the win rate down with a number nobody measured. Unknowns are now
+        excluded from the rates and reported separately.
+        """
         closed = self.closed_positions()
-        pnls = [p["realized_pnl"] or 0.0 for p in closed]
+        pnls = [p["realized_pnl"] for p in closed if p["realized_pnl"] is not None]
+        unknown = len(closed) - len(pnls)
         wins = [p for p in pnls if p > 0]
         losses = [p for p in pnls if p <= 0]
         return {
             "closed_trades": len(closed),
+            "closed_pnl_unknown": unknown,
             "open_trades": len(self.open_positions()),
             "realized_pnl": round(sum(pnls), 2),
             "win_rate": round(len(wins) / len(pnls), 4) if pnls else None,

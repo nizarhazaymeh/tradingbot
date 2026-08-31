@@ -36,6 +36,9 @@ class Agent:
         # exercised outside session hours. NEVER combine with --live.
         self.rehearse = rehearse
         self.cycle_n = 0
+        # signature -> consecutive cycles seen as a ghost. In memory on purpose:
+        # a restart re-observes before retiring anything. See _retire_ghosts().
+        self._ghost_streak: dict = {}
 
     # ------------------------------------------------------------- helpers
     def _halted(self) -> bool:
@@ -103,6 +106,112 @@ class Agent:
             log.info("    cleared never-filled %s (order %s)",
                      pos["signature"][:52], o.get("status"))
         return cleared
+
+    def _cancel_stale_orders(self) -> list:
+        """Cancel working orders that have sat unfilled past config.ORDER_TTL_SEC.
+
+        A working order is not free. Alpaca refuses any new order that takes the
+        OPPOSITE side of a contract a live order already touches, so one stale
+        mleg limit blocks every structure that overlaps its strikes — the agent
+        re-proposes and is rejected 403 "potential wash trade detected" every
+        cycle, burning its order budget and locking itself out of the underlying.
+
+        Only orders with zero fills are cancelled. A partially filled order is a
+        real position; cancelling it would strand the filled legs naked, so it is
+        reported and left alone exactly as monitor.reconcile() leaves a partial.
+
+        The cancelled row is not closed here. Its order becomes `canceled` with
+        filled_qty 0, which is precisely what _clear_never_filled() already looks
+        for, so the next cycle retires it and releases the risk budget.
+        """
+        ttl = config.ORDER_TTL_SEC
+        if ttl <= 0:
+            return []
+        now = datetime.now(timezone.utc)
+        cancelled = []
+        for pos in self.store.open_positions():
+            oid = pos.get("open_order_id")
+            if not oid:
+                continue
+            try:
+                o = self.c.get_order(oid)
+            except AlpacaError as e:
+                log.warning("could not verify order %s: [%s] %s",
+                            str(oid)[:8], e.status, e.message[:60])
+                continue
+            if o.get("status") in ("filled", "canceled", "expired", "rejected"):
+                continue
+            if float(o.get("filled_qty") or 0) > 0:
+                continue                    # partial fill: a real position
+            sub = o.get("submitted_at") or o.get("created_at")
+            if not sub:
+                continue
+            try:
+                age = (now - datetime.fromisoformat(
+                    str(sub).replace("Z", "+00:00"))).total_seconds()
+            except ValueError:
+                continue
+            if age < ttl:
+                continue
+            try:
+                self.c.cancel_order(str(oid))
+            except AlpacaError as e:
+                # 422 means it filled or died between the read and the cancel —
+                # the broker is the truth and the next cycle will see it.
+                log.warning("could not cancel %s: [%s] %s",
+                            str(oid)[:8], e.status, e.message[:60])
+                continue
+            cancelled.append(pos["signature"])
+            log.info("    cancelled stale order %s after %.0fs unfilled — %s",
+                     str(oid)[:8], age, pos["signature"][:52])
+        return cancelled
+
+    def _retire_ghosts(self, ghosts: list) -> list:
+        """Close tracked rows the broker has held no leg of for N cycles running.
+
+        reconcile() has always identified these exactly and then only logged
+        them, so the row lived forever and g_no_duplicate refused to re-enter the
+        structure. On 31 Aug an IWM bear_put the broker had not held since 14:35
+        blocked every IWM proposal for the rest of the session. Restarting does
+        not clear it — the row is in SQLite.
+
+        Two things keep this conservative:
+
+        * A structure must be a ghost on `config.GHOST_RETIRE_CYCLES` CONSECUTIVE
+          cycles. A fill that has not yet surfaced in /v2/positions reads as a
+          ghost once, and one observation is not evidence.
+        * The streak lives in memory, so a restart starts counting again. Being
+          slow to retire costs a few minutes of a blocked structure; being fast
+          costs a real position its exit plan.
+
+        P&L is recorded as NULL, meaning UNKNOWN rather than zero. These legs can
+        be shared between structures — the two SPY condors on 31 Aug shared both
+        put strikes — so per-symbol fills cannot be attributed to one of them.
+        Store.stats() excludes unknowns from the win rate rather than counting a
+        fabricated loss.
+        """
+        n = config.GHOST_RETIRE_CYCLES
+        if n <= 0:
+            self._ghost_streak.clear()
+            return []
+        live = set(ghosts or [])
+        for sig in list(self._ghost_streak):
+            if sig not in live:
+                del self._ghost_streak[sig]          # reappeared: streak broken
+        retired = []
+        for sig in live:
+            self._ghost_streak[sig] = self._ghost_streak.get(sig, 0) + 1
+            if self._ghost_streak[sig] < n:
+                log.info("    ghost %s seen %d/%d cycles — not retiring yet",
+                         sig[:52], self._ghost_streak[sig], n)
+                continue
+            self.store.close_position(
+                sig, realized_pnl=None,
+                reason=f"ghost: broker held no leg for {n} cycles (P&L unknown)")
+            del self._ghost_streak[sig]
+            retired.append(sig)
+            log.warning("    RETIRED ghost %s — broker holds none of its legs", sig[:60])
+        return retired
 
     def _structure(self, ohlc) -> tuple:
         """(market_structure, zones, fib, breaks) from daily bars — all best-effort.
@@ -472,11 +581,21 @@ class Agent:
         obs = self.observe()
         acct, clock = obs["account"], obs["clock"]
 
+        # Retire stale working orders first: a live order that will never fill
+        # still blocks every overlapping structure at the broker. Cancelling here
+        # means _clear_never_filled() sees it terminal on the next cycle.
+        stale = self._cancel_stale_orders()
+
         # Drop never-filled rows BEFORE reconciling, so the picture reconcile
         # reports — and the heat the risk gates compute — reflects the broker.
         cleared = self._clear_never_filled()
         rec = monitor.reconcile(self.store, obs["positions"])
         rec["cleared_never_filled"] = cleared
+        rec["cancelled_stale"] = stale
+        # Retire ghosts AFTER reconcile — it is what identifies them — and before
+        # the risk book is built, so a retired row stops consuming heat this
+        # cycle rather than the next one.
+        rec["retired_ghosts"] = self._retire_ghosts(rec.get("ghosts"))
         if not rec["clean"]:
             log.warning("RECONCILE: ghosts=%s partial=%s orphans=%s",
                         rec["ghosts"], rec.get("partial"), rec["orphans"])
