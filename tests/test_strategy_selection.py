@@ -170,3 +170,165 @@ def test_budget_is_still_respected():
     assert sp is not None, why
     assert sp.max_loss_per_unit <= BUDGET, (
         f"max loss ${sp.max_loss_per_unit:.0f} exceeds budget ${BUDGET:.0f}")
+
+
+# ------------------------------------------- the retest barrier is a tie-break
+#
+# A break of structure that price returned to and respected is the strongest
+# barrier levels.py can identify. docs/BACKTEST.md Part 6 measured it
+# leave-one-window-out: trades whose short strike sat behind one returned +$3,255
+# (PF 1.98) against -$554 (PF 0.91) without one.
+#
+# It inverted in one of four windows, so it is wired as a RANKING preference and
+# nothing more. These tests pin that boundary: it may reorder acceptable
+# structures, and it may never admit an unacceptable one.
+
+from agent import levels as L
+from agent.strategy import _retest_bonus
+
+
+def confirmed_at(level, direction=-1):
+    return L.Break(index=40, level=level, direction=direction, pivot_index=36,
+                   state="confirmed")
+
+
+def a_credit_spread(reg, views):
+    """The highest-EV structure with a short leg.
+
+    Deliberately side-agnostic: the trending fixture is an UPtrend, so
+    candidates() offers puts and refuses calls. A test that demanded a bear_call
+    would be testing the trend filter, not the barrier.
+    """
+    for _, sp in _scored(reg, views):
+        if any(l.side == "sell" and l.view for l in sp.legs):
+            return sp
+    raise AssertionError("fixture produced no structure with a short leg")
+
+
+def shorts_of(sp):
+    return [l.view.strike for l in sp.legs if l.side == "sell" and l.view]
+
+
+def between_spot_and(strike):
+    """A level price must pass before it can reach `strike`, either side."""
+    return (SPOT + strike) / 2
+
+
+def beyond(strike):
+    """A level on the far side of the strike — price reaches the strike first."""
+    return strike - 5 if strike < SPOT else strike + 5
+
+
+def test_no_breaks_means_no_bonus():
+    sp = a_credit_spread(regime(), chain())
+    assert _retest_bonus(sp, SPOT, []) == 0.0
+    assert _retest_bonus(sp, SPOT, None) == 0.0
+
+
+def test_a_level_in_front_of_the_short_strike_earns_the_bonus():
+    sp = a_credit_spread(regime(), chain())
+    k = shorts_of(sp)[0]
+    assert _retest_bonus(sp, SPOT, [confirmed_at(between_spot_and(k))]) == (
+        config.RETEST_BARRIER_BONUS)
+
+
+def test_a_level_beyond_the_short_strike_earns_nothing():
+    sp = a_credit_spread(regime(), chain())
+    k = shorts_of(sp)[0]
+    assert _retest_bonus(sp, SPOT, [confirmed_at(beyond(k))]) == 0.0
+
+
+def test_an_unconfirmed_level_earns_nothing():
+    """The retest is the entire signal — a level price never returned to is noise."""
+    sp = a_credit_spread(regime(), chain())
+    k = shorts_of(sp)[0]
+    mid = between_spot_and(k)
+    for state in ("pending", "failed"):
+        b = L.Break(index=40, level=mid, direction=-1, pivot_index=36, state=state)
+        assert _retest_bonus(sp, SPOT, [b]) == 0.0
+
+
+def test_half_a_condor_is_not_a_protected_condor():
+    """A level under the put and nothing over the call protects the wrong side."""
+    reg, views = range_regime(), chain()
+    condor = next(sp for _, sp in _scored(reg, views) if sp.kind == "iron_condor")
+    ks = sorted(shorts_of(condor))
+    put_side = [confirmed_at((ks[0] + SPOT) / 2)]
+    assert _retest_bonus(condor, SPOT, put_side) == 0.0
+    both = put_side + [confirmed_at((SPOT + ks[-1]) / 2)]
+    assert _retest_bonus(condor, SPOT, both) == config.RETEST_BARRIER_BONUS
+
+
+def test_the_levels_are_recorded_whether_or_not_they_pay():
+    """Auditability: the barrier read is logged even when it earns nothing."""
+    sp = a_credit_spread(regime(), chain())
+    far = SPOT + 50 if shorts_of(sp)[0] < SPOT else SPOT - 50
+    _retest_bonus(sp, SPOT, [confirmed_at(far)])         # wrong side entirely
+    assert "retest_levels" in sp.meta and sp.meta["retest_levels"]
+    assert all(v is None for v in sp.meta["retest_levels"].values())
+
+
+def with_breaks(reg, brks):
+    """The same regime, carrying breaks the way cycle.py supplies them."""
+    reg.detail = dict(reg.detail or {})
+    reg.detail["breaks"] = brks
+    return reg
+
+
+BARRIERS_EVERYWHERE = [confirmed_at(SPOT + d) for d in range(-60, 61, 2) if d]
+
+
+def test_the_bonus_cannot_admit_a_structure_the_gates_reject():
+    """The safety boundary: a preference must never become permission.
+
+    A barrier is planted in front of every possible strike, so the bonus applies
+    to every candidate. That is the maximum influence it can ever have, and the
+    structure that comes back must still satisfy the gates it would have had to
+    satisfy without it.
+    """
+    views = chain()
+    plain, _ = propose(regime(), views, E, View(), BUDGET)
+    boosted, why = propose(with_breaks(regime(), BARRIERS_EVERYWHERE), views, E,
+                           View(), BUDGET)
+    assert plain is not None and boosted is not None
+    assert quality_gate(boosted, regime(), View()) is None, (
+        "the bonus pushed through a structure that fails its own gates")
+    # and it must not have invented candidates, only reordered them
+    assert (boosted.meta["candidates_considered"]
+            == plain.meta["candidates_considered"])
+
+
+def test_a_barrier_reorders_which_acceptable_structure_wins():
+    """The bonus has to actually DO something, or it is dead code.
+
+    A barrier placed in front of one specific strike, and nowhere else, should be
+    able to lift that structure over a rival it was narrowly behind.
+    """
+    views = chain()
+    plain, _ = propose(regime(), views, E, View(), BUDGET)
+    chosen = shorts_of(plain)[0]
+    # find an acceptable structure with a DIFFERENT short strike to promote
+    rivals = [sp for _, sp in _scored(regime(), views)
+              if shorts_of(sp) and shorts_of(sp)[0] != chosen
+              and quality_gate(sp, regime(), View()) is None]
+    if not rivals:
+        return                                  # fixture offers only one strike
+    target = shorts_of(rivals[0])[0]
+    boosted, _ = propose(with_breaks(regime(), [confirmed_at(between_spot_and(target))]),
+                         views, E, View(), BUDGET)
+    assert quality_gate(boosted, regime(), View()) is None
+    assert boosted.meta.get("retest_levels") is not None, (
+        "the barrier read must be recorded on whatever structure is chosen")
+
+
+def test_a_zero_bonus_disables_the_preference():
+    """config.RETEST_BARRIER_BONUS = 0 must switch it off completely."""
+    sp = a_credit_spread(regime(), chain())
+    k = shorts_of(sp)[0]
+    brks = [confirmed_at(between_spot_and(k))]
+    old = config.RETEST_BARRIER_BONUS
+    try:
+        config.RETEST_BARRIER_BONUS = 0.0
+        assert _retest_bonus(sp, SPOT, brks) == 0.0
+    finally:
+        config.RETEST_BARRIER_BONUS = old

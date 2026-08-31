@@ -11,6 +11,7 @@ from typing import Dict, List, Optional
 
 from . import config
 from . import expectancy as EX
+from . import levels as L
 from . import options as O
 from . import spreads as S
 from .regime import (Regime, HIGH_IV_RANGE, HIGH_IV_TREND, LOW_IV_TREND,
@@ -234,6 +235,39 @@ def quality_gate(sp: S.Spread, reg: Regime = None, view: "View" = None) -> Optio
     return None
 
 
+def _retest_bonus(sp: S.Spread, spot: float, brks: list) -> float:
+    """Prefer a short strike that has a proven level in front of it.
+
+    A break of structure that price returned to and respected is the strongest
+    barrier this codebase can identify: the market was handed a chance to push
+    through and declined. A short strike sitting behind one has to be reached
+    through that level first.
+
+    Every short leg must be covered before the bonus applies. An iron condor with
+    a level under its put and nothing over its call is not a protected structure —
+    it is a protected half and an exposed half, and the exposed half is what
+    loses.
+
+    Returns EV-ratio points to ADD FOR RANKING ONLY. The bonus never reaches the
+    EV gate, the risk gates or the audit log; it only decides which of several
+    acceptable structures gets picked. See config.RETEST_BARRIER_BONUS for the
+    measurement behind it.
+    """
+    shorts = [l for l in sp.legs if l.side == "sell" and l.view is not None]
+    if not shorts or not brks:
+        return 0.0
+    found = {}
+    for leg in shorts:
+        b = L.retest_barrier(brks, spot, leg.view.strike, leg.view.kind)
+        found[f"{leg.view.strike:.0f}{leg.view.kind}"] = (
+            {"level": b.level, "direction": b.direction,
+             "extent_atr": b.extent_atr} if b else None)
+    sp.meta["retest_levels"] = found
+    if not all(found.values()):
+        return 0.0
+    return config.RETEST_BARRIER_BONUS
+
+
 def candidates(reg: Regime, views: List[O.ContractView], expiry: date,
                view: View, budget: float) -> List[S.Spread]:
     """Enumerate every structure the regime permits, across deltas and widths.
@@ -347,16 +381,21 @@ def propose(reg: Regime, views: List[O.ContractView], expiry: date,
         return None, f"{reg.name}: no feasible structure fits the risk budget"
 
     rv = (reg.detail or {}).get("realized_vol")
+    brks = (reg.detail or {}).get("breaks") or []
     scored = []
     for sp in pool:
         ev = EX.evaluate(sp, view=view, spot=reg.spot, real_vol=rv)
         if ev is None:
             continue
-        scored.append((ev.ev_ratio, ev, sp))
+        bonus = _retest_bonus(sp, reg.spot, brks)
+        scored.append((ev.ev_ratio, ev, sp, bonus))
     if not scored:
         return None, "could not compute expected value for any candidate"
 
-    scored.sort(key=lambda t: t[0], reverse=True)
+    # Rank on EV plus the barrier preference, but never report the bonus as EV —
+    # everything downstream (the gates, the audit log, the notifier) sees the
+    # real expected value.
+    scored.sort(key=lambda t: t[0] + t[3], reverse=True)
 
     # Take the highest-EV candidate that ALSO passes the quality gates.
     #
@@ -371,7 +410,7 @@ def propose(reg: Regime, views: List[O.ContractView], expiry: date,
     best_ratio = best_ev = best = None
     best_rank = -1
     top_reason = None
-    for rank, (ratio, ev, sp) in enumerate(scored):
+    for rank, (ratio, ev, sp, bonus) in enumerate(scored):
         bad = quality_gate(sp, reg, view)
         if bad is None:
             best_ratio, best_ev, best, best_rank = ratio, ev, sp, rank
@@ -384,6 +423,7 @@ def propose(reg: Regime, views: List[O.ContractView], expiry: date,
                       f"best-EV one because: {top_reason}")
 
     best.meta["candidates_considered"] = len(scored)
+    best.meta["retest_barrier"] = bool(best.meta.get("retest_levels"))
     best.meta["candidate_rank"] = best_rank
     best.meta.update(view_direction=view.direction, view_confidence=view.confidence,
                      view_source=view.source,

@@ -117,7 +117,7 @@ def realized_vol(closes: List[float], window: int = 20) -> Optional[float]:
 def classify(underlying: str, spot: float, views: List[ContractView], closes: List[float],
              *, expiry: date, iv_history: List[float] = None,
              has_catalyst: bool = False, catalyst_note: str = "",
-             structure: str = None) -> Regime:
+             structure: str = None, breaks: list = None) -> Regime:
     dte = max((expiry - date.today()).days, 1)
     iv = atm_iv(views, spot, expiry) or 0.0
     rank = iv_rank(iv, iv_history or [])
@@ -125,8 +125,13 @@ def classify(underlying: str, spot: float, views: List[ContractView], closes: Li
     em = expected_move(spot, iv, dte)
     rv = realized_vol(closes)
 
+    # `breaks` rides in detail rather than becoming a field: it does not classify
+    # the regime, it only tells strategy.propose() which strikes have a level in
+    # front of them. Unlike `structure`, it is not inert — see
+    # config.RETEST_BARRIER_BONUS.
     detail = {"realized_vol": rv, "iv_minus_rv": (iv - rv) if rv else None,
-              "n_contracts": len(views), "n_closes": len(closes)}
+              "n_contracts": len(views), "n_closes": len(closes),
+              "breaks": breaks or []}
 
     if has_catalyst:
         return Regime(EVENT_RISK, underlying, spot, iv, rank, z, direction, em, dte,

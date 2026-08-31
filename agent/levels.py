@@ -4,9 +4,12 @@ This is the part of the system that answers WHERE — where price is likely to
 turn, so the strategy has real places to put an entry, a stop and targets
 instead of deriving everything from a single ATR multiple.
 
-Three ideas, all built on the same swing detection:
+Four ideas, all built on the same swing detection:
 
   pivots            the swing highs and lows that define structure
+  breaks            a close through a swing level, and the RETEST that decides
+                    whether it was real — price returns, and the level either
+                    holds (confirmed) or gives way (a false break)
   zones             supply/demand — the base a big move launched from, which
                     tends to react again when price returns to it
   fibonacci         retracements of the last impulse (entries) and extensions
@@ -88,6 +91,162 @@ def market_structure(pv: List[Pivot]) -> str:
     if not hh and not hl:
         return "down"
     return "range"
+
+
+# --------------------------------------------------------------------------- #
+# Break of structure, and the retest that confirms it
+# --------------------------------------------------------------------------- #
+#
+# market_structure() above asks a demanding question — three consecutive higher
+# highs AND higher lows — and answers "range" most of the time. That is why it
+# failed as a trend filter (docs/BACKTEST.md, Part 4).
+#
+# A break of structure asks a smaller question that resolves far more often:
+# price closed beyond a swing level that had been holding. The break alone is
+# weak — most of them are noise — so the pattern that traders actually use adds a
+# second step. Price returns to the level it broke, and either it HOLDS (the old
+# resistance is now support: confirmed) or it does not (a false break: failed).
+#
+# The retest is what carries the information. A confirmed level is one the market
+# has been given a chance to reject and did not, which makes it a better place to
+# hide a short strike behind than a zone price has never revisited.
+
+
+@dataclass
+class Break:
+    index: int                      # bar whose close broke the level
+    level: float                    # the swing price that gave way
+    direction: int                  # +1 broke upward, -1 broke downward
+    pivot_index: int                # the swing that was broken
+    state: str                      # "confirmed" | "failed" | "pending"
+    retest_index: Optional[int] = None
+    extent_atr: float = 0.0         # how far price ran before coming back, in ATR
+
+    @property
+    def confirmed(self) -> bool:
+        return self.state == "confirmed"
+
+    @property
+    def failed(self) -> bool:
+        """A false break — price came back through and kept going."""
+        return self.state == "failed"
+
+
+def _resolve_retest(bars, i, level, direction, atr, tol, max_wait) -> tuple:
+    """Walk forward from a break and classify the first return to the level.
+
+    Only bars AFTER the break are read, and the verdict is taken on the bar that
+    touches the level — so a break resolved here would have resolved the same way
+    live, `max_wait` bars later at the latest.
+    """
+    state, ridx, extent = "pending", None, 0.0
+    for j in range(i + 1, min(i + 1 + max_wait, len(bars))):
+        b = bars[j]
+        if direction > 0:
+            extent = max(extent, (b.h - level) / atr)
+            if b.l <= level + tol:                     # price came back to it
+                # closing back above means the broken resistance held as support
+                return ("confirmed" if b.c >= level else "failed"), j, extent
+        else:
+            extent = max(extent, (level - b.l) / atr)
+            if b.h >= level - tol:
+                return ("confirmed" if b.c <= level else "failed"), j, extent
+    return state, ridx, extent
+
+
+def breaks(bars, left: int = 3, right: int = 3, *, tol_atr: float = 0.35,
+           max_wait: int = 10, atr_period: int = 14,
+           lookback: int = 200) -> List[Break]:
+    """Every break of a swing level in the lookback, each with its retest verdict.
+
+    A level counts as broken when a close goes beyond a swing pivot that had
+    already been confirmed — `right` bars had to pass before that pivot existed,
+    so nothing here is visible earlier than it would have been live.
+
+    `tol_atr` is how close a return has to get to count as a retest; a level is
+    an area, not a line, and demanding an exact touch finds almost nothing.
+    """
+    need = atr_period * 2 + left + right
+    if len(bars) < need:
+        return []
+    highs = [b.h for b in bars]
+    lows = [b.l for b in bars]
+    closes = [b.c for b in bars]
+    atr_s = ind.atr_series(highs, lows, closes, atr_period)
+    pv = pivots(bars, left, right)
+    ph = [p for p in pv if p.kind == "high"]
+    pl = [p for p in pv if p.kind == "low"]
+
+    out: List[Break] = []
+    seen = {1: None, -1: None}      # don't re-report the same level every bar
+    start = max(need, len(bars) - lookback)
+    for i in range(start, len(bars)):
+        a = atr_s[i]
+        if not a:
+            continue
+        tol = tol_atr * a
+        for direction, pool in ((1, ph), (-1, pl)):
+            # the most recent pivot that had been CONFIRMED by bar i
+            vis = [p for p in pool if p.index + right <= i]
+            if not vis:
+                continue
+            piv = vis[-1]
+            broke = closes[i] > piv.price if direction > 0 else closes[i] < piv.price
+            if not broke or seen[direction] == piv.price:
+                continue
+            seen[direction] = piv.price
+            state, ridx, ext = _resolve_retest(bars, i, piv.price, direction, a,
+                                               tol, max_wait)
+            out.append(Break(index=i, level=piv.price, direction=direction,
+                             pivot_index=piv.index, state=state,
+                             retest_index=ridx, extent_atr=round(ext, 3)))
+    return sorted(out, key=lambda b: b.index)
+
+
+def latest_break(bars, **kw) -> Optional[Break]:
+    """The most recent break, whatever its retest verdict."""
+    b = breaks(bars, **kw)
+    return b[-1] if b else None
+
+
+def break_trend(brks: List[Break], *, require_retest: bool = True) -> int:
+    """Trend direction from break structure: +1 up, -1 down, 0 undecided.
+
+    With `require_retest` (the default) only a break the market came back to and
+    respected counts. That is the whole point of the pattern — an unconfirmed
+    break is a candle, a confirmed one is a level that has been tested.
+
+    A FAILED break is not neutral: price broke up, came back through and kept
+    going, which is the signature of a trap. It reads as the opposite direction.
+    """
+    for b in reversed(brks or []):
+        if b.confirmed:
+            return b.direction
+        if b.failed:
+            return -b.direction
+        if not require_retest and b.state == "pending":
+            return b.direction
+    return 0
+
+
+def retest_barrier(brks: List[Break], spot: float, strike: float,
+                   kind: str) -> Optional[Break]:
+    """A confirmed retested level standing between spot and a short strike.
+
+    Same shape as protects_short() below, but the barrier is a level price has
+    already been handed a chance to break and declined, rather than a zone it may
+    never have revisited.
+
+    A diagnostic, like protects_short(): recorded against entries so it can be
+    validated against realised outcomes before it influences strike choice.
+    """
+    cands = [b for b in (brks or []) if b.confirmed
+             and (spot < b.level < strike if kind == "C" else strike < b.level < spot)]
+    if not cands:
+        return None
+    # the first barrier price would meet, not the furthest
+    return min(cands, key=lambda b: b.level) if kind == "C" else max(
+        cands, key=lambda b: b.level)
 
 
 # --------------------------------------------------------------------------- #

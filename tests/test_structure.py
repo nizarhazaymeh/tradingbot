@@ -162,3 +162,151 @@ def test_the_nearest_qualifying_zone_is_returned():
 
 def test_no_zones_is_unprotected_not_an_error():
     assert L.protects_short([], SPOT, 790, "C") is None
+
+
+# --------------------------------------------------- break of structure + retest
+#
+# market_structure() answers "range" most of the time (the test above pins why
+# the veto built on it failed). A break of structure resolves far more often: a
+# close through a swing level, then the retest that decides whether it was real.
+
+def mkbars(rows):
+    """(high, low, close) triples -> Bars, oldest first."""
+    return [L.Bar(i, c, h, l, 1000.0) for i, (h, l, c) in enumerate(rows)]
+
+
+def ranging_with_a_swing_high():
+    """Flat range with one clean swing high at 110 on bar 10.
+
+    The flat highs cannot make a pivot — pivots() needs a STRICT new extreme —
+    so bar 10 is the only pivot in the series, which keeps these tests about the
+    break rather than about pivot detection.
+    """
+    return ([(105, 100, 102)] * 10 + [(110, 104, 108)] + [(105, 100, 102)] * 9)
+
+
+BREAK_BAR = [(112, 106, 111)]        # closes 111, through the 110 level
+
+
+def test_a_close_through_a_swing_high_is_a_break():
+    bs = L.breaks(mkbars(ranging_with_a_swing_high() + BREAK_BAR), atr_period=5)
+    assert len(bs) == 1
+    assert bs[0].direction == 1 and bs[0].level == 110
+
+
+def test_a_retest_that_holds_is_confirmed():
+    """Price comes back to 110 and closes above it — broken resistance held."""
+    tail = BREAK_BAR + [(113, 110.5, 112), (112, 109, 110.5)]
+    b = L.breaks(mkbars(ranging_with_a_swing_high() + tail), atr_period=5)[0]
+    assert b.state == "confirmed" and b.confirmed and not b.failed
+    assert b.retest_index is not None
+
+
+def test_a_retest_that_gives_way_is_a_failed_break():
+    """Same break, but the retest bar closes back below the level: a false break."""
+    tail = BREAK_BAR + [(112, 108, 107)]
+    b = L.breaks(mkbars(ranging_with_a_swing_high() + tail), atr_period=5)[0]
+    assert b.state == "failed" and b.failed and not b.confirmed
+
+
+def test_a_break_that_never_comes_back_stays_pending():
+    tail = BREAK_BAR + [(118, 115, 117), (120, 117, 119), (122, 119, 121)]
+    b = L.breaks(mkbars(ranging_with_a_swing_high() + tail),
+                 atr_period=5, max_wait=3)[0]
+    assert b.state == "pending" and b.retest_index is None
+    assert b.extent_atr > 1, "price ran a long way before max_wait expired"
+
+
+def test_a_level_is_reported_once_not_on_every_bar_above_it():
+    tail = BREAK_BAR + [(113, 111, 112), (114, 112, 113), (115, 113, 114)]
+    bs = L.breaks(mkbars(ranging_with_a_swing_high() + tail), atr_period=5)
+    assert len([b for b in bs if b.level == 110]) == 1
+
+
+def test_a_break_is_never_reported_before_its_pivot_was_confirmed():
+    """The no-lookahead invariant, asserted directly.
+
+    pivots() needs `right` later bars before a swing exists, so a break of it
+    cannot be seen earlier than `right` bars after the swing itself.
+    """
+    tail = BREAK_BAR + [(113, 110.5, 112), (112, 109, 110.5)]
+    for b in L.breaks(mkbars(ranging_with_a_swing_high() + tail), atr_period=5,
+                      right=3):
+        assert b.index >= b.pivot_index + 3
+
+
+def test_too_few_bars_is_empty_not_an_error():
+    assert L.breaks(mkbars([(105, 100, 102)] * 5)) == []
+    assert L.latest_break(mkbars([])) is None
+
+
+# ------------------------------------------------------------ break_trend
+def brk(direction, state, level=100.0, index=10):
+    return L.Break(index=index, level=level, direction=direction,
+                   pivot_index=index - 4, state=state)
+
+
+def test_break_trend_follows_the_last_confirmed_break():
+    assert L.break_trend([brk(1, "confirmed")]) == 1
+    assert L.break_trend([brk(-1, "confirmed")]) == -1
+
+
+def test_a_failed_break_reads_as_the_opposite_direction():
+    """Broke up, came back through and kept going — that is a trap, not a rally."""
+    assert L.break_trend([brk(1, "failed")]) == -1
+    assert L.break_trend([brk(-1, "failed")]) == 1
+
+
+def test_a_pending_break_decides_nothing_by_default():
+    assert L.break_trend([brk(1, "pending")]) == 0
+    assert L.break_trend([brk(1, "pending")], require_retest=False) == 1
+
+
+def test_the_most_recent_resolved_break_wins():
+    bs = [brk(1, "confirmed", index=5), brk(-1, "confirmed", index=20)]
+    assert L.break_trend(bs) == -1
+
+
+def test_no_breaks_is_no_direction():
+    assert L.break_trend([]) == 0
+    assert L.break_trend(None) == 0
+
+
+# --------------------------------------------------------- retest_barrier
+CONFIRMED = [L.Break(index=10, level=780.0, direction=-1, pivot_index=6,
+                     state="confirmed"),
+             L.Break(index=12, level=800.0, direction=-1, pivot_index=8,
+                     state="confirmed"),
+             L.Break(index=14, level=745.0, direction=1, pivot_index=10,
+                     state="confirmed")]
+
+
+def test_a_confirmed_level_between_spot_and_a_short_call_is_a_barrier():
+    got = L.retest_barrier(CONFIRMED, SPOT, 790, "C")
+    assert got is not None and got.level == 780
+
+
+def test_the_first_barrier_price_meets_is_returned():
+    got = L.retest_barrier(CONFIRMED, SPOT, 820, "C")
+    assert got.level == 780, "not the furthest level, the one price reaches first"
+
+
+def test_a_confirmed_level_between_spot_and_a_short_put_is_a_barrier():
+    got = L.retest_barrier(CONFIRMED, SPOT, 740, "P")
+    assert got is not None and got.level == 745
+
+
+def test_a_level_beyond_the_strike_is_not_a_barrier():
+    assert L.retest_barrier(CONFIRMED, SPOT, 775, "C") is None
+
+
+def test_an_unconfirmed_break_is_not_a_barrier():
+    """The retest is the whole point — a level price never came back to proves nothing."""
+    unresolved = [L.Break(index=10, level=780.0, direction=-1, pivot_index=6,
+                          state=s) for s in ("pending", "failed")]
+    assert L.retest_barrier(unresolved, SPOT, 790, "C") is None
+
+
+def test_no_breaks_is_unprotected_not_an_error():
+    assert L.retest_barrier([], SPOT, 790, "C") is None
+    assert L.retest_barrier(None, SPOT, 790, "C") is None

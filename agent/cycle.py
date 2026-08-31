@@ -65,26 +65,29 @@ class Agent:
         return min(candidates, key=lambda d: abs((d - today).days - config.TARGET_DTE))
 
     def _structure(self, ohlc) -> tuple:
-        """(market_structure, zones, fib) from daily bars — all best-effort.
+        """(market_structure, zones, fib, breaks) from daily bars — all best-effort.
 
         Structure is a second opinion on trend direction; zones say where price
-        has previously turned. Anything here failing must degrade to "no
+        has previously turned; breaks say which levels price has already been
+        given a chance to reclaim. Anything here failing must degrade to "no
         opinion" rather than stop a cycle, so the whole thing is guarded.
         """
         if len(ohlc) < 45:                      # find_zones needs atr_period*3
-            return None, [], None
+            return None, [], None, []
         try:
             pv = L.pivots(ohlc)
             struct = L.market_structure(pv)
             zones = L.find_zones(ohlc)
             imp = L.last_impulse(ohlc, pv)
             fib = L.fibonacci(*imp) if imp else None
-            return struct, zones, fib
+            brks = L.breaks(ohlc)
+            return struct, zones, fib, brks
         except Exception as e:                  # never let structure break a cycle
             log.warning("structure analysis failed: %s: %s", type(e).__name__, e)
-            return None, [], None
+            return None, [], None, []
 
-    def _structure_context(self, reg, spot: float, zones, fib, structure) -> dict:
+    def _structure_context(self, reg, spot: float, zones, fib, structure,
+                           brks=None) -> dict:
         """Structure as scalars the model can compare, not raw objects.
 
         Distances are in units of the 1-sigma expected move rather than dollars,
@@ -107,6 +110,19 @@ class Agent:
 
         if fib:
             ctx["in_golden_pocket"] = fib.in_golden_pocket(spot)
+
+        # The last break of structure and whether its retest held. Direction here
+        # is a second read on trend that resolves far more often than `structure`
+        # does — but like `structure` it is context for the model, not a veto.
+        last = (brks or [])[-1] if brks else None
+        if last:
+            ctx["last_break"] = {
+                "direction": "up" if last.direction > 0 else "down",
+                "retest": last.state,
+                "level_sigma": (round((last.level - spot) / sigma, 2)
+                                if sigma else None),
+            }
+            ctx["break_trend"] = L.break_trend(brks)
         return ctx
 
     def _chain(self, underlying: str, spot: float, expiry: date, span=0.10):
@@ -288,13 +304,13 @@ class Agent:
         # Swing structure, supply/demand zones and the last impulse. Highs and
         # lows were previously fetched and thrown away — only the close was read.
         ohlc = L.bars_from_api(rows)
-        structure, zones, fib = self._structure(ohlc)
+        structure, zones, fib, brks = self._structure(ohlc)
         out["structure"] = structure
 
         views, rejects = self._chain(underlying, spot, expiry)
         iv_hist = self.store.iv_history(underlying)
         reg = R.classify(underlying, spot, views, closes, expiry=expiry,
-                         iv_history=iv_hist, structure=structure)
+                         iv_history=iv_hist, structure=structure, breaks=brks)
 
         if reg.iv > 0:
             self.store.record_iv(underlying, date.today(), reg.iv)
@@ -312,7 +328,8 @@ class Agent:
             except AlpacaError:
                 pass
             v = brain.view(reg, news=news,
-                           extra=self._structure_context(reg, spot, zones, fib, structure))
+                           extra=self._structure_context(reg, spot, zones, fib,
+                                                        structure, brks))
             log.info("    view: %s (conf %.2f) — %s", v.direction, v.confidence, v.thesis[:90])
 
         budget = config.RISK_PER_TRADE_PCT * book.equity
@@ -343,8 +360,14 @@ class Agent:
             sp.meta["zone_protection"] = prot
             sp.meta["structure"] = structure
             n_prot = sum(1 for v_ in prot.values() if v_)
-            log.info("    structure=%s · %d/%d short strikes behind a zone",
-                     structure, n_prot, len(prot))
+            # retest_levels is set by strategy._retest_bonus() for the chosen
+            # structure. Unlike zone_protection this one DID influence selection,
+            # as a ranking tie-break — log both so the audit shows which.
+            rt = sp.meta.get("retest_levels") or {}
+            n_rt = sum(1 for v_ in rt.values() if v_)
+            log.info("    structure=%s · %d/%d short strikes behind a zone · "
+                     "%d/%d behind a retested level",
+                     structure, n_prot, len(prot), n_rt, len(rt) or len(prot))
 
         gate = RK.evaluate(sp, book)
         out["proposal"] = sp.describe()

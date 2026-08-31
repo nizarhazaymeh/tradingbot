@@ -144,6 +144,18 @@ MIN_CREDIT_RATIO = _f("MIN_CREDIT_RATIO", 0.04) # sanity floor only; EV is the r
 MAX_VIEW_TILT = _f("MAX_VIEW_TILT", 0.35)       # max probability shift at full conviction
 MIN_EV_RATIO = _f("MIN_EV_RATIO", 0.02)         # require EV >= 2% of capital at risk
 MIN_SHORT_SIGMA = _f("MIN_SHORT_SIGMA", 0.90)   # short strike >= 0.9σ from spot
+
+# A tie-breaker, not a gate. Among candidates that already clear every gate,
+# prefer the one whose short strike sits behind a level price broke, came back
+# to, and respected (levels.retest_barrier). Measured leave-one-window-out over
+# 277 recorded trades in docs/BACKTEST.md Part 6: trades with such a barrier
+# returned +$3,255 (PF 1.98, 78% win) against -$554 (PF 0.91, 62%) without one,
+# and the separation is sharpest on short calls (+$1,711 vs -$1,353).
+#
+# It is deliberately small. The rule inverted in one of the four windows, so this
+# reorders near-ties and nothing more — it cannot admit a structure the EV test
+# or the quality gates would have refused. Set to 0 to switch it off entirely.
+RETEST_BARRIER_BONUS = _f("RETEST_BARRIER_BONUS", 0.005)   # in EV-ratio points
 CONSERVATIVE_SIGMA = _f("CONSERVATIVE_SIGMA", 1.6)  # wider condor when no regime edge
 MAX_ABS_NET_DELTA = _f("MAX_ABS_NET_DELTA", 0.35)  # per-unit directional cap
 MAX_PORTFOLIO_DELTA = _f("MAX_PORTFOLIO_DELTA", 3.0)  # aggregate, per $100k equity

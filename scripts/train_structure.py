@@ -90,6 +90,18 @@ STRUCTURE_FEATURES = [
     "protect_dist_atr",  # how far away that zone is, in ATRs (0 when none)
     "protect_touches",   # times price has already worked it (0 = fresh = strongest)
 ]
+# Break of structure and its retest. Separable from STRUCTURE_FEATURES because
+# these are the ones being evaluated, and 277 trades will not support judging
+# them inside a 21-feature model.
+BREAK_FEATURES = [
+    "bos_threat",        # break direction signed so POSITIVE means broken TOWARD the strike
+    "bos_confirmed",     # the last break was retested and the level held
+    "bos_failed",        # the last break was retested and gave way (a trap)
+    "bos_age",           # bars since that break — structure goes stale
+    "bos_extent_atr",    # how far price ran past the level before returning
+    "retest_barrier",    # a confirmed retested level stands between spot and the strike
+    "retest_dist_atr",   # how far away it is, in ATRs (0 when there is none)
+]
 # Trend and volatility — the filters the agent already ships, as continuous inputs.
 TREND_FEATURES = [
     "threat_trend",      # z-score signed so POSITIVE means trending INTO the short strike
@@ -178,6 +190,8 @@ class Context:
         pv = L.pivots(ohlc)
         struct = L.market_structure(pv)
         zones = L.find_zones(ohlc)
+        brks = L.breaks(ohlc)
+        last = brks[-1] if brks else None
 
         hi20, lo20 = max(highs[-20:]), min(lows[-20:])
         range_pos = (spot - lo20) / (hi20 - lo20) if hi20 > lo20 else 0.5
@@ -189,6 +203,10 @@ class Context:
 
         return {"spot": spot, "atr": atr, "z": z, "zdir": zdir, "structure": struct,
                 "zones": zones, "range_pos": range_pos, "golden": golden,
+                "breaks": brks, "bos_dir": L.break_trend(brks),
+                "bos_state": last.state if last else "none",
+                "bos_age": (len(ohlc) - 1 - last.index) if last else 999,
+                "bos_extent": last.extent_atr if last else 0.0,
                 "rv20": realized_vol(closes) or 0.0,
                 "adx": ind.adx(highs, lows, closes, 14) or 0.0,
                 "rsi": ind.rsi(closes, 14) or 50.0}
@@ -207,6 +225,13 @@ def features_for(ctx, strategy):
         dist = (z.mid - spot) / atr if kind == "C" else (spot - z.mid) / atr
         return 1.0, max(dist, 0.0), float(z.touches)
 
+    def barrier(strike, kind):
+        b = L.retest_barrier(ctx["breaks"], spot, strike, kind)
+        if not b:
+            return 0.0, 0.0
+        dist = (b.level - spot) / atr if kind == "C" else (spot - b.level) / atr
+        return 1.0, max(dist, 0.0)
+
     if side == "IC":
         # A condor is threatened on both sides, so it is only protected if both
         # sides are, and its barrier is whichever side has less room.
@@ -216,23 +241,37 @@ def features_for(ctx, strategy):
         protected = 1.0 if (pc and pp) else 0.0
         pdist = min(dc, dp) if protected else 0.0
         touches = max(tc, tp) if protected else 0.0
-        barrier = abs(off) * spot / atr
+        bc, bdc = barrier(kc, "C")
+        bp, bdp = barrier(kp, "P")
+        rbar = 1.0 if (bc and bp) else 0.0
+        rdist = min(bdc, bdp) if rbar else 0.0
+        barrier_atr = abs(off) * spot / atr
         threat = abs(ctx["z"])                 # either direction hurts a condor
+        bos_threat = abs(ctx["bos_dir"])
     else:
         strike = round(spot * (1 + off))
         protected, pdist, touches = protection(strike, side)
-        barrier = abs(strike - spot) / atr
+        rbar, rdist = barrier(strike, side)
+        barrier_atr = abs(strike - spot) / atr
         threat = ctx["z"] if side == "C" else -ctx["z"]
+        bos_threat = ctx["bos_dir"] if side == "C" else -ctx["bos_dir"]
 
     return {
         "struct_up": 1.0 if ctx["structure"] == "up" else 0.0,
         "struct_down": 1.0 if ctx["structure"] == "down" else 0.0,
         "range_pos": ctx["range_pos"],
         "golden": ctx["golden"],
-        "barrier_atr": barrier,
+        "barrier_atr": barrier_atr,
         "protected": protected,
         "protect_dist_atr": pdist,
         "protect_touches": touches,
+        "bos_threat": float(bos_threat),
+        "bos_confirmed": 1.0 if ctx["bos_state"] == "confirmed" else 0.0,
+        "bos_failed": 1.0 if ctx["bos_state"] == "failed" else 0.0,
+        "bos_age": float(min(ctx["bos_age"], 120)),
+        "bos_extent_atr": float(ctx["bos_extent"]),
+        "retest_barrier": rbar,
+        "retest_dist_atr": rdist,
         "threat_trend": threat,
         "rv20": ctx["rv20"],
         "adx": ctx["adx"],
@@ -275,7 +314,8 @@ def build_dataset(refresh=False, path="docs/structure_dataset.json"):
                 "strategy": t["strategy"], "pnl": t["pnl"], "max_loss": t["max_loss"],
                 "R": round(t["pnl"] / t["max_loss"], 5),
                 "structure": ctx["structure"], "z": round(ctx["z"], 3),
-                "zdir": ctx["zdir"],
+                "zdir": ctx["zdir"], "bos_dir": ctx["bos_dir"],
+                "bos_state": ctx["bos_state"],
                 "rv": round(ctx["rv20"], 4),
                 "f": {k: round(v, 5) for k, v in features_for(ctx, t["strategy"]).items()},
             })
@@ -531,14 +571,16 @@ def profile(rows, cols):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--features", choices=("all", "structure", "trend"), default="all")
+    ap.add_argument("--features",
+                    choices=("all", "structure", "trend", "breaks"), default="all")
     ap.add_argument("--mode", choices=("model", "rules", "both"), default="both")
     ap.add_argument("--refresh", action="store_true", help="rebuild dataset from the API")
     ap.add_argument("--out", default="docs/structure_model.json")
     a = ap.parse_args()
 
-    cols = {"all": STRUCTURE_FEATURES + TREND_FEATURES,
+    cols = {"all": STRUCTURE_FEATURES + BREAK_FEATURES + TREND_FEATURES,
             "structure": STRUCTURE_FEATURES,
+            "breaks": BREAK_FEATURES,
             "trend": TREND_FEATURES}[a.features]
 
     print("\nbuilding dataset (no lookahead: bars up to and including each entry)...")

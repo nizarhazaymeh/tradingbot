@@ -585,3 +585,133 @@ python scripts/train_structure.py --mode rules --refresh # rebuild from the API
 ```
 
 The per-trade feature dataset is committed, so re-runs need no API access.
+
+---
+
+# Part 6 — Break of structure, and the retest that confirms it
+
+Run 31 Aug 2026 · `agent/levels.py` + `scripts/train_structure.py --features breaks`
+
+Part 5 trained on pivots, zones and Fibonacci and found nothing that generalised.
+Those describe *where* price has been. They never ask the question a price-action
+trader actually asks: **has this level been tested since it broke, and did it
+hold?**
+
+## What was added
+
+`levels.breaks()` finds every close through a confirmed swing pivot, then walks
+forward to the first return to that level and rules on it:
+
+| verdict | what happened |
+|---|---|
+| **confirmed** | price came back to the level and closed on the break side — it held |
+| **failed** | price came back through and kept going — a false break, a trap |
+| **pending** | price never returned inside `max_wait` bars |
+
+Nothing repaints. A pivot needs `right` bars to exist, so a break of it cannot be
+seen earlier than `right` bars after the swing, and the retest is judged on the
+bar that touches the level. `test_a_break_is_never_reported_before_its_pivot_was_confirmed`
+asserts that invariant directly.
+
+This resolves far more often than `market_structure()`, which is the failure Part
+4 diagnosed. Across the 57 entry contexts: **31 confirmed, 14 pending, 12 failed**
+— against "range" in 28 of 57 for swing structure.
+
+## Result — the first structural model that clears the shipped filter
+
+Same leave-one-window-out harness as Part 5, same nested selection, seven
+break/retest features:
+
+| Window | naive | shipped | learned |
+|---|---:|---:|---:|
+| Calm / rising | −$240 | **+$293** | +$122 |
+| Vol spike 46% | −$695 | −$844 | **−$695** |
+| Selloff −7.7% | **+$3,479** | +$2,322 | +$2,292 |
+| Carry unwind | +$157 | −$1,360 | **+$533** |
+| **Total** | **+$2,701** | +$411 | **+$2,252** |
+
+**Better than the shipped filter in 3 of 4 windows**, and 5.5× its total —
+against Part 5's structure model, which managed 2 of 4 and −$1,330. Still short
+of trading everything, which remains the number to beat.
+
+## The rule worth having — position, not permission
+
+The one-feature search returns one clear winner, and it is about **where to put
+the strike**, not whether to trade:
+
+> **`retest_barrier` — only sell a strike with a confirmed retested level in front of it**
+> 131 trades · 78% win · **+$3,255** · PF 1.98 · R +0.061
+
+| | with a barrier | without |
+|---|---:|---:|
+| All 277 trades | 131 · 78% · **+$3,255** · PF 1.98 | 146 · 62% · **−$554** · PF 0.91 |
+
+It is the only rule found across Parts 5 and 6 that **beats trading everything on
+net dollars while taking less than half the trades.** And the separation is
+sharpest exactly where theory says it should be — in front of a short call, where
+a reclaimed resistance level is the thing price must break to reach the strike:
+
+| Strategy | behind a level | no level |
+|---|---:|---:|
+| **call credit 1.5%** | 25 · 80% · **+$1,711** · PF 3.11 | 32 · 44% · **−$1,353** · PF 0.46 |
+| call credit 3.0% | 31 · 77% · −$32 · PF 0.97 | 23 · 57% · −$569 · PF 0.54 |
+| put credit 3.0% | 34 · 85% · +$738 · PF 5.50 | 22 · 73% · +$220 · PF 1.45 |
+| put credit 1.5% | 24 · 71% · +$275 · PF 1.50 | 31 · 74% · **+$733** · PF 2.15 |
+| iron condor | 17 · 71% · +$563 · PF 1.97 | 38 · 63% · +$415 · PF 1.26 |
+
+Note the second row of Part 5's finding closing here: those short calls are the
+trades the **trend filter refuses**. A retested level is a better reason to sell
+a call than the trend direction is.
+
+## 🔴 Why it ships as a tie-break and not a gate
+
+| Window | with a barrier | without |
+|---|---:|---:|
+| Calm / rising | +$203 · PF 1.22 | −$443 · PF 0.75 |
+| Vol spike 46% | +$630 · PF 2.64 | −$1,325 · PF 0.57 |
+| Selloff −7.7% | +$3,088 · PF 21.45 | +$391 · PF 2.06 |
+| **Carry unwind** | 🔴 **−$666 · PF 0.64** | **+$823** · PF 1.63 |
+
+**It inverts in the carry unwind.** Three windows for, one against, and one
+strategy family (put credit 1.5%) against it too. On 19 entry dates that is a
+good signal, not a proven one — and this repo has now reverted two structural
+rules that looked good on one slice of this same data.
+
+So it is wired in as a **ranking preference, not a filter**:
+
+```python
+config.RETEST_BARRIER_BONUS = 0.005   # EV-ratio points, tie-break only
+```
+
+`strategy._retest_bonus()` adds it when **every** short leg of a structure sits
+behind a confirmed retested level — half a protected condor is an exposed condor.
+The bonus reorders candidates that have already cleared the EV floor and all 22
+risk gates; it can never admit one that has not.
+`test_the_bonus_cannot_admit_a_structure_the_gates_reject` plants a barrier in
+front of every strike in the chain and asserts the winner still passes its gates
+and that no new candidate appeared. Setting the knob to `0` disables it entirely.
+
+Both reads are recorded on every proposal — `zone_protection` (diagnostic, as
+before) and `retest_levels` (which did influence ranking) — so live fills can be
+scored against them.
+
+## What runs live now
+
+```
+structure=up · 0/1 short strikes behind a zone · 1/1 behind a retested level
+```
+
+From `run.py once --rehearse` on 31 Aug 2026. Worth noting that the zone method
+found nothing on any of the three underlyings while the retest method found a
+level on two — zones need a base-then-impulse pattern that is simply rarer than a
+broken swing.
+
+The break direction and its retest verdict also reach the LLM as context
+(`last_break`, `break_trend`), alongside the structure read it already got.
+
+## Reproduce
+
+```bash
+python scripts/train_structure.py --features breaks
+python -m pytest tests/test_structure.py tests/test_strategy_selection.py -q
+```
