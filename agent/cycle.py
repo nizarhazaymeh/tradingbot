@@ -17,6 +17,7 @@ from . import config
 from . import brain, monitor, options as O, regime as R, risk as RK, spreads as S, strategy as ST
 from .client import AlpacaClient, AlpacaError
 from .executor import Executor, price_ladder
+from .notifier import notify
 from .state import Store, utcnow
 
 log = logging.getLogger("agent")
@@ -302,6 +303,8 @@ class Agent:
         log.info("    SUBMIT %s @ %.2f -> %s", sp.describe()[:70], ladder[0], msg)
 
         if order and order.get("status") != "dry_run":
+            notify(f"{sp.describe()}\nlimit {ladder[0]:+.2f} -> {msg}",
+                   subject=f"Opened {sp.kind} {sp.underlying}")
             coid = order.get("client_order_id") or sp.client_order_id()
             tp = config.TAKE_PROFIT_CREDIT if sp.is_credit else config.TAKE_PROFIT_DEBIT
             self.store.open_position(
@@ -339,6 +342,10 @@ class Agent:
         cb = RK.circuit_breakers(book, halted_flag=self._halted())
         if not cb:
             log.critical("CIRCUIT BREAKER [%s]: %s", cb.gate, cb.reason)
+            notify(f"HALTED [{cb.gate}]\n{cb.reason}\n"
+                   f"account {config.ACCOUNT} ({config.ACCOUNT_NUMBER})\n"
+                   f"equity ${book.equity:,.2f}",
+                   subject=f"Agent HALTED — {cb.gate}")
             res = self.ex.halt_everything(cb.reason)
             # Only a real run may engage the persistent kill switch. halt_everything()
             # already no-ops when dry, but this write was unguarded — so a rehearsal

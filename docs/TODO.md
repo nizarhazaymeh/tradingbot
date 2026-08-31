@@ -234,11 +234,16 @@ the provenance is unambiguous.
 ## 🟡 NICE TO HAVE — only if time allows
 
 - News-driven entries (Alpaca's real-time news stream is free and unused)
-- Rolling a threatened spread (the `ROLL` branch is decided but not executed —
-  it currently closes instead)
+- ~~Rolling a threatened spread~~ — ✅ **already done.** `cycle._try_roll()` and
+  `spreads.roll_order()` build an atomic 4-leg roll, covered by
+  `test_roll_order_is_four_legs_with_correct_intents` and
+  `test_delta_breach_triggers_roll`. This entry predated commit `aa430bd`
 - More underlyings beyond SPY/QQQ/IWM
 - Multiple expiries simultaneously
-- Telegram alerts (`notifier.py` is inherited and working, just not wired in)
+- ~~Telegram alerts~~ — ✅ **wired.** `cycle.py` notifies on a circuit-breaker halt
+  and on every real (non-dry-run) submission. Off unless `NOTIFY=true`, since the
+  SMTP block in `.env` was inherited rather than chosen; a failing channel is
+  logged and swallowed so an alert can never break a cycle
 
 ---
 

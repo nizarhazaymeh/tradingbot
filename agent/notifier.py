@@ -75,8 +75,22 @@ def _send_email(subject: str, body: str) -> bool:
     return False
 
 
-def notify(text: str, subject: str = "Trading Bot Signal") -> None:
-    """Send a notification through every configured channel."""
+def notify(text: str, subject: str = "Options Alpha Agent") -> None:
+    """Send a notification through every configured channel.
+
+    Always logs. Sends only when config.NOTIFY is on, so an inherited SMTP
+    block in .env cannot start mailing on its own. Each channel is
+    independently optional and fails silently if unconfigured — a notification
+    must never be able to break a trading cycle.
+    """
     log.info("NOTIFY: %s", text.replace("\n", " | "))
-    _send_telegram(text)
-    _send_email(subject, text)
+    if not config.NOTIFY:
+        return
+    try:
+        _send_telegram(text)
+    except Exception as e:                      # never propagate into the cycle
+        log.warning("telegram notify failed: %s", e)
+    try:
+        _send_email(subject, text)
+    except Exception as e:
+        log.warning("email notify failed: %s", e)

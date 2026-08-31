@@ -177,6 +177,9 @@ LOG_DIR.mkdir(exist_ok=True)
 # ---------------------------------------------------------------- notifications
 # Read by agent/notifier.py. All optional: an empty token or host disables that
 # channel silently, so the agent runs unchanged with none of these set.
+# Off by default. Wiring the notifier in must not silently start sending mail
+# from a config file that was inherited rather than chosen.
+NOTIFY = _b("NOTIFY", False)
 TELEGRAM_BOT_TOKEN = _s("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = _s("TELEGRAM_CHAT_ID")
 SMTP_HOST = _s("SMTP_HOST")
