@@ -145,17 +145,34 @@ MAX_VIEW_TILT = _f("MAX_VIEW_TILT", 0.35)       # max probability shift at full 
 MIN_EV_RATIO = _f("MIN_EV_RATIO", 0.02)         # require EV >= 2% of capital at risk
 MIN_SHORT_SIGMA = _f("MIN_SHORT_SIGMA", 0.90)   # short strike >= 0.9σ from spot
 
-# A tie-breaker, not a gate. Among candidates that already clear every gate,
-# prefer the one whose short strike sits behind a level price broke, came back
-# to, and respected (levels.retest_barrier). Measured leave-one-window-out over
-# 277 recorded trades in docs/BACKTEST.md Part 6: trades with such a barrier
-# returned +$3,255 (PF 1.98, 78% win) against -$554 (PF 0.91, 62%) without one,
-# and the separation is sharpest on short calls (+$1,711 vs -$1,353).
+# OFF, by measurement. See docs/BACKTEST.md Part 7.
 #
-# It is deliberately small. The rule inverted in one of the four windows, so this
-# reorders near-ties and nothing more — it cannot admit a structure the EV test
-# or the quality gates would have refused. Set to 0 to switch it off entirely.
-RETEST_BARRIER_BONUS = _f("RETEST_BARRIER_BONUS", 0.005)   # in EV-ratio points
+# A ranking preference for structures whose short strikes sit behind a level
+# price broke, returned to, and respected (levels.retest_barrier). Part 6 found
+# that property separates outcomes sharply as a trade FILTER — +$3,255 (PF 1.98)
+# against -$554 (PF 0.91) — and it shipped at 0.005 as a tie-break instead,
+# because the filter inverted in one of four windows.
+#
+# scripts/backtest_bonus.py then ran the real propose() over all four windows
+# with the knob on and off. At 0.005 it changed the chosen structure in 0 of 47
+# entries: the EV gaps between candidates are far larger than the bonus, so it
+# never decided anything. The cheapest flip in the sample needs 0.026 and the
+# median needs 0.254. Turned up far enough to bite, it LOSES:
+#
+#   0.005 / 0.010 / 0.020   0 entries changed        $0   inert
+#   0.050                   4 entries changed     -$250
+#   0.100                   5 entries changed     -$533
+#   0.250                   7 entries changed     -$427
+#
+# So the honest setting is zero. A filter-level finding did not survive being
+# expressed as a candidate-level preference — the barrier is largely a property
+# of the ENTRY, and propose() only ever chooses between structures at one entry.
+#
+# Everything else about breaks stays live: they are computed, logged on every
+# proposal as `retest_levels`, and passed to the LLM as context. Only the
+# influence on selection is off. tests/test_strategy_selection.py pins this at 0
+# so it cannot be turned on again without a measurement.
+RETEST_BARRIER_BONUS = _f("RETEST_BARRIER_BONUS", 0.0)   # in EV-ratio points
 CONSERVATIVE_SIGMA = _f("CONSERVATIVE_SIGMA", 1.6)  # wider condor when no regime edge
 MAX_ABS_NET_DELTA = _f("MAX_ABS_NET_DELTA", 0.35)  # per-unit directional cap
 MAX_PORTFOLIO_DELTA = _f("MAX_PORTFOLIO_DELTA", 3.0)  # aggregate, per $100k equity

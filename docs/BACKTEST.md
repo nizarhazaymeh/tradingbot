@@ -715,3 +715,101 @@ The break direction and its retest verdict also reach the LLM as context
 python scripts/train_structure.py --features breaks
 python -m pytest tests/test_structure.py tests/test_strategy_selection.py -q
 ```
+
+---
+
+# Part 7 — The bonus, measured through `propose()`: it never fires
+
+Run 31 Aug 2026 · `scripts/backtest_bonus.py` · raw data
+[`backtest_bonus.json`](backtest_bonus.json)
+
+Part 6 measured the retest barrier as a **filter** — keep the trades whose short
+strike sits behind a confirmed retested level, drop the rest — and got +$3,255
+against −$554. It then shipped as something different: a 0.005 EV-ratio
+**tie-break** inside `strategy.propose()`.
+
+Those are not the same intervention. A filter changes which trades happen; a
+tie-break changes which structure is chosen when a trade happens either way.
+Part 6 never measured the thing that shipped. This does.
+
+## The obstacle, and what it took to get past it
+
+`scripts/backtest.py` has never imported `agent.strategy`. It builds five fixed
+structures at fixed % offsets, so the entire selection layer — `candidates()`,
+the EV ranking, `quality_gate()`, and now the bonus — was untestable against
+history. `tests/test_strategy_selection.py` says so in its own docstring.
+
+The reason is Greeks: `propose()` picks strikes by **delta**, and the historical
+bars endpoint returns none.
+
+`scripts/backtest_bonus.py` recovers them. For every contract with a bar on the
+entry date it inverts Black-Scholes by bisection to find the volatility that
+reproduces that close, then differentiates at that vol for delta, gamma, theta
+and vega. Contracts priced at or below intrinsic have no solution and are dropped
+rather than clamped — a fabricated vol would feed a fabricated delta straight
+into strike selection, which is the one thing this harness exists to get right.
+
+**The agent's real pipeline now runs against history**: `regime.classify()` on
+bars up to the entry date, `strategy.propose()`, then `Replayer.replay()` through
+the real exit logic. Twice per entry, identical but for the knob.
+
+## Result — 0 of 47
+
+| bonus | entries changed | net effect | |
+|---:|---:|---:|---|
+| 0.005 *(as shipped)* | **0** | $0 | inert |
+| 0.010 | 0 | $0 | inert |
+| 0.020 | 0 | $0 | inert |
+| 0.050 | 4 | **−$250** | hurts |
+| 0.100 | 5 | **−$533** | hurts |
+| 0.250 | 7 | **−$427** | hurts |
+
+**At the shipped value it changed nothing, anywhere, in any of the four windows.**
+Bisecting the knob per entry: only 14 of 47 entries can be flipped at all, the
+cheapest needs **0.026** — five times the shipped value — and the median needs
+**0.254**, fifty times it. The EV gaps between candidates are simply much larger
+than the bonus.
+
+And every value large enough to bite lost money.
+
+## Why the filter result did not survive the translation
+
+A barrier is **not strike-specific**. A level between spot and a far strike also
+sits between spot and every nearer strike on that side, so it can only favour a
+rival *further out* than the incumbent — and the incumbent is usually already the
+furthest, because `MIN_SHORT_SIGMA` pushes that way too. The barrier is largely a
+property of the **entry**, while `propose()` only ever chooses between structures
+*at* one entry. There is almost nothing for a tie-break to break.
+
+Expressing Part 6's finding faithfully would need it as an entry-level gate —
+stand aside when nothing stands in front of the strike — which is exactly the
+form Part 6 rejected, because it inverted in the carry unwind.
+
+## What changed
+
+```python
+config.RETEST_BARRIER_BONUS = 0.0     # was 0.005
+```
+
+The knob is off, with the sweep table recorded beside it in `config.py`.
+`tests/test_strategy_selection.py` pins the default at zero, so turning it back on
+requires editing a test — which requires a new measurement to justify. The
+mechanism stays fully covered by tests against an explicit non-zero value, so it
+works correctly if better evidence ever turns it on.
+
+**Everything else about breaks stays live.** They are still computed, still
+recorded on every proposal as `retest_levels`, still logged, and still passed to
+the LLM as context. Only the influence on selection is off — the same place
+`market_structure()` ended up in Part 4, reached the same way.
+
+That is now three structural rules measured in this repo and three that did not
+earn a decision: the structure veto (Part 4), the fitted structure model (Part 5),
+and this. The pattern is consistent enough to state plainly: **structure reads are
+informative in aggregate and unreliable as decisions on 19 entry dates.**
+
+## Reproduce
+
+```bash
+python scripts/backtest_bonus.py --sweep
+python scripts/backtest_bonus.py --window calm
+```

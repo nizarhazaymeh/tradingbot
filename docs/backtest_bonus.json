@@ -1,0 +1,43 @@
+{
+  "bonus": 0.005,
+  "dte": 4,
+  "changed": 0,
+  "rows": [],
+  "sweep": [
+    {
+      "bonus": 0.0,
+      "changed": 0,
+      "net": 0.0
+    },
+    {
+      "bonus": 0.005,
+      "changed": 0,
+      "net": 0.0
+    },
+    {
+      "bonus": 0.01,
+      "changed": 0,
+      "net": 0.0
+    },
+    {
+      "bonus": 0.02,
+      "changed": 0,
+      "net": 0.0
+    },
+    {
+      "bonus": 0.05,
+      "changed": 4,
+      "net": -250.0
+    },
+    {
+      "bonus": 0.1,
+      "changed": 5,
+      "net": -533.0
+    },
+    {
+      "bonus": 0.25,
+      "changed": 7,
+      "net": -427.0
+    }
+  ]
+}

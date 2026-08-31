@@ -172,19 +172,53 @@ def test_budget_is_still_respected():
         f"max loss ${sp.max_loss_per_unit:.0f} exceeds budget ${BUDGET:.0f}")
 
 
-# ------------------------------------------- the retest barrier is a tie-break
+# ------------------------------------------ the retest barrier is OFF, by measure
 #
 # A break of structure that price returned to and respected is the strongest
-# barrier levels.py can identify. docs/BACKTEST.md Part 6 measured it
-# leave-one-window-out: trades whose short strike sat behind one returned +$3,255
-# (PF 1.98) against -$554 (PF 0.91) without one.
+# barrier levels.py can identify, and as a trade FILTER it separates outcomes
+# sharply (docs/BACKTEST.md Part 6: +$3,255 at PF 1.98 against -$554 at PF 0.91).
 #
-# It inverted in one of four windows, so it is wired as a RANKING preference and
-# nothing more. These tests pin that boundary: it may reorder acceptable
-# structures, and it may never admit an unacceptable one.
+# It shipped as a 0.005 ranking tie-break instead, and Part 7 measured that
+# through the real propose(): it changed the chosen structure in 0 of 47 entries,
+# and turned up far enough to bite it lost money (-$250 at 0.05, -$533 at 0.10).
+# config.RETEST_BARRIER_BONUS is therefore 0.
+#
+# These tests keep the MECHANISM covered — it must work correctly if anyone turns
+# the knob on with new evidence — while pinning the shipped default at zero, the
+# same way trend_score(structure=...) is pinned inert above.
 
 from agent import levels as L
 from agent.strategy import _retest_bonus
+
+BONUS = 0.005            # the value Part 7 measured; not the shipped default
+
+
+def with_bonus(value):
+    """Context manager-ish helper: the knob is module state, so restore it."""
+    class _Ctx:
+        def __enter__(self):
+            self.old = config.RETEST_BARRIER_BONUS
+            config.RETEST_BARRIER_BONUS = value
+            return value
+
+        def __exit__(self, *exc):
+            config.RETEST_BARRIER_BONUS = self.old
+    return _Ctx()
+
+
+def test_the_shipped_default_is_off():
+    """Pinned. Part 7 measured this knob as inert at 0.005 and losing above it.
+
+    Turning it on again requires changing this test, which requires a new
+    measurement to justify.
+    """
+    assert config.RETEST_BARRIER_BONUS == 0.0
+
+
+def test_with_the_default_the_preference_never_fires():
+    sp = a_credit_spread(regime(), chain())
+    k = shorts_of(sp)[0]
+    assert _retest_bonus(sp, SPOT, [confirmed_at(between_spot_and(k))]) == 0.0
 
 
 def confirmed_at(level, direction=-1):
@@ -228,8 +262,9 @@ def test_no_breaks_means_no_bonus():
 def test_a_level_in_front_of_the_short_strike_earns_the_bonus():
     sp = a_credit_spread(regime(), chain())
     k = shorts_of(sp)[0]
-    assert _retest_bonus(sp, SPOT, [confirmed_at(between_spot_and(k))]) == (
-        config.RETEST_BARRIER_BONUS)
+    with with_bonus(BONUS):
+        assert _retest_bonus(sp, SPOT,
+                             [confirmed_at(between_spot_and(k))]) == BONUS
 
 
 def test_a_level_beyond_the_short_strike_earns_nothing():
@@ -254,9 +289,10 @@ def test_half_a_condor_is_not_a_protected_condor():
     condor = next(sp for _, sp in _scored(reg, views) if sp.kind == "iron_condor")
     ks = sorted(shorts_of(condor))
     put_side = [confirmed_at((ks[0] + SPOT) / 2)]
-    assert _retest_bonus(condor, SPOT, put_side) == 0.0
     both = put_side + [confirmed_at((SPOT + ks[-1]) / 2)]
-    assert _retest_bonus(condor, SPOT, both) == config.RETEST_BARRIER_BONUS
+    with with_bonus(BONUS):
+        assert _retest_bonus(condor, SPOT, put_side) == 0.0
+        assert _retest_bonus(condor, SPOT, both) == BONUS
 
 
 def test_the_levels_are_recorded_whether_or_not_they_pay():
@@ -288,8 +324,9 @@ def test_the_bonus_cannot_admit_a_structure_the_gates_reject():
     """
     views = chain()
     plain, _ = propose(regime(), views, E, View(), BUDGET)
-    boosted, why = propose(with_breaks(regime(), BARRIERS_EVERYWHERE), views, E,
-                           View(), BUDGET)
+    with with_bonus(BONUS):
+        boosted, _ = propose(with_breaks(regime(), BARRIERS_EVERYWHERE), views, E,
+                             View(), BUDGET)
     assert plain is not None and boosted is not None
     assert quality_gate(boosted, regime(), View()) is None, (
         "the bonus pushed through a structure that fails its own gates")
@@ -312,9 +349,13 @@ def test_the_bonus_can_flip_the_ranking_when_the_gap_is_smaller_than_it():
     That is not a bug — it means the preference pushes toward further-out short
     strikes, the same direction MIN_SHORT_SIGMA pushes. It does mean an
     end-to-end promotion needs a chain where a nearer strike wins on EV.
+
+    Uses an explicit BONUS rather than the config value: Part 7 measured the knob
+    through the real propose() and set the shipped default to 0, so reading it
+    here would make this test vacuous. The arithmetic being checked is the same
+    whatever the knob is set to.
     """
-    B = config.RETEST_BARRIER_BONUS
-    assert B > 0, "bonus disabled; nothing to test"
+    B = BONUS
 
     # (ev, bonus) pairs exactly as propose() builds them, sorted the same way
     def order(pairs):
@@ -387,9 +428,5 @@ def test_a_zero_bonus_disables_the_preference():
     sp = a_credit_spread(regime(), chain())
     k = shorts_of(sp)[0]
     brks = [confirmed_at(between_spot_and(k))]
-    old = config.RETEST_BARRIER_BONUS
-    try:
-        config.RETEST_BARRIER_BONUS = 0.0
+    with with_bonus(0.0):
         assert _retest_bonus(sp, SPOT, brks) == 0.0
-    finally:
-        config.RETEST_BARRIER_BONUS = old
