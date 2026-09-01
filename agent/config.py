@@ -282,7 +282,12 @@ NO_NEW_AFTER = _s("NO_NEW_AFTER", "2026-09-03T15:30:00-04:00")
 
 POLL_SECONDS = _i("POLL_SECONDS", 300)
 DRY_RUN = _b("DRY_RUN", True)
-STATE_DB = str(ROOT / "state" / "agent.db")
+# 🔴 The ledger MUST be per-account. A single shared file meant switching to
+# ACCOUNT=comp read DEV's open positions: the monitor tried to manage legs the
+# competition account did not hold, and its risk budget was consumed by
+# positions belonging to another account, so every trade was rejected with
+# "per_expiry budget $2". Observed live 1 Sep on the first COMP cycle.
+STATE_DB = str(ROOT / "state" / f"agent-{ACCOUNT}.db")
 LOG_DIR = ROOT / "logs"
 LOG_DIR.mkdir(exist_ok=True)
 # Console stays terse; the file keeps the full record. See agent/logsetup.py.

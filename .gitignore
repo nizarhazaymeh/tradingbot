@@ -8,6 +8,8 @@ secrets/
 state.json
 state/
 *.db
+*.db.pre-split
+*.db
 trades.csv
 logs/
 __pycache__/
