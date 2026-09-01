@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-01T20:41:56+00:00",
+  "updated_at": "2026-09-01T20:43:28+00:00",
   "account": {
     "account_id": "PA3BAT1OOEFE",
     "environment": "comp",
@@ -193,6 +193,10 @@
     {
       "ts": "2026-09-01T20:35:53+00:00",
       "equity": 100208.95
+    },
+    {
+      "ts": "2026-09-01T20:41:15+00:00",
+      "equity": 100208.95
     }
   ],
   "market": [
@@ -201,16 +205,16 @@
       "spot": 762.15,
       "implied_vol": 0.1198,
       "realized_vol": 0.0699,
-      "premium_edge": 0.0499,
+      "premium_edge": 0.0498,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     },
     {
       "underlying": "QQQ",
       "spot": 708.02,
-      "implied_vol": 0.1684,
+      "implied_vol": 0.1683,
       "realized_vol": 0.128,
-      "premium_edge": 0.0404,
+      "premium_edge": 0.0403,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     },
@@ -226,18 +230,18 @@
     {
       "underlying": "DIA",
       "spot": 527.63,
-      "implied_vol": 0.126,
+      "implied_vol": 0.1258,
       "realized_vol": 0.0789,
-      "premium_edge": 0.0472,
+      "premium_edge": 0.0469,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     },
     {
       "underlying": "SMH",
       "spot": 545.05,
-      "implied_vol": 0.3409,
+      "implied_vol": 0.3383,
       "realized_vol": 0.2978,
-      "premium_edge": 0.0431,
+      "premium_edge": 0.0405,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     },
@@ -253,36 +257,36 @@
     {
       "underlying": "MSFT",
       "spot": 501.19,
-      "implied_vol": 0.2494,
+      "implied_vol": 0.2501,
       "realized_vol": 0.2143,
-      "premium_edge": 0.0351,
+      "premium_edge": 0.0358,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     },
     {
       "underlying": "META",
       "spot": 578.72,
-      "implied_vol": 0.3572,
+      "implied_vol": 0.3569,
       "realized_vol": 0.2907,
-      "premium_edge": 0.0664,
+      "premium_edge": 0.0662,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     },
     {
       "underlying": "AMZN",
       "spot": 254.88,
-      "implied_vol": 0.2733,
+      "implied_vol": 0.2732,
       "realized_vol": 0.2573,
-      "premium_edge": 0.016,
+      "premium_edge": 0.0159,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     },
     {
       "underlying": "GOOGL",
       "spot": 335.0,
-      "implied_vol": 0.2653,
+      "implied_vol": 0.2658,
       "realized_vol": 0.2386,
-      "premium_edge": 0.0267,
+      "premium_edge": 0.0271,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     }
