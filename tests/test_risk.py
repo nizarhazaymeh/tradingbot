@@ -271,3 +271,19 @@ def test_other_underlying_strikes_do_not_clash():
     sp = condor()
     shorts = {round(l.view.strike, 2) for l in sp.legs if l.side == "sell"}
     assert gate_portfolio(sp, book(short_strikes={"QQQ": shorts}))
+
+
+def test_per_expiry_cap_is_not_tighter_than_portfolio_heat():
+    """A per-expiry cap below the heat cap silently becomes the total limit when
+    only one expiry is usable — which is exactly the case near the deadline."""
+    assert config.MAX_PER_EXPIRY_PCT >= config.PORTFOLIO_HEAT_PCT, (
+        "per-expiry cap below portfolio heat leaves the heat budget unusable "
+        "whenever the tradable expiries collapse to one")
+
+
+def test_heat_still_binds_before_per_expiry():
+    """Heat counts every expiry, so it must be the constraint that actually bites."""
+    sp = bull_call_spread(cv("C", 769, mid=3.00), cv("C", 771, mid=2.00))
+    heat_cap = config.PORTFOLIO_HEAT_PCT * 100_000
+    r = size_spread(sp, book(open_heat=heat_cap - 50))
+    assert not r and r.gate == "g_sizing"

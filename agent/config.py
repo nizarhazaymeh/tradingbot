@@ -107,7 +107,13 @@ STARTING_EQUITY = _f("STARTING_EQUITY", 100_000.0)
 RISK_PER_TRADE_PCT = _f("RISK_PER_TRADE_PCT", 0.0055)    # 0.55% -> $550
 PORTFOLIO_HEAT_PCT = _f("PORTFOLIO_HEAT_PCT", 0.0400)    # 4.00% -> $4,000
 MAX_PER_UNDERLYING_PCT = _f("MAX_PER_UNDERLYING_PCT", 0.0120)
-MAX_PER_EXPIRY_PCT = _f("MAX_PER_EXPIRY_PCT", 0.0250)
+# The per-expiry cap exists to stop concentration ACROSS expiries. But the
+# deadline leaves exactly one usable expiry — anything later than 4 Sep is still
+# open when the account is judged — so a cap below PORTFOLIO_HEAT_PCT just
+# becomes a lower total limit. Observed live 1 Sep: deployment stalled at 2.5%
+# with the 4% heat budget two-thirds unused. Aligned with the heat cap so heat
+# is the single binding constraint.
+MAX_PER_EXPIRY_PCT = _f("MAX_PER_EXPIRY_PCT", 0.0400)
 MAX_OPEN_POSITIONS = _i("MAX_OPEN_POSITIONS", 10)
 # The heat cap limits RISK per underlying but not CORRELATION or churn. Observed
 # live 1 Sep: three QQQ condors at nearly identical strikes — one bet taken three
