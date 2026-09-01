@@ -17,6 +17,10 @@ PYTHON="${PYTHON:-/Users/karambalasmeh/.pyenv/versions/3.11.9/bin/python3}"
 LOG="logs/comp-live-$(date +%Y%m%d).log"
 mkdir -p logs
 
+# The demo URL is only as live as the last commit of public/dashboard.json.
+# Rate-limited internally; safe to call every time the watchdog fires.
+./scripts/publish_dashboard.sh || true
+
 if pgrep -f "run.py loop" > /dev/null; then
   echo "$(date '+%F %T') loop already running (pid $(pgrep -f 'run.py loop' | head -1))"
   exit 0
