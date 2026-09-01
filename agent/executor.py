@@ -22,6 +22,37 @@ class Executor:
         self.store = store
         self.dry_run = config.DRY_RUN if dry_run is None else dry_run
 
+    # --------------------------------------------------------------- pricing
+    def refresh_quotes(self, spread: Spread) -> bool:
+        """Re-read every leg's quote immediately before pricing.
+
+        Observed live on 1 Sep 2026: an order priced from the chain fetched at the
+        start of the cycle asked for $0.25 credit when, seconds later, the market
+        only offered $0.14. It sat at status `new` and never filled. A cycle can
+        take tens of seconds; option quotes move faster than that.
+        """
+        syms = [l.symbol for l in spread.legs]
+        try:
+            snaps = self.c.option_snapshots(syms)
+        except AlpacaError as e:
+            log.warning("quote refresh failed: %s", e.message[:100])
+            return False
+        stale = []
+        for leg in spread.legs:
+            q = (snaps.get(leg.symbol) or {}).get("latestQuote") or {}
+            bid, ask = float(q.get("bp") or 0), float(q.get("ap") or 0)
+            if bid <= 0 or ask <= 0:
+                stale.append(leg.symbol)
+                continue
+            if leg.view is not None:
+                leg.view.bid, leg.view.ask = bid, ask
+                leg.view.mid = (bid + ask) / 2.0
+                leg.view.spread_pct = (ask - bid) / leg.view.mid
+        if stale:
+            log.warning("no two-sided quote for %s — not repricing", stale)
+            return False
+        return True
+
     # ------------------------------------------------------------------ open
     def open_spread(self, spread: Spread, *, limit_price: float = None
                     ) -> Tuple[Optional[dict], str]:
@@ -98,6 +129,59 @@ class Executor:
 
         return self._submit(body, coid, "close")
 
+    # --------------------------------------------------------- fill chasing
+    def open_and_chase(self, spread: Spread, *, steps: int = 3,
+                       wait: float = 12.0) -> Tuple[Optional[dict], str]:
+        """Submit, then walk the price toward the market until it fills.
+
+        A single limit at the natural price is a coin flip: the quote it was
+        derived from is already a few seconds old. So we submit, wait, and if it
+        is still unfilled we REPLACE at a slightly worse price. Each step gives
+        up a little edge to convert an unfilled order into a position.
+
+        Replacing rather than cancel-and-resubmit keeps one client_order_id
+        lineage, so a crash mid-chase leaves exactly one recoverable order.
+        """
+        if not self.refresh_quotes(spread):
+            return None, "could not refresh quotes — not submitting"
+
+        ladder = price_ladder(spread, steps=steps)
+        order, msg = self.open_spread(spread, limit_price=ladder[0])
+        if order is None or order.get("status") == "dry_run":
+            return order, msg
+
+        oid = order.get("id")
+        for i, px in enumerate(ladder[1:], start=1):
+            deadline = time.time() + wait
+            while time.time() < deadline:
+                time.sleep(min(4.0, max(1.0, wait / 3)))
+                try:
+                    order = self.c.get_order(oid)
+                except AlpacaError:
+                    break
+                st = order.get("status")
+                if st == "filled":
+                    return order, (f"filled @ {order.get('filled_avg_price')} "
+                                   f"after {i-1} reprice(s)")
+                if st in ("canceled", "rejected", "expired"):
+                    return order, f"{st} before filling"
+
+            try:
+                order = self.c.replace_order(oid, limit_price=f"{px:.2f}")
+                oid = order.get("id", oid)
+                log.info("    reprice %d/%d -> %.2f", i, len(ladder) - 1, px)
+            except AlpacaError as e:
+                log.warning("reprice failed: %s", e.message[:90])
+                break
+
+        try:
+            order = self.c.get_order(oid)
+        except AlpacaError:
+            pass
+        if order.get("status") == "filled":
+            return order, f"filled @ {order.get('filled_avg_price')} on the last step"
+        return order, f"unfilled after {len(ladder)-1} reprices (status {order.get('status')})"
+
     # ------------------------------------------------------------- internals
     def _submit(self, body: dict, coid: str, kind: str) -> Tuple[Optional[dict], str]:
         try:
@@ -148,29 +232,51 @@ class Executor:
         return result
 
 
-def marketable_limit(spread: Spread, *, aggression: float = 0.0) -> float:
-    """Price a spread for execution.
+def spread_prices(spread: Spread) -> Tuple[float, float]:
+    """(mid, natural) net price for the structure, in limit_price convention.
 
-    aggression 0.0 = at mid; 1.0 = fully cross the spread. Used by the re-price
-    ladder: start at mid, walk toward the far side until filled.
+    `natural` is the price that actually transacts: every leg we buy is taken at
+    the ASK, every leg we sell is hit at the BID. Signed so that positive = debit
+    and negative = credit, matching Alpaca's mleg limit_price.
     """
-    total_bid = total_ask = 0.0
+    mid = nat = 0.0
     for leg in spread.legs:
         v = leg.view
         if v is None:
-            return spread.net_price
+            return spread.net_price, spread.net_price
         if leg.side == "buy":
-            total_bid += v.bid
-            total_ask += v.ask
+            mid += v.mid
+            nat += v.ask          # we pay up to open a long leg
         else:
-            total_bid -= v.ask
-            total_ask -= v.bid
-    mid = (total_bid + total_ask) / 2.0
-    far = total_ask
-    price = mid + aggression * (far - mid)
-    return round(price, 2)
+            mid -= v.mid
+            nat -= v.bid          # we accept the bid to open a short leg
+    return round(mid, 2), round(nat, 2)
 
 
-def price_ladder(spread: Spread, steps: int = 4) -> list:
-    """Successive prices to walk through: mid -> progressively more aggressive."""
-    return [marketable_limit(spread, aggression=i / steps) for i in range(steps + 1)]
+def marketable_limit(spread: Spread, *, aggression: float = 0.0) -> float:
+    """Price for execution. 0.0 = mid, 1.0 = the natural (transacting) price."""
+    mid, nat = spread_prices(spread)
+    return round(mid + aggression * (nat - mid), 2)
+
+
+def price_ladder(spread: Spread, steps: int = 3) -> list:
+    """Prices to walk through, mid → natural → beyond.
+
+    Verified live: a limit at the natural price filled in under 5 seconds, and
+    actually received price improvement. A limit derived from a stale quote sat
+    unfilled indefinitely. So the ladder starts at mid (best case), reaches the
+    natural price, then goes one step past it to guarantee a fill.
+    """
+    mid, nat = spread_prices(spread)
+    out = [marketable_limit(spread, aggression=i / steps) for i in range(steps + 1)]
+    # "More likely to fill" is ALWAYS toward more positive, whatever the sign:
+    # a debit means paying more, a credit means accepting less. Moving a credit
+    # further negative asks for MORE credit and is less likely to fill.
+    beyond = round(nat + 0.05, 2)
+    out.append(beyond)
+    # keep order monotonic toward "more likely to fill" and drop duplicates
+    seen, ladder = set(), []
+    for p in out:
+        if p not in seen:
+            seen.add(p); ladder.append(p)
+    return ladder

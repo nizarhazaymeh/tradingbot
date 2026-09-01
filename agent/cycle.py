@@ -659,8 +659,9 @@ class Agent:
                                     decision="reject", gate="g_critic", reason=out["reason"])
             return out
 
-        ladder = price_ladder(sp)
-        order, msg = self.ex.open_spread(sp, limit_price=ladder[0])
+        # Refresh quotes and chase the fill: a single limit derived from a chain
+        # fetched earlier in the cycle sits unfilled, as observed live 1 Sep.
+        order, msg = self.ex.open_and_chase(sp)
         out.update(decision="submit", reason=msg, order=msg)
         log.info("    SUBMIT %s @ %.2f -> %s", sp.describe()[:70], ladder[0], msg)
 

@@ -202,6 +202,18 @@ class AlpacaClient:
     def get_order(self, order_id: str) -> dict:
         return self._request("GET", f"/v2/orders/{order_id}")
 
+    def replace_order(self, order_id: str, *, limit_price: str = None,
+                      qty: str = None, client_order_id: str = None) -> dict:
+        """PATCH an open order. Returns a NEW order object with a new id.
+
+        Used by the fill-chasing ladder: replacing keeps one order lineage, so a
+        crash mid-chase leaves exactly one recoverable order rather than several.
+        """
+        body = {k: v for k, v in
+                {"limit_price": limit_price, "qty": qty,
+                 "client_order_id": client_order_id}.items() if v is not None}
+        return self._request("PATCH", f"/v2/orders/{order_id}", body=body, retries=1)
+
     def cancel_order(self, order_id: str) -> None:
         self._request("DELETE", f"/v2/orders/{order_id}")
 
