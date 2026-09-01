@@ -195,7 +195,7 @@
     <table><thead><tr><th>Layer</th><th>What it enforces</th><th class="num">Verified</th></tr></thead>
     <tbody>
       <tr><td>Structure gates</td><td>Short strike ≥ 0.9σ from spot · credit ≥ 4% of width · positive theta · net delta ≤ 0.35/unit</td><td class="num g">92 tests</td></tr>
-      <tr><td>Sizing</td><td>0.40% of equity per trade · 4% portfolio heat · caps per underlying and per expiry</td><td class="num g">92 tests</td></tr>
+      <tr><td>Sizing</td><td>0.55% of equity per trade · 4% portfolio heat · caps per underlying and per expiry</td><td class="num g">92 tests</td></tr>
       <tr><td>Expectancy</td><td>Expected value ≥ 2% of capital at risk, or no trade</td><td class="num g">92 tests</td></tr>
       <tr><td>Circuit breakers</td><td>Daily 2% / total 6% drawdown · order-rate cap · kill-switch file</td><td class="num g">21/21</td></tr>
       <tr><td>Broker-side halt</td><td>Cancel, flatten, then set <span class="mono">suspend_trade</span> on the account itself</td><td class="num g">real 403</td></tr>

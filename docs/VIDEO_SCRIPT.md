@@ -58,7 +58,7 @@ Point at each of these as it appears:
 | `QQQ … no clear edge -> stand aside` | "QQQ is charging less than the real risk. It refuses to trade it. **Standing aside is the product.**" |
 | `208 usable contracts (100 rejected)` | "It rejects contracts on spread width, open interest and missing Greeks before scoring anything." |
 | `best acceptable EV of 36 candidates (rank 1)` | "36 structures scored by expected value. It takes the best one that *also* clears every risk gate — not just the best-scoring one." |
-| `SUBMIT iron_condor SPY … CREDIT $0.46 \| maxloss $309` | "A four-leg iron condor, submitted as a single `mleg` order. Max loss $309 against a $400 per-trade budget." |
+| `SUBMIT iron_condor SPY … CREDIT $0.46 \| maxloss $309` | "A four-leg iron condor, submitted as a single `mleg` order. Max loss $309 against a $550 per-trade budget." |
 | order status → `filled` | "And it fills." |
 
 Then the demo page — reload it live:

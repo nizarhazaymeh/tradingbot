@@ -103,7 +103,7 @@ Every position is **defined-risk**. The account cannot blow up.
 
 | Layer | Limit |
 |---|---|
-| Per trade | 0.40% of equity (~$400 max loss) |
+| Per trade | 0.55% of equity (~$550 max loss) |
 | Portfolio heat | 4.0% total risk deployed |
 | Per underlying / per expiry | 1.2% / 2.5% |
 | Concurrent positions | 10 |
@@ -153,7 +153,7 @@ brew install alpacahq/tap/cli
 
 cp .env.example .env        # add your Alpaca paper keys + Featherless key
 
-pytest -q                   # 52 tests — the risk gates are the product
+pytest -q                   # 205 tests — the risk gates are the product
 python run.py status        # account, options level, book
 python run.py once          # one full cycle, dry run (no orders)
 python run.py once --live   # actually trade

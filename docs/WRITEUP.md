@@ -66,18 +66,28 @@ rejects, and the failing gate is named in the audit log.
 | Layer | Checks |
 |---|---|
 | **Structural** | `mleg` validity (≤4 legs, per-expiry long ≥ short coverage, ratio GCD = 1, no equity legs, `position_intent` on every leg, `day` TIF, no extended hours); debit/credit sign matches the strategy; credit cannot exceed spread width |
-| **Market state** | market open; no new positions after 15:30 ET; 2 ≤ DTE ≤ 10 (0DTE rejected — Alpaca returns no Greeks for it) |
+| **Market state** | market open; no new positions after 15:30 ET; 3 ≤ DTE ≤ 10 (0-2 DTE rejected: no Greeks at 0DTE, destructive gamma below 3) |
 | **Contract quality** | tradable; open interest ≥ 500; bid/ask spread within a % *or* absolute-cents limit; Greeks present; 0.01 < IV < 5.0; order qty ≤ 5% of open interest |
 | **Expectancy** | EV ≥ 2% of capital at risk, under realised-vol probabilities |
-| **Portfolio** | 0.40% max loss per trade · 4.0% total heat · 1.2% per underlying · 2.5% per expiry · ≤10 concurrent · cost ≤ 50% of options buying power · portfolio delta within ±3.0 per $100k · no duplicate structures |
+| **Portfolio** | 0.55% max loss per trade · 4.0% total heat · 1.2% per underlying · 2.5% per expiry · ≤10 concurrent · cost ≤ 50% of options buying power · portfolio delta within ±3.0 per $100k · no duplicate structures |
 | **Circuit breakers** | daily −2%, total −6% → cancel all orders, flatten the book, and set `suspend_trade` on the Alpaca account |
+| **Competition deadline** | `NO_NEW_AFTER` 3 Sep 15:30 ET stops opening; `FLATTEN_AT` 4 Sep 09:35 ET closes everything unconditionally, at higher priority than any other exit |
 
 **Exits are our responsibility.** Alpaca does not support bracket/OCO orders on
-options, so the monitor loop *is* the stop-loss: +50% of max gain (credit) or
+options, so the monitor loop *is* the stop-loss: +35% of max gain (credit) or
 +75% (debit); −150% of credit or −60% of debit; short-leg |delta| > 0.40 →
 roll; time stop at DTE 1; and on expiry day a forced close — limit from 14:00 ET,
 market from 15:30 ET. That last rule is not optional: Alpaca auto-exercises ITM
 options, which would convert a $400 spread into six-figure equity exposure.
+
+**Deadline policy.** The competition is judged at a fixed moment, which is not a
+natural exit for any position. From 2 Sep the only expiries inside our 3–10 DTE
+window are 8 Sep and later — all of which would still be open when the account is
+marked, making the reported figure depend on where the market went after we
+stopped controlling it. Two cutoffs prevent that: we stop opening on 3 Sep at
+15:30 ET, and flatten the entire book on 4 Sep at 09:35 ET. The flatten outranks
+every other exit trigger, so even a healthy position closes. The reported P&L is
+therefore realised and cannot drift.
 
 **Kill switch.** A halt sets `suspend_trade: true` via
 `PATCH /v2/account/configurations` — a server-side block that survives our process
