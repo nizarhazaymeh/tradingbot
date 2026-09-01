@@ -663,11 +663,13 @@ class Agent:
         # fetched earlier in the cycle sits unfilled, as observed live 1 Sep.
         order, msg = self.ex.open_and_chase(sp)
         out.update(decision="submit", reason=msg, order=msg)
-        log.info("    SUBMIT %s @ %.2f -> %s", sp.describe()[:70], ladder[0], msg)
+        log.info("    SUBMIT %s -> %s", sp.describe()[:70], msg)
 
+        # RECORD FIRST, notify second. On 1 Sep a NameError between submission and
+        # persistence left a live 4-leg condor with no exit plan — an orphan the
+        # monitor could not manage. Nothing that can raise goes between the
+        # submit and the store write.
         if order and order.get("status") != "dry_run":
-            notify(f"{sp.describe()}\nlimit {ladder[0]:+.2f} -> {msg}",
-                   subject=f"Opened {sp.kind} {sp.underlying}")
             coid = order.get("client_order_id") or sp.client_order_id()
             tp = config.TAKE_PROFIT_CREDIT if sp.is_credit else config.TAKE_PROFIT_DEBIT
             self.store.open_position(
@@ -676,6 +678,8 @@ class Agent:
                 stop_loss=(config.STOP_CREDIT_MULT if sp.is_credit else config.STOP_DEBIT_PCT)
                           * abs(sp.net_price) * 100 * sp.qty,
                 time_stop_dte=config.TIME_STOP_DTE, client_order_id=coid)
+            notify(f"{sp.describe()}\n{msg}",
+                   subject=f"Opened {sp.kind} {sp.underlying}")
 
         self.store.log_decision(cycle=self.cycle_n, underlying=underlying, regime=reg.name,
                                 view=asdict(v), proposal=sp.kind, decision="submit",
