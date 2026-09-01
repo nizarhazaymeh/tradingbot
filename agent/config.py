@@ -258,7 +258,13 @@ MAX_DEBIT_RATIO = _f("MAX_DEBIT_RATIO", 0.60)   # debit must be <= 60% of width
 #   close at 25% -> 84% win, PF 2.92     close at 50% -> 80% win, PF 2.47
 #   close at 35% -> 84% win, PF 3.04 ←   close at 80% -> 71% win, PF 1.68
 TAKE_PROFIT_CREDIT = _f("TAKE_PROFIT_CREDIT", 0.35)   # % of max gain
-TAKE_PROFIT_DEBIT = _f("TAKE_PROFIT_DEBIT", 0.75)
+# A debit spread's max gain is several multiples of its cost — IWM live 1 Sep:
+# \$498 risked against a \$2,702 max gain. Taking profit at a % of MAX GAIN
+# therefore demands a ~4x return and never fires, leaving the position to ride to
+# expiry ungoverned. So debit exits are measured against the PREMIUM PAID, which
+# is both the standard convention and actually reachable.
+TAKE_PROFIT_DEBIT_MULT = _f("TAKE_PROFIT_DEBIT_MULT", 1.00)   # +100% of debit paid
+TAKE_PROFIT_DEBIT = _f("TAKE_PROFIT_DEBIT", 0.75)             # legacy, unused
 STOP_CREDIT_MULT = _f("STOP_CREDIT_MULT", 1.50)       # -150% of credit
 STOP_DEBIT_PCT = _f("STOP_DEBIT_PCT", 0.60)
 DELTA_BREACH = _f("DELTA_BREACH", 0.40)

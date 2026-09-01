@@ -90,3 +90,39 @@ def test_stale_quote_holds_rather_than_guessing():
     snaps = {P751: q(0, 0), P756: q(0.80, 0.84)}
     d = evaluate_exit(pos(), snaps, now=NOW)
     assert d.action == HOLD and "cannot mark" in d.reason
+
+
+# ------------------------------------------- debit take-profit uses cost paid
+def _debit_pos(expiry=E, entry=1.28, qty=4, max_gain=2702.0):
+    legs = [{"symbol": occ("SPY", expiry, "P", 755), "side": "buy",
+             "position_intent": "buy_to_open", "ratio_qty": "1"},
+            {"symbol": occ("SPY", expiry, "P", 747), "side": "sell",
+             "position_intent": "sell_to_open", "ratio_qty": "1"}]
+    return {"signature": "d", "legs_json": json.dumps(legs), "entry_price": entry,
+            "is_credit": 0, "qty": qty, "max_gain": max_gain, "max_loss": 498.0,
+            "expiry": expiry.isoformat(), "time_stop_dte": 1}
+
+
+def test_debit_take_profit_fires_at_double_the_premium():
+    """+100% of the $512 paid, not 75% of a $2,702 max gain."""
+    p = _debit_pos()
+    # entry 1.28; closing mark must exceed 1.28 + 512/400 = 2.56 to clear the
+    # +100%-of-premium target. bid(long) - ask(short) = 3.10 - 0.46 = 2.64.
+    snaps = {occ("SPY", E, "P", 755): {"latestQuote": {"bp": 3.10, "ap": 3.14}},
+             occ("SPY", E, "P", 747): {"latestQuote": {"bp": 0.42, "ap": 0.46}}}
+    d = evaluate_exit(p, snaps, now=NOW)
+    assert d.action == CLOSE_LIMIT and "paid" in d.reason
+
+
+def test_debit_holds_below_the_target():
+    p = _debit_pos()
+    snaps = {occ("SPY", E, "P", 755): {"latestQuote": {"bp": 1.60, "ap": 1.64}},
+             occ("SPY", E, "P", 747): {"latestQuote": {"bp": 0.30, "ap": 0.34}}}
+    d = evaluate_exit(p, snaps, now=NOW)
+    assert d.action == HOLD
+
+
+def test_credit_take_profit_still_uses_max_gain():
+    snaps = {P751: q(0.02, 0.04), P756: q(0.28, 0.30)}
+    d = evaluate_exit(pos(), snaps, now=NOW)
+    assert d.action == CLOSE_LIMIT and "max gain" in d.reason

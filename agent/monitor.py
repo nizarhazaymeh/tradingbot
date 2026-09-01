@@ -118,12 +118,26 @@ def evaluate_exit(position: dict, snaps: Dict[str, dict],
                                 detail={"pnl": pnl, "debit": debit})
 
     # ---- 3. take profit ---------------------------------------------------
-    target_pct = config.TAKE_PROFIT_CREDIT if is_credit else config.TAKE_PROFIT_DEBIT
-    if max_gain > 0 and pnl >= target_pct * max_gain:
-        return ExitDecision(CLOSE_LIMIT,
-                            f"take profit: ${pnl:,.0f} >= {target_pct:.0%} of "
-                            f"${max_gain:,.0f} max gain", urgency=70,
-                            detail={"pnl": pnl, "max_gain": max_gain})
+    if is_credit:
+        # A credit spread's max gain IS the credit, so a % of it is meaningful.
+        if max_gain > 0 and pnl >= config.TAKE_PROFIT_CREDIT * max_gain:
+            return ExitDecision(CLOSE_LIMIT,
+                                f"take profit: ${pnl:,.0f} >= "
+                                f"{config.TAKE_PROFIT_CREDIT:.0%} of ${max_gain:,.0f} "
+                                f"max gain", urgency=70,
+                                detail={"pnl": pnl, "max_gain": max_gain})
+    else:
+        # A debit spread's max gain is several multiples of its cost, so a % of
+        # max gain demands a return that never arrives. Measure against what we
+        # actually paid.
+        paid = abs(position["entry_price"]) * 100 * position["qty"]
+        target = config.TAKE_PROFIT_DEBIT_MULT * paid
+        if paid > 0 and pnl >= target:
+            return ExitDecision(CLOSE_LIMIT,
+                                f"take profit: ${pnl:,.0f} >= "
+                                f"{config.TAKE_PROFIT_DEBIT_MULT:.0%} of the "
+                                f"${paid:,.0f} paid", urgency=70,
+                                detail={"pnl": pnl, "paid": paid})
 
     # ---- 4. delta breach on a short leg -> roll ---------------------------
     legs = json.loads(position["legs_json"])
