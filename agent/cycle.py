@@ -693,7 +693,10 @@ class Agent:
         # fetched earlier in the cycle sits unfilled, as observed live 1 Sep.
         order, msg = self.ex.open_and_chase(sp)
         out.update(decision="submit", reason=msg, order=msg)
-        log.info("    SUBMIT %s -> %s", sp.describe()[:70], msg)
+        # Not truncated. describe() ends in "maxloss $546 | delta ... theta ...",
+        # and a [:70] slice cut that to "maxloss $54" — a wrong number that still
+        # reads as a real one. Observed 1 Sep on a bear_call IWM fill.
+        log.info("    SUBMIT %s -> %s", sp.describe(), msg)
 
         # RECORD FIRST, notify second. On 1 Sep a NameError between submission and
         # persistence left a live 4-leg condor with no exit plan — an orphan the
