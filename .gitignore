@@ -27,3 +27,4 @@ searching_docs/09_raw_sources/
 # Runtime kill switch written by a live circuit-breaker trip. Local state, never
 # committed — a HALTED file in the repo would halt the agent from a fresh clone.
 HALTED
+state/*.db*
