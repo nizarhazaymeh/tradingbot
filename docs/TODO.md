@@ -38,6 +38,21 @@ working. See [`BACKTEST.md`](BACKTEST.md).
 Naive strategy loses (−$240, PF 0.91); each of the agent's filters improves it,
 reaching +$657 / PF 2.52 / 81% win rate. Caveats documented honestly.
 
+### ✅ DEADLINE POLICY — added 1 Sep
+The competition is judged at a fixed moment, which is not a natural exit for any
+position. Found while pre-flighting: from **2 Sep onward the only expiries inside
+the 3-10 DTE window are 8 Sep and later**, all of which would still be open when
+judges mark the account.
+
+Two cutoffs now enforce it (`agent/config.py`):
+- `NO_NEW_AFTER = 2026-09-03T15:30 ET` — stop opening anything that cannot be
+  managed to a sensible close
+- `FLATTEN_AT = 2026-09-04T09:35 ET` — close everything unconditionally, at
+  urgency 200 so it outranks every other exit trigger
+
+Consequence: the reported P&L is realised and cannot drift after we stop
+controlling it. 10 tests in `tests/test_deadline.py`.
+
 ### T1 — 🔴 No order has ever actually filled
 **This is the single biggest unknown in the whole project.**
 

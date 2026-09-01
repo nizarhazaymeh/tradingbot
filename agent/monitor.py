@@ -16,7 +16,7 @@ from typing import Dict, List, Optional, Tuple
 
 from . import config
 from .options import ContractView
-from .risk import expiry_action, now_et
+from .risk import expiry_action, now_et, flatten_now as RK_flatten
 
 log = logging.getLogger(__name__)
 
@@ -78,6 +78,12 @@ def evaluate_exit(position: dict, snaps: Dict[str, dict],
     views = views or {}
     expiry = date.fromisoformat(position["expiry"])
     dte = (expiry - now.date()).days
+
+    # ---- 0. competition deadline: overrides everything --------------------
+    fl = RK_flatten(now)
+    if fl:
+        return ExitDecision(CLOSE_MARKET, fl, urgency=200,
+                            detail={"deadline": True, "dte": dte})
 
     # ---- 1. expiry day: non-negotiable, highest urgency -------------------
     ea = expiry_action(dte, now)

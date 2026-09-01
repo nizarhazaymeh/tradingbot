@@ -119,11 +119,59 @@ def market_gates(clock: dict, *, allow_new: bool = True) -> GateResult:
         return _fail("g_market_open", f"market closed; next open {clock.get('next_open')}")
     if not allow_new:
         return _fail("g_no_new_requested", "new positions disabled for this cycle")
+    now = now_et()
     cutoff = _hhmm(config.NO_NEW_AFTER_ET)
-    if now_et().time() >= cutoff:
+    if now.time() >= cutoff:
         return _fail("g_not_near_close",
                      f"past {config.NO_NEW_AFTER_ET} ET — no new positions")
+
+    # The competition is judged at a fixed moment, which is not a natural exit
+    # for any position. Stop opening once we are too close to it to manage a
+    # trade to a sensible close.
+    no_new, now_a = _aware(_iso(config.NO_NEW_AFTER)), _aware(now)
+    if no_new and now_a and now_a >= no_new:
+        return _fail("g_deadline_no_new",
+                     f"past NO_NEW_AFTER {config.NO_NEW_AFTER} — too close to the "
+                     f"competition deadline to open anything new")
     return PASS
+
+
+def _iso(v: str):
+    """Parse an ISO datetime from config; None if unset or malformed."""
+    try:
+        return datetime.fromisoformat(v)
+    except (TypeError, ValueError):
+        return None
+
+
+def _aware(d) -> Optional[datetime]:
+    """Normalise to an aware ET datetime, or None if it isn't a real datetime.
+
+    Callers pass aware datetimes, naive ones (tests), and occasionally mocked
+    clocks. Returning None lets the deadline checks skip cleanly rather than
+    raising on a comparison.
+    """
+    if not isinstance(d, datetime):
+        return None
+    return d if d.tzinfo is not None else d.replace(tzinfo=ET)
+
+
+def flatten_now(now: datetime = None) -> Optional[str]:
+    """Past the flatten cutoff every position closes, regardless of P&L.
+
+    Judges mark the account at a fixed time. An open, mid-move position makes the
+    reported figure depend on where the market went after we stopped controlling
+    it — and anything expiring after the deadline would never reach its own time
+    stop. So the book is flattened first.
+    """
+    at = _iso(config.FLATTEN_AT)
+    if at is None:
+        return None
+    now, at = _aware(now or now_et()), _aware(at)
+    if now and at and now >= at:
+        return (f"past FLATTEN_AT {config.FLATTEN_AT} — flattening the book "
+                f"before the competition deadline")
+    return None
 
 
 # ------------------------------------------------------------ contract gates

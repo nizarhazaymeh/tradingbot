@@ -234,6 +234,17 @@ FORCE_CLOSE_AFTER_ET = _s("FORCE_CLOSE_AFTER_ET", "14:00")
 ESCALATE_CLOSE_AFTER_ET = _s("ESCALATE_CLOSE_AFTER_ET", "15:30")
 
 # ---------------------------------------------------------------- runtime
+# ---------------------------------------------------------------- deadline
+# The competition is judged at a fixed moment, which is NOT a natural exit for a
+# position. Two separate cutoffs:
+#   FLATTEN_AT      close everything, unconditionally
+#   NO_NEW_AFTER    stop opening anything that cannot be closed before FLATTEN_AT
+# Without these the judges would mark an open, mid-move position, and anything
+# expiring after the deadline would never reach its own time stop.
+COMPETITION_DEADLINE = _s("COMPETITION_DEADLINE", "2026-09-04T11:00:00-04:00")
+FLATTEN_AT = _s("FLATTEN_AT", "2026-09-04T09:35:00-04:00")
+NO_NEW_AFTER = _s("NO_NEW_AFTER", "2026-09-03T15:30:00-04:00")
+
 POLL_SECONDS = _i("POLL_SECONDS", 300)
 DRY_RUN = _b("DRY_RUN", True)
 STATE_DB = str(ROOT / "state" / "agent.db")
