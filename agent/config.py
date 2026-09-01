@@ -109,6 +109,10 @@ PORTFOLIO_HEAT_PCT = _f("PORTFOLIO_HEAT_PCT", 0.0400)    # 4.00% -> $4,000
 MAX_PER_UNDERLYING_PCT = _f("MAX_PER_UNDERLYING_PCT", 0.0120)
 MAX_PER_EXPIRY_PCT = _f("MAX_PER_EXPIRY_PCT", 0.0250)
 MAX_OPEN_POSITIONS = _i("MAX_OPEN_POSITIONS", 10)
+# The heat cap limits RISK per underlying but not CORRELATION or churn. Observed
+# live 1 Sep: three QQQ condors at nearly identical strikes — one bet taken three
+# times, paying the bid/ask spread three times for no added diversification.
+MAX_POSITIONS_PER_UNDERLYING = _i("MAX_POSITIONS_PER_UNDERLYING", 2)
 MAX_ORDERS_PER_HOUR = _i("MAX_ORDERS_PER_HOUR", 12)
 
 # How long an unfilled order may sit at the broker before the agent cancels it.

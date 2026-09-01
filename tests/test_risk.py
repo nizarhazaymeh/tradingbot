@@ -217,3 +217,29 @@ def test_condors_withheld_in_high_vol():
                  {"realized_vol": 0.46})     # the April-2025 regime
     kinds = {c.kind for c in candidates(reg, views, E, View(), 10_000)}
     assert "iron_condor" not in kinds
+
+
+# ------------------------------------------------ per-underlying count cap
+def test_max_positions_per_underlying_blocks_a_third():
+    """Adjacent-strike structures are one bet taken N times, paying N spreads."""
+    sp = condor()
+    b = book(count_by_underlying={"SPY": config.MAX_POSITIONS_PER_UNDERLYING})
+    r = gate_portfolio(sp, b)
+    assert not r and r.gate == "g_max_per_underlying"
+
+
+def test_max_positions_per_underlying_allows_the_second():
+    sp = condor()
+    assert gate_portfolio(sp, book(count_by_underlying={"SPY": 1}))
+
+
+def test_count_by_underlying_is_built_from_the_book():
+    b = Book.from_account(
+        {"equity": "100000", "last_equity": "100000", "options_buying_power": "100000"},
+        [{"signature": "a", "underlying": "SPY", "expiry": "2026-09-04",
+          "max_loss": 400, "net_delta": 0.0},
+         {"signature": "b", "underlying": "SPY", "expiry": "2026-09-04",
+          "max_loss": 400, "net_delta": 0.0},
+         {"signature": "c", "underlying": "QQQ", "expiry": "2026-09-04",
+          "max_loss": 400, "net_delta": 0.0}])
+    assert b.count_by_underlying == {"SPY": 2, "QQQ": 1}

@@ -16,8 +16,8 @@ from .options import ContractView, atm_iv, expected_move, iv_rank
 
 # Regime names
 HIGH_IV_RANGE = "HIGH_IV_RANGE"      # calm + expensive options -> sell premium, neutral
-HIGH_IV_TREND = "HIGH_IV_TREND"      # trending + expensive     -> credit spread with the trend
-LOW_IV_TREND = "LOW_IV_TREND"        # trending + cheap         -> debit spread with the trend
+HIGH_IV_TREND = "HIGH_IV_TREND"      # trending + expensive premium
+LOW_IV_TREND = "LOW_IV_TREND"        # trending + cheap premium
 LOW_IV_RANGE = "LOW_IV_RANGE"        # calm + cheap             -> no edge, stand aside
 EVENT_RISK = "EVENT_RISK"            # catalyst in window       -> stand aside
 
@@ -159,14 +159,14 @@ def classify(underlying: str, spot: float, views: List[ContractView], closes: Li
 
     if rich and not trending:
         return Regime(HIGH_IV_RANGE, underlying, spot, iv, rank, z, direction, em, dte,
-                      f"{basis}, no trend (z{z:+.2f}) -> sell premium, delta-neutral", detail)
+                      f"{basis}, no trend (z{z:+.2f}) -> premium is rich, price is range-bound", detail)
     if rich and trending:
         return Regime(HIGH_IV_TREND, underlying, spot, iv, rank, z, direction, em, dte,
                       f"{basis}, trend {'up' if direction > 0 else 'down'} "
-                      f"-> credit spread with the trend", detail)
+                      f"-> premium is rich and price is trending", detail)
     if cheap and trending:
         return Regime(LOW_IV_TREND, underlying, spot, iv, rank, z, direction, em, dte,
                       f"{basis}, trend {'up' if direction > 0 else 'down'} "
-                      f"-> debit spread with the trend", detail)
+                      f"-> premium is cheap and price is trending", detail)
     return Regime(LOW_IV_RANGE, underlying, spot, iv, rank, z, direction, em, dte,
-                  f"{basis}, no clear edge -> stand aside", detail)
+                  f"{basis}, no clear volatility edge", detail)

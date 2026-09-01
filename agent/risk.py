@@ -60,6 +60,7 @@ class Book:
     net_delta: float = 0.0
     orders_last_hour: int = 0
     held_structures: set = field(default_factory=set)
+    count_by_underlying: Dict[str, int] = field(default_factory=dict)
 
     @classmethod
     def from_account(cls, account: dict, tracked: List[dict] = None) -> "Book":
@@ -77,6 +78,8 @@ class Book:
             b.heat_by_expiry[t["expiry"]] = b.heat_by_expiry.get(t["expiry"], 0) + loss
             b.net_delta += float(t.get("net_delta") or 0)
             b.held_structures.add(t.get("signature", ""))
+            u = t["underlying"]
+            b.count_by_underlying[u] = b.count_by_underlying.get(u, 0) + 1
         return b
 
 
@@ -304,6 +307,16 @@ def gate_portfolio(spread: Spread, book: Book) -> GateResult:
     sig = signature(spread)
     if sig in book.held_structures:
         return _fail("g_no_duplicate", f"already holding {sig}")
+
+    # g_no_duplicate only catches an EXACT match, so nearly identical structures
+    # at adjacent strikes slip through as separate "positions". That is one bet
+    # taken N times, paying the spread N times.
+    held = book.count_by_underlying.get(spread.underlying, 0)
+    if held >= config.MAX_POSITIONS_PER_UNDERLYING:
+        return _fail("g_max_per_underlying",
+                     f"already holding {held} position(s) in {spread.underlying}, "
+                     f"cap {config.MAX_POSITIONS_PER_UNDERLYING} — adjacent strikes "
+                     f"are the same bet, not diversification")
 
     cost = estimated_cost(spread)
     if cost > 0.5 * book.options_buying_power:
