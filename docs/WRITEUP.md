@@ -58,6 +58,88 @@ wrong opinion that the EV test must still accept on its merits.
 for calls and understates it for puts. Using delta as a probability materially
 misprices the EV.
 
+**A rule we built, measured, and switched off.** The variance risk premium is a
+claim about prices, not about which side we are on, so it should govern selling
+as well as buying. It did not: credit structures had a take-profit against max
+gain, but a long-premium structure had only a profit multiple of the debit paid
+and a DTE-1 time stop.
+
+On 1 Sep that gap appeared live. The agent held two IWM bear put spreads at
+DTE 3 whose long strikes (290, 291) had been pinned by a 290.39 spot. About 80%
+of their $1,236 value was time value, and IWM implied vol was 20.8% against
+11.7% realised — we were long options priced at nearly twice the volatility the
+index was delivering, precisely the trade the entry logic exists to refuse, and
+no exit rule would sell them.
+
+So we wrote one. `monitor.harvest_edge()` values the remaining life of a
+structure at *realised* vol with a Black-Scholes mark and compares that to what
+the market will pay now; when the market overpays for time we still hold, we
+sell. It fired on both positions and realised **+$406**, and correctly left the
+six short-premium structures alone.
+
+**Then we tested it properly, and it did not hold up.** One case is not
+evidence, so we A/B'd the same structures through the same exit logic with the
+rule on and off, over 120 historical debit structures across 12 expiry cycles
+(`scripts/validate_harvest.py`, realised vol computed only from closes *before*
+each step so the rule cannot see the move it is judged on):
+
+| Window | Harvest on | Harvest off | Difference |
+|---|---|---|---|
+| 6 cycles | $2,634 | $1,474 | **+$1,160** |
+| 12 cycles | −$150 | $126 | **−$276** |
+
+The encouraging number was a window artifact. Six weeks happened to include the
+one good cycle (24 Jul, +$1,514) and exclude the worst (12 Jun, −$1,518); by
+cycle the rule was positive four times and negative four times. Threshold
+sweeps did not rescue it — on an absolute floor only one setting was positive,
+and it fired 3 times in 120, which is fitting a threshold to three samples. On a
+relative floor, every setting from 10% to 50% of the position's mark was *worse*
+than off. A trend veto, on the theory that a debit spread is bought on a
+directional thesis, made it worse still: it blocked the two cases it should have
+kept and let through all four it should have stopped.
+
+**So it ships disabled** (`HARVEST_ENABLED=False`). The +$406 it realised was
+correct on that position's own merits and stands; what we could not show is that
+the generalisation makes money. One caveat we kept in the code: all 23 replay
+firings were bull call spreads, so the structure that motivated the rule — a
+bear put spread — was never exercised historically. The rule is unproven for
+that case rather than disproven. Unproven is still not a reason to run it on a
+live account.
+
+We are including this because it is the most honest thing in the project: the
+machinery it introduced (`bs_price`, `fair_value`) is what let us price the
+deadline decision below, and the discipline that killed it is the same
+discipline that found the strategy in the first place.
+
+**Topology.** Each cycle, per underlying:
+
+| Stage | Component | LLM? |
+|---|---|---|
+| 1 | Regime classification — IV vs realised vol, trend z-score, expected move | ❌ |
+| 2 | Directional view — direction, magnitude, confidence, thesis | ✅ |
+| 3 | Candidate enumeration — ~37 structures across deltas, widths, sides | ❌ |
+| 4 | Expected-value scoring — N(d₂) probabilities under realised vol, tilted by the view | ❌ |
+| 5 | Critic — structural coherence check | ✅ |
+| 6 | Risk gates — 22 deterministic checks | ❌ |
+| 7 | Execution — 4-leg `mleg` order via the Alpaca CLI | ❌ |
+
+**Where the model is, and is not.** The LLM (Featherless AI, `zai-org/GLM-5.2`)
+returns exactly one thing: a JSON view of `{direction, magnitude, horizon_days,
+confidence, thesis}`. That confidence *tilts* the market-implied probabilities,
+and the agent trades only when the tilt is large enough to overcome transaction
+costs. The model never picks a strike, never sizes a position, never constructs
+an order payload. Confidence below 0.55 is treated as no opinion.
+
+This split is deliberate and is also our defence against prompt injection: the
+agent reads news headlines, which are attacker-influenceable text. Because model
+output is constrained to a fixed schema and consumed only as a probability tilt,
+a fully compromised response cannot place a trade — the worst it achieves is a
+wrong opinion that the EV test must still accept on its merits.
+
+**Probabilities.** We use N(d₂), not delta. Delta is N(d₁); it overstates P(ITM)
+for calls and understates it for puts. Using delta as a probability materially
+misprices the EV.
+
 **The same test, applied to exits.** The variance risk premium is a claim about
 *prices*, not about which side we happen to be on — so it should govern selling
 as well as buying. It did not, at first. Credit structures had a take-profit
@@ -112,10 +194,9 @@ rejects, and the failing gate is named in the audit log.
 
 **Exits are our responsibility.** Alpaca does not support bracket/OCO orders on
 options, so the monitor loop *is* the stop-loss: +35% of max gain (credit) or
-+100% of the debit paid; −150% of credit or −60% of debit; a decay harvest that
-sells long premium the market overpays for; short-leg |delta| > 0.40 → roll;
-time stop at DTE 1; and on expiry day a forced close — limit from 14:00 ET,
-market from 15:30 ET. That last rule is not optional: Alpaca auto-exercises ITM
++100% of the debit paid; −150% of credit or −60% of debit; short-leg
+|delta| > 0.40 → roll; time stop at DTE 1; and on expiry day a forced close —
+limit from 14:00 ET, market from 15:30 ET. That last rule is not optional: Alpaca auto-exercises ITM
 options, which would convert a $400 spread into six-figure equity exposure.
 
 **Deadline policy.** The competition is judged at a fixed moment, which is not a

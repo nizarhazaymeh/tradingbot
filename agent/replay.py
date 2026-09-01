@@ -26,7 +26,7 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from . import config, monitor, spreads as S
+from . import config, monitor, regime as R, spreads as S
 from .client import AlpacaClient, AlpacaError
 from .options import ContractView, parse_occ
 
@@ -189,6 +189,12 @@ class Replayer:
 
         bars = self.option_bars(syms, start, end)
         closes = self.stock_closes(spread.underlying, start, end)
+        # Realised vol needs ~20 prior sessions, and `start` is only two days
+        # before entry — so a separate, longer history purely for volatility.
+        # Without this the harvest rule stays inert through the whole replay.
+        vol_closes = self.stock_closes(spread.underlying,
+                                       (entry_day - timedelta(days=150)).isoformat(),
+                                       end)
 
         entry = entry_price if entry_price is not None else self._mark(spread, bars,
                                                                       entry_day.isoformat())
@@ -231,7 +237,20 @@ class Replayer:
                 snaps[leg.symbol] = {"latestQuote": {"bp": max(px - 0.02, 0.01),
                                                      "ap": px + 0.02}}
             noon = datetime(day.year, day.month, day.day, 12, 0)
-            d = monitor.evaluate_exit(pos, snaps, {}, now=noon)
+
+            # The harvest rule needs spot and realised vol, and is inert without
+            # them — so replaying with no context silently skipped it entirely.
+            # Realised vol is computed from closes strictly BEFORE this day, so
+            # the replay cannot see the move it is about to be judged on.
+            context = {}
+            prior = [vol_closes[k] for k in sorted(vol_closes) if k < ds]
+            rv = R.realized_vol(prior) if len(prior) >= 21 else None
+            spot_ds = closes.get(ds) or vol_closes.get(ds)
+            if rv and spot_ds:
+                tz, _dir = R.trend_score(prior) if len(prior) >= 52 else (0.0, 0)
+                context[spread.underlying] = {"spot": float(spot_ds),
+                                              "realized_vol": rv, "trend_z": tz}
+            d = monitor.evaluate_exit(pos, snaps, {}, now=noon, context=context)
 
             result.steps.append(ReplayStep(day, dte, closes.get(ds), mark, pnl,
                                            d.action, d.reason))

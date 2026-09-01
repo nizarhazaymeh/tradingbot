@@ -319,9 +319,50 @@ TIME_STOP_DTE = _i("TIME_STOP_DTE", 1)
 # HARVEST compares the market's mark against what the REMAINING TIME is worth
 # priced at realised vol. When the market overpays for time we still hold, we
 # sell it — the same trade we make on the short side, in the other direction.
-HARVEST_ENABLED = _b("HARVEST_ENABLED", True)
+# 🔴 OFF BY DEFAULT — the idea is sound and the evidence is not.
+#
+# Built on 1 Sep off one live case: two IWM bear put spreads, 80% time value,
+# implied 20.8% against realised 11.7%, needing a 2.4-sigma fall to reach max
+# value. Selling them was right and banked +$406. But one case is not evidence,
+# so it was A/B'd over 120 historical debit structures across 12 expiry cycles
+# (scripts/validate_harvest.py):
+#
+#   6 cycles  +$1,160   <- the window this was first measured on
+#  12 cycles    -$276
+#
+# The first number was a window artifact: six weeks happened to include the one
+# good cycle (24 Jul, +$1,514) and exclude the worst (12 Jun, -$1,518). Firing
+# by cycle: 4 positive, 4 negative.
+#
+# Threshold sweeps do not rescue it. On an absolute floor only MIN_EDGE=150 is
+# positive (+$592) and it fires 3 times in 120 — fitting a threshold to three
+# samples, not finding an edge. On a relative floor every setting from 10% to
+# 50% of the mark is WORSE than off. A trend veto was tried and made it worse
+# still (see the note below).
+#
+# One caveat worth keeping: all 23 replay firings were bull_calls, so the
+# structure that motivated the rule — a bear put spread — was never exercised
+# historically. The rule is therefore unproven rather than disproven for that
+# case. Unproven is still not a reason to run it on a live account.
+#
+# Set HARVEST_ENABLED=1 to turn it back on.
+HARVEST_ENABLED = _b("HARVEST_ENABLED", False)
 HARVEST_EDGE_MULT = _f("HARVEST_EDGE_MULT", 2.0)   # edge must beat 2x the exit cost
 HARVEST_MIN_EDGE = _f("HARVEST_MIN_EDGE", 50.0)    # and be worth the ticket
+HARVEST_MIN_EDGE_FRAC = _f("HARVEST_MIN_EDGE_FRAC", 0.0)  # and this share of the mark
+# A trend veto was tried here and REJECTED. The reasoning was that a debit
+# spread is bought on a directional thesis while harvest is pure vol arbitrage,
+# so the rule should stand down while the trend still backs the position. A/B
+# over 72 historical debit structures (scripts/validate_harvest.py) says the
+# trend does not separate the good harvests from the bad ones:
+#
+#   harvest alone          +$1,160   fired 10 times
+#   harvest + trend veto     +$518   fired  8 times
+#
+# The veto blocked the two cases it should have kept (SPY 21 Aug +$456, SPY
+# 7 Aug +$186) and let through all four it should have stopped (28 Aug, -$996).
+# Trend z-score was exactly the wrong discriminator. Left out rather than
+# tuned, because there is no evidence it separates anything.
 
 NO_NEW_AFTER_ET = _s("NO_NEW_AFTER_ET", "15:30")
 FORCE_CLOSE_AFTER_ET = _s("FORCE_CLOSE_AFTER_ET", "14:00")

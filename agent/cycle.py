@@ -432,10 +432,12 @@ class Agent:
         for und in sorted({p["underlying"] for p in open_pos}):
             try:
                 bars = self.c.stock_bars([und], timeframe="1Day", limit=90).get(und, [])
-                rv = R.realized_vol([b["c"] for b in bars])
+                closes_u = [b["c"] for b in bars]
+                rv = R.realized_vol(closes_u)
+                tz, _dir = R.trend_score(closes_u)
                 spot = self.c.latest_trade(und)
                 if spot and rv:
-                    context[und] = {"spot": spot, "realized_vol": rv}
+                    context[und] = {"spot": spot, "realized_vol": rv, "trend_z": tz}
             except Exception as e:
                 log.debug("no harvest context for %s: %s", und, e)
 

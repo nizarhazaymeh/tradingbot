@@ -24,6 +24,13 @@ NOW = datetime(2026, 9, 1, 12, 0, tzinfo=ET)
 # deadline that defines it.
 def setup_function():
     config.FLATTEN_AT = "2026-09-04T09:35:00-04:00"
+    # The rule ships OFF (its edge did not survive a 12-cycle A/B — see the note
+    # in config.py). These tests exercise the logic, so they enable it
+    # explicitly rather than depending on the shipped default either way.
+    config.HARVEST_ENABLED = True
+    config.HARVEST_MIN_EDGE = 50.0
+    config.HARVEST_EDGE_MULT = 2.0
+    config.HARVEST_MIN_EDGE_FRAC = 0.0
 
 
 def quote(bid, ask):
@@ -137,3 +144,11 @@ def test_stop_loss_still_outranks_harvest():
     p = position(entry_price=10.0)        # paid $10, now worth ~$1.92 -> deep loss
     d = monitor.evaluate_exit(p, snaps_at(2.33, 0.41), {}, now=NOW, context=ctx)
     assert d.urgency == 90 and "stop" in d.reason
+
+
+def test_ships_disabled():
+    """The default must stay off until there is evidence for it."""
+    import importlib
+    from agent import config as fresh
+    importlib.reload(fresh)
+    assert fresh.HARVEST_ENABLED is False

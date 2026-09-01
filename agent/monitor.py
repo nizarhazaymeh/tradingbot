@@ -197,7 +197,8 @@ def evaluate_exit(position: dict, snaps: Dict[str, dict],
         if h:
             mark, fair, edge, cost = h
             if (mark > 0 and edge >= config.HARVEST_MIN_EDGE
-                    and edge >= config.HARVEST_EDGE_MULT * cost):
+                    and edge >= config.HARVEST_EDGE_MULT * cost
+                    and edge >= config.HARVEST_MIN_EDGE_FRAC * mark):
                 return ExitDecision(
                     CLOSE_LIMIT,
                     f"harvest: market pays ${mark:,.0f} for time worth ${fair:,.0f} "
