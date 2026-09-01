@@ -16,7 +16,8 @@ from typing import Dict, List, Optional, Tuple
 
 from . import config
 from .options import ContractView
-from .risk import expiry_action, now_et, flatten_now as RK_flatten
+from .risk import (expiry_action, now_et, flatten_now as RK_flatten,
+                   holding_days as RK_holding_days)
 
 log = logging.getLogger(__name__)
 
@@ -69,13 +70,56 @@ def unrealized_pnl(position: dict, snaps: Dict[str, dict]) -> Optional[float]:
     return round((now - entry) * 100 * position["qty"], 2)
 
 
+def exit_cost(legs: List[dict], snaps: Dict[str, dict], qty: int) -> Optional[float]:
+    """Dollars given up crossing the spread once, to get out."""
+    total = 0.0
+    for leg in legs:
+        q = (snaps.get(leg["symbol"]) or {}).get("latestQuote") or {}
+        bid, ask = float(q.get("bp") or 0), float(q.get("ap") or 0)
+        if bid <= 0 or ask <= 0:
+            return None
+        total += (ask - bid) / 2.0 * int(leg.get("ratio_qty") or 1)
+    return total * 100 * max(qty, 1)
+
+
+def harvest_edge(position: dict, legs: List[dict], snaps: Dict[str, dict],
+                 spot: float, realized_vol: float,
+                 days: float) -> Optional[Tuple[float, float, float, float]]:
+    """How much the market overpays for the time value we are still holding.
+
+    Returns (mark_dollars, fair_dollars, edge, cost) or None if unpriceable.
+
+    `fair` is the structure valued at REALISED vol over the remaining hold: what
+    the rest of its life is worth if the underlying keeps moving the way it has
+    actually been moving. `mark` is what the market will pay for it right now.
+    Their difference is the same variance risk premium the entry logic hunts,
+    measured on a position we already own.
+
+    Sign convention follows mark_to_market: positive mark = we are long premium.
+    """
+    from .expectancy import fair_value
+    if spot <= 0 or not realized_vol or realized_vol <= 0 or days <= 0:
+        return None
+    qty = position["qty"]
+    mark = mark_to_market(legs, snaps, qty)
+    if mark is None:
+        return None
+    fair = fair_value(legs, spot, realized_vol, days, qty)
+    cost = exit_cost(legs, snaps, qty)
+    if fair is None or cost is None:
+        return None
+    return (mark * 100 * qty, fair, mark * 100 * qty - fair, cost)
+
+
 def evaluate_exit(position: dict, snaps: Dict[str, dict],
                   views: Dict[str, ContractView] = None,
-                  now: datetime = None) -> ExitDecision:
+                  now: datetime = None,
+                  context: Dict[str, dict] = None) -> ExitDecision:
     """Decide what to do with one open structure. Highest-urgency trigger wins."""
     import json
     now = now or now_et()
     views = views or {}
+    context = context or {}
     expiry = date.fromisoformat(position["expiry"])
     dte = (expiry - now.date()).days
 
@@ -139,8 +183,29 @@ def evaluate_exit(position: dict, snaps: Dict[str, dict],
                                 f"${paid:,.0f} paid", urgency=70,
                                 detail={"pnl": pnl, "paid": paid})
 
-    # ---- 4. delta breach on a short leg -> roll ---------------------------
     legs = json.loads(position["legs_json"])
+
+    # ---- 3b. decay harvest ------------------------------------------------
+    # Only meaningful for long premium: for a short structure "the market
+    # overpays" is the reason to KEEP it, and the credit take-profit above
+    # already governs that side.
+    if config.HARVEST_ENABLED and context:
+        ctx = context.get(position["underlying"]) or {}
+        h = harvest_edge(position, legs, snaps, ctx.get("spot") or 0.0,
+                         ctx.get("realized_vol") or 0.0,
+                         RK_holding_days(expiry, now))
+        if h:
+            mark, fair, edge, cost = h
+            if (mark > 0 and edge >= config.HARVEST_MIN_EDGE
+                    and edge >= config.HARVEST_EDGE_MULT * cost):
+                return ExitDecision(
+                    CLOSE_LIMIT,
+                    f"harvest: market pays ${mark:,.0f} for time worth ${fair:,.0f} "
+                    f"at realised vol — ${edge:,.0f} edge vs ${cost:,.0f} to exit",
+                    urgency=65,
+                    detail={"mark": mark, "fair": fair, "edge": edge, "cost": cost})
+
+    # ---- 4. delta breach on a short leg -> roll ---------------------------
     breached = []
     for leg in legs:
         if leg["side"] != "sell":

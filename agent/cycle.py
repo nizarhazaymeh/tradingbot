@@ -426,8 +426,21 @@ class Agent:
             except Exception:
                 pass
 
+        # Spot and realised vol per underlying, for the decay-harvest rule. A
+        # miss here only disables that one rule — every other exit still runs.
+        context = {}
+        for und in sorted({p["underlying"] for p in open_pos}):
+            try:
+                bars = self.c.stock_bars([und], timeframe="1Day", limit=90).get(und, [])
+                rv = R.realized_vol([b["c"] for b in bars])
+                spot = self.c.latest_trade(und)
+                if spot and rv:
+                    context[und] = {"spot": spot, "realized_vol": rv}
+            except Exception as e:
+                log.debug("no harvest context for %s: %s", und, e)
+
         for p in open_pos:
-            d = monitor.evaluate_exit(p, snaps, views)
+            d = monitor.evaluate_exit(p, snaps, views, context=context)
             if not d:
                 log.info("  hold %s — %s", p["signature"][:40], d.reason)
                 continue

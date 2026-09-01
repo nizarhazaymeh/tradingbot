@@ -310,6 +310,19 @@ STOP_DEBIT_PCT = _f("STOP_DEBIT_PCT", 0.60)
 DELTA_BREACH = _f("DELTA_BREACH", 0.40)
 TIME_STOP_DTE = _i("TIME_STOP_DTE", 1)
 
+# ---- decay harvest ---------------------------------------------------------
+# The strategy's whole thesis is "be short overpriced options". The exit rules
+# enforced that for credit structures but not for debit ones: a long-premium
+# spread had only a profit-multiple target and a DTE-1 time stop, so an ATM
+# debit spread could sit at DTE 3 bleeding time value with no rule to sell it.
+#
+# HARVEST compares the market's mark against what the REMAINING TIME is worth
+# priced at realised vol. When the market overpays for time we still hold, we
+# sell it — the same trade we make on the short side, in the other direction.
+HARVEST_ENABLED = _b("HARVEST_ENABLED", True)
+HARVEST_EDGE_MULT = _f("HARVEST_EDGE_MULT", 2.0)   # edge must beat 2x the exit cost
+HARVEST_MIN_EDGE = _f("HARVEST_MIN_EDGE", 50.0)    # and be worth the ticket
+
 NO_NEW_AFTER_ET = _s("NO_NEW_AFTER_ET", "15:30")
 FORCE_CLOSE_AFTER_ET = _s("FORCE_CLOSE_AFTER_ET", "14:00")
 ESCALATE_CLOSE_AFTER_ET = _s("ESCALATE_CLOSE_AFTER_ET", "15:30")

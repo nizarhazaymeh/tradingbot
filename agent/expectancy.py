@@ -37,6 +37,51 @@ def prob_itm(spot: float, strike: float, iv: float, dte_days: int,
     d2 = d1 - vol_t
     return _norm_cdf(d2) if kind.upper().startswith("C") else _norm_cdf(-d2)
 
+
+def bs_price(spot: float, strike: float, vol: float, days: float,
+             kind: str, r: float = 0.0) -> float:
+    """Black-Scholes value with r=0, matching prob_itm's convention.
+
+    Used to answer "what is the remaining time worth?" — not to second-guess the
+    market's price. Feed it REALISED vol and it returns what the option is worth
+    if the underlying keeps moving the way it has actually been moving; feed it
+    implied and you get the market's own mark back.
+    """
+    call = kind.upper().startswith("C")
+    if days <= 0 or vol <= 0:
+        intrinsic = (spot - strike) if call else (strike - spot)
+        return max(intrinsic, 0.0)
+    t = days / 365.0
+    vol_t = vol * math.sqrt(t)
+    d1 = (math.log(spot / strike) + (r + 0.5 * vol * vol) * t) / vol_t
+    d2 = d1 - vol_t
+    if call:
+        return spot * _norm_cdf(d1) - strike * _norm_cdf(d2)
+    return strike * _norm_cdf(-d2) - spot * _norm_cdf(-d1)
+
+
+def fair_value(legs: List[dict], spot: float, vol: float, days: float,
+               qty: int = 1) -> Optional[float]:
+    """What the whole structure is worth at `vol`, in dollars, signed like a mark.
+
+    `legs` are the stored leg dicts: {"symbol", "side", "ratio_qty", ...}. A
+    "buy" leg contributes positively, a "sell" leg negatively, so the result is
+    directly comparable to monitor.mark_to_market().
+    """
+    from .options import parse_occ
+    if not legs or spot <= 0:
+        return None
+    total = 0.0
+    for leg in legs:
+        try:
+            _root, _exp, kind, strike = parse_occ(leg["symbol"])
+        except Exception:
+            return None
+        px = bs_price(spot, strike, vol, days, kind)
+        n = int(leg.get("ratio_qty") or 1) * max(qty, 1)
+        total += (px if leg["side"] == "buy" else -px) * n * 100
+    return total
+
 from . import config
 from .options import ContractView
 from .spreads import Spread
