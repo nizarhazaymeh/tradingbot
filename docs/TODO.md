@@ -45,10 +45,15 @@ the 3-10 DTE window are 8 Sep and later**, all of which would still be open when
 judges mark the account.
 
 Two cutoffs now enforce it (`agent/config.py`):
-- `NO_NEW_AFTER = 2026-09-03T15:30 ET` — stop opening anything that cannot be
+- `NO_NEW_AFTER = 2026-09-02T15:30 ET` — stop opening anything that cannot be
   managed to a sensible close
-- `FLATTEN_AT = 2026-09-04T09:35 ET` — close everything unconditionally, at
+- `FLATTEN_AT = 2026-09-03T15:30 ET` — close everything unconditionally, at
   urgency 200 so it outranks every other exit trigger
+
+Moved a day earlier on 1 Sep. Judging is Friday 11:00 ET and everything we can
+open expires Friday, so the old cutoff closed a 0-DTE book five minutes into
+deadline morning. Thursday costs ~$95 of carry (measured, not guessed) and
+removes both the overnight gap and the dependency on the machine staying awake.
 
 Consequence: the reported P&L is realised and cannot drift after we stop
 controlling it. 10 tests in `tests/test_deadline.py`.

@@ -58,6 +58,43 @@ wrong opinion that the EV test must still accept on its merits.
 for calls and understates it for puts. Using delta as a probability materially
 misprices the EV.
 
+**The same test, applied to exits.** The variance risk premium is a claim about
+*prices*, not about which side we happen to be on — so it should govern selling
+as well as buying. It did not, at first. Credit structures had a take-profit
+measured against max gain, but a long-premium structure had only a profit
+multiple of the debit paid and a DTE-1 time stop. Nothing covered the case that
+actually appeared.
+
+On 1 Sep the agent held two IWM bear put spreads at DTE 3 whose long strikes
+(290, 291) had been pinned by a 290.39 spot. About 80% of their $1,236 value was
+time value, and IWM implied vol was 20.8% against 11.7% realised. We were long
+options priced at nearly twice the volatility the index was actually delivering
+— precisely the trade the entry logic exists to refuse — and no exit rule would
+sell them.
+
+`monitor.harvest_edge()` closes the asymmetry. It values the remaining life of a
+structure at *realised* vol via a Black-Scholes mark and compares that to what
+the market will pay right now. When the market overpays for time we still hold,
+we sell it — the same trade as the short side, in the other direction. It fires
+only on long premium, because for a credit structure an overpriced mark is the
+reason to *keep* collecting. It must clear twice the cost of getting out, since a
+wide market can swallow the whole edge.
+
+Live, that afternoon:
+
+| Structure | Market pays | Worth at realised vol | Edge | Cost to exit |
+|---|---|---|---|---|
+| `bear_put:IWM` ×4 | $828 | $683 | **$145** | $32 |
+| `bear_put:IWM` ×3 | $516 | $347 | **$169** | $4 |
+
+Both filled within a minute, realising **+$406**. The six short-premium
+structures in the book were correctly left alone.
+
+One honest note on the arithmetic. Valuing the book at a flat spot suggested $994
+would decay away, which overstates the case: it assumes IWM never falls.
+`fair_value` credits that possibility, and the defensible edge was $306. We acted
+on the smaller number.
+
 ## 2. Risk Gates
 
 All gates are plain Python, unit-tested, with no model in the loop. First failure
@@ -71,12 +108,13 @@ rejects, and the failing gate is named in the audit log.
 | **Expectancy** | EV ≥ 2% of capital at risk, under realised-vol probabilities |
 | **Portfolio** | 0.55% max loss per trade · 4.0% total heat · 1.2% per underlying · 2.5% per expiry · ≤10 concurrent · cost ≤ 50% of options buying power · portfolio delta within ±3.0 per $100k · no duplicate structures |
 | **Circuit breakers** | daily −2%, total −6% → cancel all orders, flatten the book, and set `suspend_trade` on the Alpaca account |
-| **Competition deadline** | `NO_NEW_AFTER` 3 Sep 15:30 ET stops opening; `FLATTEN_AT` 4 Sep 09:35 ET closes everything unconditionally, at higher priority than any other exit |
+| **Competition deadline** | `NO_NEW_AFTER` 2 Sep 15:30 ET stops opening; `FLATTEN_AT` 3 Sep 15:30 ET closes everything unconditionally, at higher priority than any other exit |
 
 **Exits are our responsibility.** Alpaca does not support bracket/OCO orders on
 options, so the monitor loop *is* the stop-loss: +35% of max gain (credit) or
-+75% (debit); −150% of credit or −60% of debit; short-leg |delta| > 0.40 →
-roll; time stop at DTE 1; and on expiry day a forced close — limit from 14:00 ET,
++100% of the debit paid; −150% of credit or −60% of debit; a decay harvest that
+sells long premium the market overpays for; short-leg |delta| > 0.40 → roll;
+time stop at DTE 1; and on expiry day a forced close — limit from 14:00 ET,
 market from 15:30 ET. That last rule is not optional: Alpaca auto-exercises ITM
 options, which would convert a $400 spread into six-figure equity exposure.
 
@@ -84,10 +122,21 @@ options, which would convert a $400 spread into six-figure equity exposure.
 natural exit for any position. From 2 Sep the only expiries inside our 3–10 DTE
 window are 8 Sep and later — all of which would still be open when the account is
 marked, making the reported figure depend on where the market went after we
-stopped controlling it. Two cutoffs prevent that: we stop opening on 3 Sep at
-15:30 ET, and flatten the entire book on 4 Sep at 09:35 ET. The flatten outranks
+stopped controlling it. Two cutoffs prevent that: we stop opening on 2 Sep at
+15:30 ET, and flatten the entire book on 3 Sep at 15:30 ET. The flatten outranks
 every other exit trigger, so even a healthy position closes. The reported P&L is
 therefore realised and cannot drift.
+
+**Why Thursday and not Friday.** Judging is Friday 11:00 ET and every position we
+can still open expires that same day, so a Friday flatten meant closing a 0-DTE
+book in the first minutes of the session — the widest-spread moment of the week —
+on deadline morning. Priced against the live book at realised vol, flattening
+Thursday 15:30 keeps $728 of the $827 still on the table against $823 for Friday
+09:35. That $95 of carry is paid for by holding a 0-DTE book through one
+overnight gap with the nearest short strikes 0.67% away: +$20 of expected value
+at realised vol, −$168 at implied. Nothing in expectation, against a $1–2k tail
+— and holding also makes the judged figure depend on a laptop staying awake
+overnight. We buy the certainty for $95.
 
 **Kill switch.** A halt sets `suspend_trade: true` via
 `PATCH /v2/account/configurations` — a server-side block that survives our process
