@@ -74,17 +74,39 @@ def tilt_from_view(view, spread_kind: str, short_kind: str) -> float:
 
 @dataclass
 class Expectancy:
-    ev_per_unit: float          # dollars
-    ev_ratio: float             # EV / max_loss
+    ev_per_unit: float          # dollars, GROSS of transaction cost
+    ev_ratio: float             # net EV / max_loss  <- the number gates compare
     p_max_profit: float
     p_partial: float
     p_max_loss: float
     breakeven: Optional[float]
+    cost_per_unit: float = 0.0  # round-trip bid/ask, dollars
+    ev_net_per_unit: float = 0.0
 
     def summary(self) -> str:
-        return (f"EV ${self.ev_per_unit:+.2f}/unit ({self.ev_ratio:+.1%} of risk) | "
-                f"P(win) {self.p_max_profit:.0%} P(partial) {self.p_partial:.0%} "
-                f"P(maxloss) {self.p_max_loss:.0%}")
+        return (f"EV ${self.ev_net_per_unit:+.2f}/unit net "
+                f"(${self.ev_per_unit:+.2f} gross − ${self.cost_per_unit:.2f} spread) "
+                f"= {self.ev_ratio:+.1%} of risk | P(win) {self.p_max_profit:.0%}")
+
+
+def round_trip_cost(spread: Spread) -> float:
+    """Dollars of bid/ask paid to open AND close one unit of the structure.
+
+    Every leg is crossed twice — once in, once out. Ignoring this made the EV
+    model approve trades that were negative-EV net of costs: observed live 1 Sep,
+    where a condor requiring \$8.82 of EV paid \$36 in round-trip spread.
+
+    Assumes execution at the natural price (full spread crossed). That is what
+    the fill-chasing ladder actually converges to, so it is the honest figure
+    rather than the optimistic half-spread.
+    """
+    total = 0.0
+    for leg in spread.legs:
+        v = leg.view
+        if v is None:
+            continue
+        total += (v.ask - v.bid)
+    return round(total * 2 * 100, 2)      # x2 for the round trip, x100 multiplier
 
 
 def _p_itm(v: ContractView, spot: Optional[float],
@@ -131,9 +153,10 @@ def _vertical_ev(short: ContractView, long_: ContractView, credit: float,
           + p_partial * (credit - width / 2.0)
           + p_max_loss * (credit - width))
 
-    max_loss = max(width - credit, 1e-9)
-    return Expectancy(ev_per_unit=round(ev * 100, 2),
-                      ev_ratio=ev / max_loss,
+    max_loss = max((width - credit) * 100, 1e-9)
+    gross = ev * 100
+    return Expectancy(ev_per_unit=round(gross, 2),
+                      ev_ratio=gross / max_loss,          # cost applied in evaluate()
                       p_max_profit=p_max_profit, p_partial=p_partial,
                       p_max_loss=p_max_loss,
                       breakeven=(short.strike - credit if short.kind == "P"
@@ -159,8 +182,9 @@ def _debit_ev(long_: ContractView, short: ContractView, debit: float,
           + p_partial * (width / 2.0 - debit)
           + p_max_loss * (-debit))
 
-    return Expectancy(ev_per_unit=round(ev * 100, 2),
-                      ev_ratio=ev / max(debit, 1e-9),
+    gross = ev * 100
+    return Expectancy(ev_per_unit=round(gross, 2),
+                      ev_ratio=gross / max(debit * 100, 1e-9),
                       p_max_profit=p_max_profit, p_partial=p_partial,
                       p_max_loss=p_max_loss,
                       breakeven=(long_.strike + debit if long_.kind == "C"
@@ -168,23 +192,34 @@ def _debit_ev(long_: ContractView, short: ContractView, debit: float,
 
 
 def evaluate(spread: Spread, view=None, spot: float = None,
-             real_vol: float = None) -> Optional[Expectancy]:
+             real_vol: float = None, apply_cost: bool = True) -> Optional[Expectancy]:
     """Expected value for a whole structure. Returns None if Greeks are missing."""
     legs = [l for l in spread.legs if l.view is not None]
     if len(legs) != len(spread.legs):
         return None
 
+    def _net(e: Optional[Expectancy]) -> Optional[Expectancy]:
+        """Subtract the round-trip spread. ev_ratio is what the gates compare."""
+        if e is None:
+            return None
+        cost = round_trip_cost(spread) if apply_cost else 0.0
+        max_loss = max(spread.max_loss_per_unit, 1e-9)
+        e.cost_per_unit = cost
+        e.ev_net_per_unit = round(e.ev_per_unit - cost, 2)
+        e.ev_ratio = e.ev_net_per_unit / max_loss
+        return e
+
     if spread.kind in ("bull_put", "bear_call"):
         short = next(l.view for l in spread.legs if l.side == "sell")
         long_ = next(l.view for l in spread.legs if l.side == "buy")
         t = tilt_from_view(view, spread.kind, short.kind)
-        return _vertical_ev(short, long_, abs(spread.net_price), spread.width, t, spot, real_vol)
+        return _net(_vertical_ev(short, long_, abs(spread.net_price), spread.width, t, spot, real_vol))
 
     if spread.kind in ("bull_call", "bear_put"):
         long_ = next(l.view for l in spread.legs if l.side == "buy")
         short = next(l.view for l in spread.legs if l.side == "sell")
         t = tilt_from_view(view, spread.kind, long_.kind)
-        return _debit_ev(long_, short, abs(spread.net_price), spread.width, t, spot, real_vol)
+        return _net(_debit_ev(long_, short, abs(spread.net_price), spread.width, t, spot, real_vol))
 
     if spread.kind in ("iron_condor", "iron_butterfly"):
         puts = sorted([l.view for l in spread.legs if l.view.kind == "P"],
@@ -209,13 +244,13 @@ def evaluate(spread: Spread, view=None, spot: float = None,
         ce = _vertical_ev(short_call, long_call, call_credit, call_w,
                           tilt_from_view(view, spread.kind, "C"), spot, real_vol)
 
-        ev = (pe.ev_per_unit + ce.ev_per_unit) / 100.0
-        max_loss = max(max(put_w, call_w) - credit, 1e-9)
+        gross = pe.ev_per_unit + ce.ev_per_unit
+        max_loss = max((max(put_w, call_w) - credit) * 100, 1e-9)
         p_loss = pe.p_max_loss + ce.p_max_loss
         p_partial = pe.p_partial + ce.p_partial
-        return Expectancy(ev_per_unit=round(ev * 100, 2),
-                          ev_ratio=ev / max_loss,
-                          p_max_profit=max(1.0 - p_loss - p_partial, 0.0),
-                          p_partial=p_partial, p_max_loss=p_loss,
-                          breakeven=None)
+        return _net(Expectancy(ev_per_unit=round(gross, 2),
+                               ev_ratio=gross / max_loss,
+                               p_max_profit=max(1.0 - p_loss - p_partial, 0.0),
+                               p_partial=p_partial, p_max_loss=p_loss,
+                               breakeven=None))
     return None

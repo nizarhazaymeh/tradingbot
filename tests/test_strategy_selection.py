@@ -12,6 +12,7 @@ backtest could never have caught this. These tests cover that gap.
 """
 import math
 import os
+import pytest
 import sys
 from datetime import date
 
@@ -45,9 +46,29 @@ def cv(kind, strike):
     theta = -max(0.01, 0.30 * math.exp(-d / 7.0))
     return ContractView(
         symbol=occ("SPY", E, kind, strike), root="SPY", expiry=E, kind=kind,
-        strike=float(strike), dte=5, bid=mid * 0.96, ask=mid * 1.04, mid=mid,
-        spread_pct=0.04, delta=delta if kind == "C" else -delta,
+        # A penny-wide market, which is what liquid index options actually show
+        # (measured live: SPY 750P bid 0.46 / ask 0.47). The old mid*0.96/mid*1.04
+        # was an 8% spread — once EV became net of round-trip cost, that alone
+        # exceeded any plausible edge and every candidate was correctly rejected.
+        strike=float(strike), dte=5,
+        bid=round(max(mid - 0.01, 0.01), 2), ask=round(mid + 0.01, 2), mid=mid,
+        spread_pct=round(0.02 / mid, 4) if mid else 0.02,
+        delta=delta if kind == "C" else -delta,
         gamma=0.01, theta=theta, vega=0.1, iv=0.15, open_interest=8000)
+
+
+@pytest.fixture(autouse=True)
+def _isolate_from_ev_economics(monkeypatch):
+    """These tests exercise RANK SELECTION, not trade economics.
+
+    Once EV became net of round-trip bid/ask (1 Sep), a penny-wide 4-leg
+    structure carries ~$8/unit of cost against single-digit gross EV, so nothing
+    in a synthetic chain clears the production 2% threshold and propose() would
+    correctly stand aside — which is not what these tests are about. Lower the
+    bar so the selection path is reachable; the economics are covered by
+    tests/test_fill_chase.py and the backtests.
+    """
+    monkeypatch.setattr(config, "MIN_EV_RATIO", -1.0)
 
 
 def chain():
@@ -372,19 +393,41 @@ def test_the_bonus_can_flip_the_ranking_when_the_gap_is_smaller_than_it():
     assert order([(0.0210, 0.0), (0.0210, B)])[0] == 1
 
 
-def test_the_incumbent_is_already_the_furthest_strike_in_this_chain():
-    """Pins the reason the test above is not end to end, so it is not mistaken
-    for the bonus being broken if someone changes the fixture."""
-    views, reg = chain(), regime()
-    acc = [(r, sp) for r, sp in _scored(reg, views)
-           if quality_gate(sp, reg, View()) is None and shorts_of(sp)]
-    assert len(acc) >= 2
-    winner = abs(shorts_of(acc[0][1])[0] - SPOT)
-    others = [abs(shorts_of(sp)[0] - SPOT) for _, sp in acc[1:]]
-    assert winner >= max(others), (
-        "fixture now offers a further-out rival — the end-to-end promotion test "
-        "is reachable and should be written")
+def test_promotion_is_now_reachable_end_to_end():
+    """Rank 0 fails its gate; a lower-ranked candidate is taken instead.
 
+    This replaces an earlier guard which asserted the winner was already the
+    furthest-out strike, making the promotion path unreachable in this fixture.
+    Netting round-trip bid/ask off EV (1 Sep) reordered the candidates, so a
+    further-out rival now exists and the end-to-end case the old guard asked for
+    can finally be written.
+    """
+    views, reg = chain(), regime()
+    scored = _scored(reg, views)
+    assert quality_gate(scored[0][1], reg, View()) is not None, (
+        "rank 0 must fail, or this proves nothing about promotion")
+
+    accepted = [(r, sp) for r, sp in scored
+                if quality_gate(sp, reg, View()) is None and shorts_of(sp)]
+    assert accepted, "no candidate passes — nothing to promote to"
+
+    sp, why = propose(reg, views, E, View(), budget=10_000)
+    assert sp is not None, f"propose() stood aside instead of promoting: {why}"
+    assert quality_gate(sp, reg, View()) is None, "promoted a candidate that fails"
+    assert sp is not scored[0][1], "returned rank 0, which does not pass"
+
+
+def test_a_further_out_rival_exists_after_cost_netting():
+    """Pins WHY promotion became reachable, so a future fixture change that
+    removes the rival is noticed rather than silently disabling the test above."""
+    views, reg = chain(), regime()
+    accepted = [sp for _, sp in _scored(reg, views)
+                if quality_gate(sp, reg, View()) is None and shorts_of(sp)]
+    assert len(accepted) >= 2
+    dists = [abs(shorts_of(sp)[0] - SPOT) for sp in accepted]
+    assert max(dists) > dists[0], (
+        "no further-out rival — promotion is unreachable and the end-to-end "
+        "test above is no longer meaningful")
 
 def test_retest_barrier_is_false_when_no_strike_is_covered():
     """meta["retest_barrier"] used to be bool() of a dict whose values were None.
