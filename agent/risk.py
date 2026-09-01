@@ -58,6 +58,7 @@ class Book:
     heat_by_underlying: Dict[str, float] = field(default_factory=dict)
     heat_by_expiry: Dict[str, float] = field(default_factory=dict)
     net_delta: float = 0.0
+    net_theta: float = 0.0
     orders_last_hour: int = 0
     held_structures: set = field(default_factory=set)
     count_by_underlying: Dict[str, int] = field(default_factory=dict)
@@ -78,6 +79,7 @@ class Book:
             b.heat_by_underlying[t["underlying"]] = b.heat_by_underlying.get(t["underlying"], 0) + loss
             b.heat_by_expiry[t["expiry"]] = b.heat_by_expiry.get(t["expiry"], 0) + loss
             b.net_delta += float(t.get("net_delta") or 0)
+            b.net_theta += float(t.get("net_theta") or 0)
             b.held_structures.add(t.get("signature", ""))
             u = t["underlying"]
             b.count_by_underlying[u] = b.count_by_underlying.get(u, 0) + 1
@@ -347,6 +349,20 @@ def gate_portfolio(spread: Spread, book: Book) -> GateResult:
         return _fail("g_net_delta",
                      f"portfolio delta would be {projected:+.2f}, cap ±{cap:.2f} "
                      f"(current {book.net_delta:+.2f}, adding {spread.net_delta:+.2f})")
+
+    # The book is paid by time decay, so a theta-NEGATIVE addition has to leave
+    # enough carry behind it. Only such additions are policed: a theta-positive
+    # structure always improves the book, and an absolute floor applied to every
+    # trade would stop an empty book from ever opening its first position.
+    if spread.net_theta < 0:
+        theta_after = book.net_theta + spread.net_theta
+        floor = config.MIN_PORTFOLIO_THETA * (book.equity / 100_000.0)
+        if theta_after < floor:
+            return _fail("g_portfolio_theta",
+                         f"a theta-negative structure (${spread.net_theta:+.0f}/day) "
+                         f"would leave portfolio theta at ${theta_after:+.0f}/day, "
+                         f"below the ${floor:.0f} floor — the carry is what pays "
+                         f"for the bid/ask")
     return PASS
 
 

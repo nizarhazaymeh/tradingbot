@@ -174,6 +174,7 @@ class Store:
             out.append({"signature": p["signature"], "underlying": p["underlying"],
                         "expiry": p["expiry"], "max_loss": p["max_loss"],
                         "net_delta": p["net_delta"] or 0.0,
+                        "net_theta": p["net_theta"] or 0.0,
                         "short_strikes": shorts})
         return out
 

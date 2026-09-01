@@ -255,6 +255,12 @@ RETEST_BARRIER_BONUS = _f("RETEST_BARRIER_BONUS", 0.0)   # in EV-ratio points
 CONSERVATIVE_SIGMA = _f("CONSERVATIVE_SIGMA", 1.6)  # wider condor when no regime edge
 MAX_ABS_NET_DELTA = _f("MAX_ABS_NET_DELTA", 0.35)  # per-unit directional cap
 MAX_PORTFOLIO_DELTA = _f("MAX_PORTFOLIO_DELTA", 3.0)  # aggregate, per $100k equity
+# The strategy earns from time decay, so the BOOK must stay theta-positive.
+# Directional debit spreads are theta-negative and legitimate in moderation, but
+# observed live 1 Sep: two IWM bear_puts plus an IBIT bull_call dragged -$108/day
+# against +$143/day of credit income, leaving net theta at +$36 — the carry that
+# is supposed to pay for the bid/ask had been mostly spent on directional bets.
+MIN_PORTFOLIO_THETA = _f("MIN_PORTFOLIO_THETA", 60.0)   # dollars/day per $100k
 MAX_DEBIT_RATIO = _f("MAX_DEBIT_RATIO", 0.60)   # debit must be <= 60% of width
 
 # ---------------------------------------------------------------- exits

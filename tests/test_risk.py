@@ -287,3 +287,46 @@ def test_heat_still_binds_before_per_expiry():
     heat_cap = config.PORTFOLIO_HEAT_PCT * 100_000
     r = size_spread(sp, book(open_heat=heat_cap - 50))
     assert not r and r.gate == "g_sizing"
+
+
+# ------------------------------------------------- portfolio theta floor
+def test_theta_negative_addition_is_rejected_when_it_breaks_the_floor():
+    """A debit spread that pushes the book below the theta floor is refused."""
+    sp = bull_call_spread(cv("C", 769, mid=3.00, delta=0.55),
+                          cv("C", 771, mid=2.00, delta=0.25))
+    sp.qty = 1
+    # force a clearly theta-negative structure
+    for l in sp.legs:
+        l.view.theta = -0.50 if l.side == "buy" else -0.10
+    assert sp.net_theta < 0
+    r = gate_portfolio(sp, book(net_theta=config.MIN_PORTFOLIO_THETA + 5))
+    assert not r and r.gate == "g_portfolio_theta"
+
+
+def test_theta_negative_addition_allowed_when_the_book_can_absorb_it():
+    sp = bull_call_spread(cv("C", 769, mid=3.00, delta=0.55),
+                          cv("C", 771, mid=2.00, delta=0.25))
+    sp.qty = 1
+    for l in sp.legs:
+        l.view.theta = -0.50 if l.side == "buy" else -0.10
+    assert gate_portfolio(sp, book(net_theta=400.0))
+
+
+def test_theta_positive_addition_always_passes_the_floor():
+    """A credit structure improves the book, so it must never be blocked — an
+    absolute floor applied to every trade would stop an empty book from ever
+    opening its first position."""
+    sp = bull_put_spread(cv("P", 756, mid=0.85), cv("P", 751, mid=0.52))
+    sp.qty = 1
+    for l in sp.legs:
+        l.view.theta = -0.30 if l.side == "sell" else -0.05
+    assert sp.net_theta > 0
+    assert gate_portfolio(sp, book(net_theta=0.0))
+
+
+def test_first_position_on_an_empty_book_is_not_blocked_by_the_floor():
+    sp = bull_put_spread(cv("P", 756, mid=0.85), cv("P", 751, mid=0.52))
+    sp.qty = 1
+    for l in sp.legs:
+        l.view.theta = -0.30 if l.side == "sell" else -0.05
+    assert gate_portfolio(sp, book())
