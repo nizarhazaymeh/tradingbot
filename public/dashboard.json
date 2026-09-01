@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-01T20:40:23+00:00",
+  "updated_at": "2026-09-01T20:41:56+00:00",
   "account": {
     "account_id": "PA3BAT1OOEFE",
     "environment": "comp",
@@ -253,9 +253,9 @@
     {
       "underlying": "MSFT",
       "spot": 501.19,
-      "implied_vol": 0.2497,
+      "implied_vol": 0.2494,
       "realized_vol": 0.2143,
-      "premium_edge": 0.0354,
+      "premium_edge": 0.0351,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     },
@@ -264,7 +264,7 @@
       "spot": 578.72,
       "implied_vol": 0.3572,
       "realized_vol": 0.2907,
-      "premium_edge": 0.0665,
+      "premium_edge": 0.0664,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     },
@@ -280,9 +280,9 @@
     {
       "underlying": "GOOGL",
       "spot": 335.0,
-      "implied_vol": 0.2657,
+      "implied_vol": 0.2653,
       "realized_vol": 0.2386,
-      "premium_edge": 0.027,
+      "premium_edge": 0.0267,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     }
