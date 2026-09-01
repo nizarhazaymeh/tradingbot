@@ -16,7 +16,7 @@ from typing import Dict, List, Optional
 from . import config
 from . import brain, monitor, options as O, regime as R, risk as RK, spreads as S, strategy as ST
 from .client import AlpacaClient, AlpacaError
-from .executor import Executor, price_ladder
+from .executor import Executor
 from . import crypto as CR
 from . import levels as L
 from .notifier import notify
@@ -669,8 +669,36 @@ class Agent:
         # persistence left a live 4-leg condor with no exit plan — an orphan the
         # monitor could not manage. Nothing that can raise goes between the
         # submit and the store write.
-        if order and order.get("status") != "dry_run":
+        # Only a FILLED order is a position. Recording on submission creates a
+        # phantom: the monitor then tries to manage legs the broker does not hold,
+        # and the risk budget is consumed by an order that may never fill.
+        # Observed live 1 Sep: an unfilled condor was tracked as open while the
+        # broker held nothing.
+        status = (order or {}).get("status")
+        if order and status not in ("dry_run",) and status != "filled":
+            oid = order.get("id")
+            try:
+                if oid:
+                    self.c.cancel_order(oid)
+                    log.info("    cancelled unfilled order %s (status %s)", oid[:8], status)
+            except AlpacaError as e:
+                log.warning("    could not cancel %s: %s", oid, e.message[:80])
+            out.update(decision="unfilled", reason=msg)
+            self.store.log_decision(cycle=self.cycle_n, underlying=underlying,
+                                    regime=reg.name, view=asdict(v), proposal=sp.kind,
+                                    decision="unfilled", gate="g_no_fill", reason=msg,
+                                    payload={"describe": sp.describe()})
+            return out
+
+        if order and status == "filled":
             coid = order.get("client_order_id") or sp.client_order_id()
+            # record the price that ACTUALLY filled, not our estimate
+            avg = order.get("filled_avg_price")
+            if avg is not None:
+                try:
+                    sp.net_price = round(float(avg), 2)
+                except (TypeError, ValueError):
+                    pass
             tp = config.TAKE_PROFIT_CREDIT if sp.is_credit else config.TAKE_PROFIT_DEBIT
             self.store.open_position(
                 signature=RK.signature(sp), spread=sp, order=order,
@@ -684,7 +712,7 @@ class Agent:
         self.store.log_decision(cycle=self.cycle_n, underlying=underlying, regime=reg.name,
                                 view=asdict(v), proposal=sp.kind, decision="submit",
                                 gate="all", reason=msg,
-                                payload={"describe": sp.describe(), "limit": ladder[0],
+                                payload={"describe": sp.describe(), "fill": msg,
                                          "critic": crit})
         return out
 
