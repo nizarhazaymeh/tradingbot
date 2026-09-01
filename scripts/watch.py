@@ -93,6 +93,7 @@ def main():
 
     n = 0
     closed_streak = 0
+    fail_streak = 0
     while True:
         # Nothing can fill outside the session, so polling every 30s overnight
         # burns API calls and emits heartbeats with no information in them.
@@ -112,8 +113,24 @@ def main():
         n += 1
         try:
             npos, norders, nacct = snapshot(c)
+            fail_streak = 0
         except (AlpacaError, OSError) as e:
-            say(f"ERROR poll failed: {type(e).__name__}: {e}")
+            fail_streak += 1
+            # Report the first failure and then every 20th, not all of them. A
+            # sustained outage produced 45 identical notifications in 30 minutes
+            # on 1 Sep and buried a real position close in the middle of them.
+            if fail_streak == 1 or fail_streak % 20 == 0:
+                say(f"ERROR poll failed (x{fail_streak}): {type(e).__name__}: {e}")
+            # A long-lived process can end up with a broken resolver while the
+            # machine is fine — on 1 Sep this watcher failed getaddrinfo for 30
+            # minutes while nslookup, the agent loop and a fresh client all
+            # resolved normally. Rebuild the client rather than trusting it.
+            if fail_streak % 5 == 0:
+                try:
+                    c = AlpacaClient()
+                    say(f"recreated the API client after {fail_streak} failures")
+                except Exception as e2:
+                    say(f"ERROR could not recreate client: {e2}")
             continue
 
         # ---- positions ----
