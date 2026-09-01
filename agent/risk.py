@@ -106,6 +106,72 @@ def circuit_breakers(book: Book, *, halted_flag: bool = False) -> GateResult:
     return PASS
 
 
+# ----------------------------------------------------------------- crypto
+def crypto_day_drawdown(equity: float, day_start_equity: Optional[float]) -> GateResult:
+    """The daily drawdown breaker, for a market that has no daily close.
+
+    circuit_breakers() compares equity against Alpaca's `last_equity`, which is
+    the previous EQUITY-market close. For a 24/7 book that number is stale by up
+    to three days across a weekend, and a stale baseline makes the breaker read
+    a loss that already happened or miss one that is happening now.
+
+    The crypto day boundary is UTC midnight — what exchanges settle on and what
+    every funding calculation uses. `day_start_equity` comes from
+    Store.equity_at(crypto.crypto_day_start()).
+
+    No baseline means no opinion. Refusing to trade because the equity curve has
+    not been recorded yet would halt a fresh install; the breaker simply does not
+    fire until there is something to compare against.
+    """
+    if not day_start_equity or day_start_equity <= 0 or equity <= 0:
+        return PASS
+    daily = (equity - day_start_equity) / day_start_equity
+    if daily <= -config.DAILY_DRAWDOWN_LIMIT:
+        return _fail("g_crypto_day_drawdown",
+                     f"crypto-day P&L {daily:.2%} since UTC midnight "
+                     f"<= -{config.DAILY_DRAWDOWN_LIMIT:.0%}", daily_pct=daily)
+    return PASS
+
+
+def crypto_gates(*, equity: float, qty: float, risk: float, notional: float,
+                 open_positions: int, open_risk: float, symbol: str,
+                 held_symbols: set = None) -> GateResult:
+    """Admission for a spot position. The notional cap is the important one.
+
+    A vertical spread cannot lose more than its width no matter what happens
+    overnight — the long wing is an arithmetic guarantee. Spot has no wing, so
+    `risk` here is a PLAN that assumes the stop fills where it was placed, and
+    crypto gaps through stops precisely when it matters.
+
+    g_crypto_notional is what replaces the wing. It bounds the loss if the stop
+    does not hold at all and the position goes to zero, which is the honest worst
+    case for spot rather than a theoretical one. Every other gate here is
+    ordinary book hygiene; that one is the reason the account still cannot be
+    lost on a single trade.
+    """
+    if qty <= 0:
+        return _fail("g_crypto_size", "position sizes to zero under the bounds")
+    if symbol in (held_symbols or set()):
+        return _fail("g_crypto_duplicate", f"already holding {symbol}")
+    if open_positions >= config.CRYPTO_MAX_POSITIONS:
+        return _fail("g_crypto_max_positions",
+                     f"{open_positions} open >= {config.CRYPTO_MAX_POSITIONS}")
+    if notional > equity * config.CRYPTO_MAX_NOTIONAL_PCT + 1e-6:
+        return _fail("g_crypto_notional",
+                     f"notional ${notional:,.0f} exceeds "
+                     f"{config.CRYPTO_MAX_NOTIONAL_PCT:.1%} of ${equity:,.0f} — "
+                     f"this is the bound that replaces a spread's long wing")
+    if risk > equity * config.CRYPTO_RISK_PER_TRADE_PCT + 1e-6:
+        return _fail("g_crypto_risk_per_trade",
+                     f"planned risk ${risk:,.0f} exceeds "
+                     f"{config.CRYPTO_RISK_PER_TRADE_PCT:.2%} of equity")
+    if (open_risk + risk) > equity * config.CRYPTO_MAX_HEAT_PCT + 1e-6:
+        return _fail("g_crypto_heat",
+                     f"summed stop risk ${open_risk + risk:,.0f} exceeds "
+                     f"{config.CRYPTO_MAX_HEAT_PCT:.2%} of equity")
+    return PASS
+
+
 # ------------------------------------------------------------- market timing
 def market_gates(clock: dict, *, allow_new: bool = True) -> GateResult:
     """Whether this cycle may OPEN anything. Exits are managed regardless.

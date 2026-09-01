@@ -17,6 +17,7 @@ from . import config
 from . import brain, monitor, options as O, regime as R, risk as RK, spreads as S, strategy as ST
 from .client import AlpacaClient, AlpacaError
 from .executor import Executor, price_ladder
+from . import crypto as CR
 from . import levels as L
 from .notifier import notify
 from .state import Store, utcnow
@@ -106,6 +107,115 @@ class Agent:
             log.info("    cleared never-filled %s (order %s)",
                      pos["signature"][:52], o.get("status"))
         return cleared
+
+    # ------------------------------------------------------------ crypto
+    def _crypto_bars(self, symbol: str, limit: int = 400):
+        r = self.c._data("/v1beta3/crypto/us/bars",
+                         {"symbols": symbol, "timeframe": "1Day", "limit": limit,
+                          "start": (date.today() - timedelta(days=limit + 60)).isoformat()})
+        return L.bars_from_api((r.get("bars") or {}).get(symbol, []))
+
+    def _crypto_price(self, symbol: str):
+        r = self.c._data("/v1beta3/crypto/us/snapshots", {"symbols": symbol})
+        snap = (r.get("snapshots") or {}).get(symbol) or {}
+        q = snap.get("latestQuote") or {}
+        bid, ask = float(q.get("bp") or 0), float(q.get("ap") or 0)
+        if bid > 0 and ask > 0:
+            return (bid + ask) / 2
+        t = snap.get("latestTrade") or {}
+        return float(t.get("p") or 0) or None
+
+    def crypto_pass(self, equity: float, *, allow_new: bool = True) -> list:
+        """The spot-crypto half. Exits first, then entries — like the options path.
+
+        Runs regardless of /v2/clock: that gate is about the equity session and
+        crypto has none. The daily-drawdown breaker is re-derived against UTC
+        midnight instead of Alpaca's `last_equity`, which is an equity-market
+        close and can be three days stale across a weekend.
+
+        Nothing here can open a position that is not bounded twice — by the stop
+        and by notional. See risk.crypto_gates().
+        """
+        out = []
+        if not config.CRYPTO_ENABLED:
+            return out
+
+        day0 = self.store.equity_at(CR.crypto_day_start().isoformat())
+        dd = RK.crypto_day_drawdown(equity, day0)
+        held = self.store.open_crypto_positions()
+
+        # ---- exits run even when the breaker has fired --------------------
+        for pos in held:
+            try:
+                px = self._crypto_price(pos["symbol"])
+                if not px:
+                    continue
+                bars = self._crypto_bars(pos["symbol"])
+                action, reason = CR.evaluate_exit(pos, px, bars)
+                if action != CR.CLOSE:
+                    log.info("    crypto hold %s — %s", pos["symbol"], reason)
+                    continue
+                pnl = (px - float(pos["entry"])) * float(pos["qty"])
+                msg = self.ex.close_crypto(pos, px)
+                self.store.close_crypto(pos["symbol"], pos["opened_at"],
+                                        exit_price=px, realized_pnl=round(pnl, 2),
+                                        reason=reason)
+                log.info("    crypto CLOSE %s @ %.2f P&L $%.0f — %s (%s)",
+                         pos["symbol"], px, pnl, reason, msg)
+                out.append({"symbol": pos["symbol"], "decision": "close",
+                            "reason": reason, "pnl": round(pnl, 2)})
+            except Exception as e:
+                log.exception("crypto exit %s", pos["symbol"])
+                out.append({"symbol": pos["symbol"], "decision": "error",
+                            "reason": str(e)[:200]})
+
+        if not dd:
+            log.warning("    crypto: %s", dd.reason)
+            out.append({"decision": "halt", "reason": dd.reason})
+            return out
+        if not allow_new:
+            return out
+
+        # ---- entries -----------------------------------------------------
+        held = self.store.open_crypto_positions()
+        held_syms = {p["symbol"] for p in held}
+        open_risk = sum(float(p["risk"] or 0) for p in held)
+        for sym in config.CRYPTO_UNIVERSE:
+            try:
+                bars = self._crypto_bars(sym)
+                sig = CR.signal(sym, bars)
+                if not sig:
+                    out.append({"symbol": sym, "decision": "skip",
+                                "reason": "no confirmed bullish break"})
+                    continue
+                qty, risk, notional = CR.size(sig, equity)
+                gate = RK.crypto_gates(equity=equity, qty=qty, risk=risk,
+                                       notional=notional, open_positions=len(held),
+                                       open_risk=open_risk, symbol=sym,
+                                       held_symbols=held_syms)
+                if not gate:
+                    log.info("    crypto REJECT [%s] %s", gate.gate, gate.reason)
+                    out.append({"symbol": sym, "decision": "reject",
+                                "gate": gate.gate, "reason": gate.reason})
+                    continue
+                order, msg = self.ex.open_crypto(sig, qty)
+                log.info("    crypto SUBMIT %s qty %.6f (risk $%.0f / notional $%.0f)"
+                         " -> %s", sig.summary(), qty, risk, notional, msg)
+                if order and order.get("status") != "dry_run":
+                    self.store.open_crypto(
+                        symbol=sym, side=sig.side, qty=qty, entry=sig.entry,
+                        stop=sig.stop, target=sig.target, risk=risk,
+                        notional=notional, level=sig.level,
+                        order_id=order.get("id"))
+                    held_syms.add(sym)
+                    open_risk += risk
+                out.append({"symbol": sym, "decision": "submit", "reason": msg,
+                            "signal": sig.summary(), "qty": qty, "risk": risk,
+                            "notional": notional})
+            except Exception as e:
+                log.exception("crypto entry %s", sym)
+                out.append({"symbol": sym, "decision": "error", "reason": str(e)[:200]})
+        return out
 
     def _cancel_stale_orders(self) -> list:
         """Cancel working orders that have sat unfilled past config.ORDER_TTL_SEC.
@@ -649,10 +759,16 @@ class Agent:
                     log.exception("%s: unexpected", u)
                     results.append({"underlying": u, "decision": "error", "reason": str(e)[:200]})
 
+        # Crypto runs outside the equity-session gate entirely: `mg` is about
+        # /v2/clock and crypto has no clock. Off by default — see
+        # config.CRYPTO_ENABLED and docs/BACKTEST.md Part 8.
+        crypto = self.crypto_pass(float(acct["equity"]), allow_new=allow_new)
+
         summary = {
             "cycle": self.cycle_n, "ts": started, "halted": False,
             "equity": float(acct["equity"]),
             "market_open": bool(clock.get("is_open")),
+            "crypto": crypto,
             "reconcile": rec, "exits": exits, "considered": results,
             "open_positions": len(self.store.open_positions()),
             "rate_remaining": self.c.gov.remaining,

@@ -813,3 +813,121 @@ informative in aggregate and unreliable as decisions on 19 entry dates.**
 python scripts/backtest_bonus.py --sweep
 python scripts/backtest_bonus.py --window calm
 ```
+
+---
+
+# Part 8 — Crypto: two pipelines, and only one of them has an edge
+
+Run 1 Sep 2026 · `scripts/backtest_crypto.py` · raw data
+[`backtest_crypto.json`](backtest_crypto.json)
+
+"The crypto market never closes" is true and turns out to split into two
+different questions, because the 24/7 half and the tradable-edge half are not the
+same instrument.
+
+## What Alpaca actually offers
+
+Checked against the live account rather than the docs:
+
+| | available | 24/7 | options |
+|---|---|---|---|
+| US equities | 14,280 assets | no | yes |
+| **Crypto spot** (BTC/USD, ETH/USD…) | 73 pairs, all tradable | **yes** | 🔴 **none** |
+| **Crypto ETFs** (IBIT, BTC trust) | yes | no | **yes** |
+| Forex | 🔴 0 assets | — | — |
+
+`BTC/USD` returns **zero option contracts**. So the variance-risk-premium edge
+this whole agent runs on — sell implied volatility that exceeds subsequently
+realised volatility — has nothing to operate on in spot. What remains is
+direction.
+
+## Pipeline 1 — crypto ETF options: added, works, one config line
+
+IBIT is now in `UNIVERSE`. It needs no new code: it is an equity option like any
+other, and the existing gates handle it. Live check on 1 Sep:
+
+```
+IBIT $44.65 | HIGH_IV_TREND | IV 43.3% vs realised 37.8% (1.15x)
+  -> bull_call IBIT 2026-09-04 x6 [+44C / -46C] DEBIT $0.58 | maxloss $348
+```
+
+VRP is **+5.5 points**, so it clears the agent's own criterion, and the structure
+is defined-risk exactly like every other. Note the 37.8% realised vol against
+SPY's 9.0%: `MAX_VOL_FOR_CONDOR = 0.18` means the agent will never open a condor
+on it, which is Part 2's finding doing its job unprompted.
+
+This does **not** give 24/7 — IBIT trades equity hours. Only spot does.
+
+## Pipeline 2 — spot crypto: built, measured, and left switched off
+
+`agent/crypto.py`, long only (Alpaca does not support shorting spot). The signal
+is a **break of structure confirmed on retest** — the pattern from Part 6 that
+could not earn a place in options selection. The reason it failed there does not
+apply here: a barrier is a property of the entry and premium selling is not
+directional. Spot is. This is the pattern's natural home.
+
+974 daily bars per symbol, Jan 2024 → Aug 2026, walked forward one bar at a time
+with the strategy seeing only bars up to and including each one:
+
+| symbol | n | win% | net | PF | R/trade | worst |
+|---|---:|---:|---:|---:|---:|---:|
+| BTC/USD | 37 | 27% | −$202 | 0.94 | −0.176 | −$346 |
+| ETH/USD | 32 | 31% | +$1,178 | 1.35 | −0.062 | −$400 |
+| **All** | **69** | **29%** | +$976 | **1.14** | **−0.123** | −$400 |
+
+**Mean R is negative on both symbols.** The positive total is carried by a few
+large-risk winners in ETH, not by the signal working. At a 2R target a 29% win
+rate sits below the ~33% break-even, and PF 1.14 over 69 trades is noise.
+
+Against the only baseline that matters for a long-only strategy:
+
+| symbol | window move | strategy | buy & hold | |
+|---|---:|---:|---:|---|
+| BTC/USD | +25.9% | −$202 | +$1,294 | 🔴 loses to holding |
+| ETH/USD | −28.2% | +$1,178 | −$1,409 | beats holding |
+
+It beat buy-and-hold only where buy-and-hold lost money. That is what a strategy
+that is mostly flat looks like, not an edge.
+
+**`CRYPTO_ENABLED = False`.** A test pins it, so turning it on requires a new
+measurement. This is the fourth structural/directional rule measured in this repo
+and the fourth that did not earn a decision.
+
+## 🔴 The risk model is genuinely weaker, and says so
+
+The README's claim is that the account cannot blow up, and it rests on
+arithmetic: a vertical spread cannot lose more than its width because the long
+wing is *there*, whatever happens overnight. **Spot has no wing.** A stop is a
+plan, and crypto gaps through plans precisely when it matters — there is no
+auction to stop it.
+
+So sizing is bounded twice:
+
+```
+by the stop      qty = (equity × CRYPTO_RISK_PER_TRADE_PCT) / (entry − stop)
+by the notional  qty ≤ (equity × CRYPTO_MAX_NOTIONAL_PCT) / entry        ← 5%
+```
+
+`g_crypto_notional` is what replaces the wing. It bounds the loss when the stop
+does **not** hold and the position goes to zero — the honest worst case for spot,
+not a theoretical one. The per-trade stop budget (0.4%) is the ordinary case; the
+notional cap (5%) is the survivable one. Without it, risk-based sizing on a tight
+stop would happily buy 40% of the account.
+
+**The 24/7 breaker.** `circuit_breakers()` measures the daily drawdown against
+Alpaca's `last_equity`, which is the previous *equity-market* close — at 03:00
+UTC on a Sunday that is three days stale. `crypto_day_drawdown()` re-derives it
+against **UTC midnight**, what exchanges settle on, read from the equity-snapshot
+curve. No baseline means no opinion, so a fresh install is not halted.
+
+Alpaca has no brackets on crypto either, so — exactly as with options —
+`cycle.crypto_pass()` **is** the stop, and the notional cap is what bounds the
+damage if the loop is not running when it matters.
+
+## Reproduce
+
+```bash
+python scripts/backtest_crypto.py
+CRYPTO_ENABLED=true python run.py once      # dry run, the pass is inert when off
+python -m pytest tests/test_crypto.py -q
+```

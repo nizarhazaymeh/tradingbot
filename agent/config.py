@@ -63,7 +63,38 @@ LLM_MAX_TOKENS = _i("LLM_MAX_TOKENS", 700)
 LLM_TIMEOUT = _i("LLM_TIMEOUT", 90)
 
 # ---------------------------------------------------------------- universe
-UNIVERSE = [s.strip().upper() for s in _s("UNIVERSE", "SPY,QQQ,IWM").split(",") if s.strip()]
+UNIVERSE = [s.strip().upper() for s in _s("UNIVERSE", "SPY,QQQ,IWM,IBIT").split(",") if s.strip()]
+
+# ------------------------------------------------------------------- crypto
+# Two facts decide everything here.
+#
+# 1. Alpaca lists NO options on crypto spot. BTC/USD returns zero option
+#    contracts, so the variance-risk-premium edge the rest of this agent runs on
+#    does not exist here. What is left is direction. Crypto ETFs (IBIT, and BTC
+#    the Grayscale trust) DO have options and are handled by the normal options
+#    path — they are in UNIVERSE above, not here.
+#
+# 2. Spot has no long wing, so a position is not defined-risk the way a vertical
+#    spread is. Sizing is therefore bounded twice: by the stop, and by notional.
+#    CRYPTO_MAX_NOTIONAL_PCT is the one that matters — it is what the account
+#    loses if the position goes to zero and the stop never fills, which is the
+#    honest worst case for spot. See agent/crypto.py.
+#
+# OFF until the backtest justifies it. scripts/backtest_crypto.py is the
+# measurement; docs/BACKTEST.md Part 8 is the result.
+CRYPTO_ENABLED = _b("CRYPTO_ENABLED", False)
+CRYPTO_UNIVERSE = [s.strip().upper() for s in
+                   _s("CRYPTO_UNIVERSE", "BTC/USD,ETH/USD").split(",") if s.strip()]
+CRYPTO_RISK_PER_TRADE_PCT = _f("CRYPTO_RISK_PER_TRADE_PCT", 0.004)   # if the stop fills
+CRYPTO_MAX_NOTIONAL_PCT = _f("CRYPTO_MAX_NOTIONAL_PCT", 0.05)        # if it does not
+CRYPTO_MAX_POSITIONS = _i("CRYPTO_MAX_POSITIONS", 2)
+CRYPTO_MAX_HEAT_PCT = _f("CRYPTO_MAX_HEAT_PCT", 0.012)               # summed stop risk
+CRYPTO_ATR_PERIOD = _i("CRYPTO_ATR_PERIOD", 14)
+CRYPTO_STOP_BUFFER_ATR = _f("CRYPTO_STOP_BUFFER_ATR", 0.5)  # stop this far under the level
+CRYPTO_MAX_STOP_ATR = _f("CRYPTO_MAX_STOP_ATR", 3.0)        # else the level is too far
+CRYPTO_TARGET_R = _f("CRYPTO_TARGET_R", 2.0)
+CRYPTO_MAX_SIGNAL_AGE = _i("CRYPTO_MAX_SIGNAL_AGE", 10)     # bars since the retest
+CRYPTO_TIME_STOP_HOURS = _i("CRYPTO_TIME_STOP_HOURS", 240)  # 10 days
 
 # ---------------------------------------------------------------- risk
 STARTING_EQUITY = _f("STARTING_EQUITY", 100_000.0)

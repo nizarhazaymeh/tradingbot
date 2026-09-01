@@ -6,6 +6,7 @@ the order landed. Never blind-retry: look it up by client_order_id first.
 from __future__ import annotations
 
 import logging
+import time
 from typing import Optional, Tuple
 
 from . import config
@@ -38,6 +39,45 @@ class Executor:
             return {"status": "dry_run", "id": None, "client_order_id": coid}, "dry run"
 
         return self._submit(body, coid, "open")
+
+    # ---------------------------------------------------------------- crypto
+    def open_crypto(self, signal, qty: float) -> Tuple[Optional[dict], str]:
+        """Buy spot. Market order, and deliberately so.
+
+        The stop is the entire risk model here, and a resting limit that does not
+        fill leaves the signal stale while price walks away from the level. The
+        options path can afford to be patient because a spread's risk is capped
+        by its width whatever happens; this one cannot.
+
+        No stop-loss order is attached. Alpaca does not support brackets on
+        crypto, so — exactly as with options — cycle.crypto_pass() IS the stop,
+        and that is why config.CRYPTO_MAX_NOTIONAL_PCT exists to bound what
+        happens if the loop is not there when it matters.
+        """
+        coid = f"cr-{signal.symbol.replace('/', '')}-{int(time.time())}"
+        body = {"symbol": signal.symbol, "qty": str(qty), "side": "buy",
+                "type": "market", "time_in_force": "gtc", "client_order_id": coid}
+        if self.dry_run:
+            log.info("DRY RUN — would buy %s qty %s", signal.symbol, qty)
+            if self.store:
+                self.store.log_order(coid, body, {"status": "dry_run"}, "open")
+            return {"status": "dry_run", "id": None, "client_order_id": coid}, "dry run"
+        return self._submit(body, coid, "open")
+
+    def close_crypto(self, position: dict, price: float = None) -> str:
+        """Sell the whole position at market. Returns a human-readable result."""
+        coid = f"cr-x-{position['symbol'].replace('/', '')}-{int(time.time())}"
+        body = {"symbol": position["symbol"], "qty": str(position["qty"]),
+                "side": "sell", "type": "market", "time_in_force": "gtc",
+                "client_order_id": coid}
+        if self.dry_run:
+            log.info("DRY RUN — would sell %s qty %s", position["symbol"],
+                     position["qty"])
+            if self.store:
+                self.store.log_order(coid, body, {"status": "dry_run"}, "close")
+            return "dry run"
+        _, msg = self._submit(body, coid, "close")
+        return msg
 
     # ----------------------------------------------------------------- close
     def close_spread(self, spread: Spread, *, limit_price: float = None,

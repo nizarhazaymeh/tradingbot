@@ -75,6 +75,26 @@ CREATE TABLE IF NOT EXISTS orders_log (
     status          TEXT,
     body_json       TEXT
 );
+CREATE TABLE IF NOT EXISTS crypto_positions (
+    symbol       TEXT NOT NULL,
+    opened_at    TEXT NOT NULL,
+    side         TEXT NOT NULL,
+    qty          REAL NOT NULL,
+    entry        REAL NOT NULL,
+    stop         REAL NOT NULL,
+    target       REAL,
+    risk         REAL NOT NULL,      -- planned loss if the stop fills
+    notional     REAL NOT NULL,      -- loss if it does not and price goes to zero
+    level        REAL,               -- the broken-and-retested level; the thesis
+    order_id     TEXT,
+    status       TEXT NOT NULL DEFAULT 'open',
+    closed_at    TEXT,
+    exit_price   REAL,
+    realized_pnl REAL,
+    close_reason TEXT,
+    PRIMARY KEY (symbol, opened_at)
+);
+CREATE INDEX IF NOT EXISTS idx_crypto_status ON crypto_positions(status);
 CREATE INDEX IF NOT EXISTS idx_pos_status ON positions(status);
 CREATE INDEX IF NOT EXISTS idx_dec_ts ON decisions(ts);
 """
@@ -195,6 +215,48 @@ class Store:
         with self._conn() as c:
             c.execute("INSERT OR REPLACE INTO equity_snapshots VALUES (?,?,?,?)",
                       (utcnow(), equity, cash, obp))
+
+    def equity_at(self, iso_ts: str) -> Optional[float]:
+        """Equity as of the last snapshot at or before `iso_ts`, or None.
+
+        risk.circuit_breakers() measures the daily drawdown against Alpaca's
+        `last_equity`, the previous EQUITY-market close. A 24/7 book cannot use
+        that — at 03:00 UTC on a Sunday it is two days stale. This is how the
+        crypto path gets a boundary that means something: the equity recorded at
+        the last UTC midnight. See crypto.crypto_day_start().
+        """
+        with self._conn() as c:
+            r = c.execute("SELECT equity FROM equity_snapshots WHERE ts <= ? "
+                          "ORDER BY ts DESC LIMIT 1", (iso_ts,)).fetchone()
+        return float(r["equity"]) if r else None
+
+    # ---------------------------------------------------------- crypto book
+    def open_crypto(self, *, symbol: str, side: str, qty: float, entry: float,
+                    stop: float, target: float, risk: float, notional: float,
+                    level: float = None, order_id: str = None) -> str:
+        ts = utcnow()
+        with self._conn() as c:
+            c.execute("""INSERT INTO crypto_positions
+                         (symbol, opened_at, side, qty, entry, stop, target, risk,
+                          notional, level, order_id, status)
+                         VALUES (?,?,?,?,?,?,?,?,?,?,?,'open')""",
+                      (symbol, ts, side, qty, entry, stop, target, risk, notional,
+                       level, order_id))
+        return ts
+
+    def open_crypto_positions(self) -> List[dict]:
+        with self._conn() as c:
+            rows = c.execute("SELECT * FROM crypto_positions WHERE status='open' "
+                             "ORDER BY opened_at").fetchall()
+        return [dict(r) for r in rows]
+
+    def close_crypto(self, symbol: str, opened_at: str, *, exit_price: float,
+                     realized_pnl: float, reason: str) -> None:
+        with self._conn() as c:
+            c.execute("""UPDATE crypto_positions SET status='closed', closed_at=?,
+                         exit_price=?, realized_pnl=?, close_reason=?
+                         WHERE symbol=? AND opened_at=?""",
+                      (utcnow(), exit_price, realized_pnl, reason, symbol, opened_at))
 
     def equity_curve(self) -> List[dict]:
         with self._conn() as c:
