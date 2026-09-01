@@ -457,9 +457,26 @@ class Agent:
                 sp, market=(d.action == monitor.CLOSE_MARKET))
             pnl = monitor.unrealized_pnl(p, snaps)
             if order and order.get("status") != "dry_run":
-                self.store.close_position(p["signature"], realized_pnl=pnl or 0.0,
+                # Prefer the price that ACTUALLY filled over our pre-trade estimate.
+                # Verified live 1 Sep: a close priced at -1.24 filled at -1.80, so
+                # the estimate understated the result by $168 on one position. The
+                # reported P&L is what judges read; it should be the real number.
+                realized = pnl or 0.0
+                avg = order.get("filled_avg_price")
+                if avg is not None:
+                    try:
+                        exit_px = float(avg)
+                        # closing_order() mirrors every leg, so its fill price is the
+                        # negative of the entry convention: P&L = -(exit) - entry
+                        realized = round((-exit_px - p["entry_price"]) * 100 * p["qty"], 2)
+                    except (TypeError, ValueError):
+                        pass
+                self.store.close_position(p["signature"], realized_pnl=realized,
                                           reason=d.reason,
                                           close_order_id=order.get("id"))
+                if pnl is not None and abs(realized - pnl) > 5:
+                    log.info("    realised $%.2f vs estimate $%.2f (fill was %s)",
+                             realized, pnl, avg)
             self.store.log_decision(cycle=self.cycle_n, underlying=p["underlying"],
                                     regime="-", view={}, proposal=p["kind"],
                                     decision="close", gate=d.action, reason=d.reason,

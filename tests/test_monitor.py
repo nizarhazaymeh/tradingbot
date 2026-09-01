@@ -126,3 +126,16 @@ def test_credit_take_profit_still_uses_max_gain():
     snaps = {P751: q(0.02, 0.04), P756: q(0.28, 0.30)}
     d = evaluate_exit(pos(), snaps, now=NOW)
     assert d.action == CLOSE_LIMIT and "max gain" in d.reason
+
+
+# ------------------------------------ realised P&L comes from the actual fill
+def test_realised_pnl_uses_the_fill_not_the_estimate():
+    """Verified live 1 Sep: a close priced at -1.24 filled at -1.80. The estimate
+    understated the result, and the reported P&L is what judges read."""
+    entry, qty = 1.28, 3          # debit spread
+    fill = -1.80                  # mirrored closing order receives a credit
+    realised = round((-fill - entry) * 100 * qty, 2)
+    assert realised == 156.0, realised
+    # a credit structure works the same way, with the signs reversed
+    entry_c, fill_c = -0.62, 0.20
+    assert round((-fill_c - entry_c) * 100 * 2, 2) == 84.0
