@@ -243,3 +243,31 @@ def test_count_by_underlying_is_built_from_the_book():
          {"signature": "c", "underlying": "QQQ", "expiry": "2026-09-04",
           "max_loss": 400, "net_delta": 0.0}])
     assert b.count_by_underlying == {"SPY": 2, "QQQ": 1}
+
+
+# ------------------------------------------------- distinct short strikes
+def test_duplicate_short_strike_is_rejected():
+    """Observed live: two SPY condors with identical short strikes [755, 773]."""
+    sp = condor()
+    shorts = {round(l.view.strike, 2) for l in sp.legs if l.side == "sell"}
+    r = gate_portfolio(sp, book(short_strikes={"SPY": shorts}))
+    assert not r and r.gate == "g_distinct_strikes"
+
+
+def test_partial_strike_overlap_is_rejected():
+    sp = condor()
+    one = min(round(l.view.strike, 2) for l in sp.legs if l.side == "sell")
+    r = gate_portfolio(sp, book(short_strikes={"SPY": {one}}))
+    assert not r and r.gate == "g_distinct_strikes"
+
+
+def test_genuinely_different_strikes_pass():
+    sp = condor()
+    r = gate_portfolio(sp, book(short_strikes={"SPY": {1.0, 2.0}}))
+    assert r
+
+
+def test_other_underlying_strikes_do_not_clash():
+    sp = condor()
+    shorts = {round(l.view.strike, 2) for l in sp.legs if l.side == "sell"}
+    assert gate_portfolio(sp, book(short_strikes={"QQQ": shorts}))

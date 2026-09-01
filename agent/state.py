@@ -162,10 +162,20 @@ class Store:
 
     def tracked_for_book(self) -> List[dict]:
         """Shape the open book the way risk.Book expects."""
-        return [{"signature": p["signature"], "underlying": p["underlying"],
-                 "expiry": p["expiry"], "max_loss": p["max_loss"],
-                 "net_delta": p["net_delta"] or 0.0}
-                for p in self.open_positions()]
+        out = []
+        for p in self.open_positions():
+            shorts = []
+            try:
+                for l in json.loads(p["legs_json"]):
+                    if l.get("side") == "sell":
+                        shorts.append(round(int(l["symbol"][-8:]) / 1000.0, 2))
+            except Exception:
+                pass
+            out.append({"signature": p["signature"], "underlying": p["underlying"],
+                        "expiry": p["expiry"], "max_loss": p["max_loss"],
+                        "net_delta": p["net_delta"] or 0.0,
+                        "short_strikes": shorts})
+        return out
 
     # ------------------------------------------------------------ decisions
     def log_decision(self, *, cycle: int, underlying: str, regime: str,

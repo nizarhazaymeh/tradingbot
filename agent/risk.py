@@ -61,6 +61,7 @@ class Book:
     orders_last_hour: int = 0
     held_structures: set = field(default_factory=set)
     count_by_underlying: Dict[str, int] = field(default_factory=dict)
+    short_strikes: Dict[str, set] = field(default_factory=dict)
 
     @classmethod
     def from_account(cls, account: dict, tracked: List[dict] = None) -> "Book":
@@ -80,6 +81,8 @@ class Book:
             b.held_structures.add(t.get("signature", ""))
             u = t["underlying"]
             b.count_by_underlying[u] = b.count_by_underlying.get(u, 0) + 1
+            for k in (t.get("short_strikes") or ()):
+                b.short_strikes.setdefault(u, set()).add(k)
         return b
 
 
@@ -311,6 +314,19 @@ def gate_portfolio(spread: Spread, book: Book) -> GateResult:
     # g_no_duplicate only catches an EXACT match, so nearly identical structures
     # at adjacent strikes slip through as separate "positions". That is one bet
     # taken N times, paying the spread N times.
+    # A second structure must be genuinely different. Observed live 1 Sep: two SPY
+    # condors opened with IDENTICAL short strikes [755, 773], and two QQQ condors
+    # sharing [700]. That is one bet taken twice, paying the bid/ask twice, with
+    # no added diversification — and the broker nets the overlapping legs.
+    new_shorts = {round(l.view.strike, 2) for l in spread.legs
+                  if l.side == "sell" and l.view is not None}
+    existing = book.short_strikes.get(spread.underlying, set())
+    clash = new_shorts & existing
+    if clash:
+        return _fail("g_distinct_strikes",
+                     f"short strike(s) {sorted(clash)} already sold in "
+                     f"{spread.underlying} — a duplicate bet, not diversification")
+
     held = book.count_by_underlying.get(spread.underlying, 0)
     if held >= config.MAX_POSITIONS_PER_UNDERLYING:
         return _fail("g_max_per_underlying",
