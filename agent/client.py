@@ -60,13 +60,32 @@ class RateGovernor:
 
 
 class AlpacaClient:
-    def __init__(self, key: str = None, secret: str = None, timeout: int = 30):
+    def __init__(self, key: str = None, secret: str = None, timeout: int = 30,
+                 verify_account: str = None):
         self.key = key or config.API_KEY
         self.secret = secret or config.SECRET_KEY
         if not self.key or not self.secret:
             raise RuntimeError("Alpaca credentials missing — check .env and ACCOUNT=")
         self.timeout = timeout
         self.gov = RateGovernor()
+        if verify_account:
+            self.assert_account(verify_account)
+
+    def assert_account(self, expected_number: str) -> dict:
+        """Refuse to proceed unless the credentials belong to the expected account.
+
+        Keys are generated per paper account, and Alpaca's dashboard issues them
+        for whichever account is *active* — so it is easy to paste DEV keys into a
+        COMP slot and never notice. Trading the wrong account would either
+        contaminate the judged one or leave it empty at the deadline.
+        """
+        a = self.account()
+        got = a.get("account_number")
+        if got != expected_number:
+            raise RuntimeError(
+                f"ACCOUNT MISMATCH: these credentials belong to {got}, "
+                f"but {expected_number} was expected. Refusing to continue.")
+        return a
 
     # ------------------------------------------------------------------ http
     def _request(self, method: str, path: str, base: str = None,

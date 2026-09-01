@@ -29,7 +29,10 @@ HALT_FILE = Path(config.ROOT if hasattr(config, "ROOT") else ".") / "HALTED"
 class Agent:
     def __init__(self, *, dry_run: bool = None, use_llm: bool = True,
                  rehearse: bool = False):
-        self.c = AlpacaClient()
+        # When trading the judged account, verify the credentials really belong
+        # to it before any order can be built.
+        expected = config.ACCOUNT_NUMBER if config.ACCOUNT == "comp" else None
+        self.c = AlpacaClient(verify_account=expected)
         self.store = Store()
         self.ex = Executor(self.c, self.store, dry_run=dry_run)
         self.use_llm = use_llm
