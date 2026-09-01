@@ -51,14 +51,22 @@ def snapshot(c):
     return pos, orders, acct
 
 
+_last_known_open = [True]
+
+
 def market_is_open(c) -> bool:
-    """Best-effort: an unreachable clock counts as open, so a network blip
-    cannot silently drop the watcher into its slow overnight cadence during a
-    session."""
+    """Last KNOWN state when the clock is unreachable, not a fixed default.
+
+    Returning True on failure was wrong in both directions: during an outage it
+    announced "MARKET OPEN" at 19:12 ET and switched to fast polling, so a
+    network fault made the watcher poll harder and talk more. Holding the last
+    known answer means an outage changes cadence not at all.
+    """
     try:
-        return bool(c.clock().get("is_open"))
+        _last_known_open[0] = bool(c.clock().get("is_open"))
     except Exception:
-        return True
+        pass
+    return _last_known_open[0]
 
 
 def main():
@@ -121,16 +129,16 @@ def main():
             # on 1 Sep and buried a real position close in the middle of them.
             if fail_streak == 1 or fail_streak % 20 == 0:
                 say(f"ERROR poll failed (x{fail_streak}): {type(e).__name__}: {e}")
-            # A long-lived process can end up with a broken resolver while the
-            # machine is fine — on 1 Sep this watcher failed getaddrinfo for 30
-            # minutes while nslookup, the agent loop and a fresh client all
-            # resolved normally. Rebuild the client rather than trusting it.
-            if fail_streak % 5 == 0:
-                try:
-                    c = AlpacaClient()
-                    say(f"recreated the API client after {fail_streak} failures")
-                except Exception as e2:
-                    say(f"ERROR could not recreate client: {e2}")
+            # Recreating AlpacaClient was tried and does nothing: it only holds
+            # keys and calls urllib, so it resets no resolver state. 45 rebuilds
+            # in a row on 1 Sep all failed. When a long-lived process loses name
+            # resolution while the machine is fine, only a new process fixes it —
+            # so back off hard and say plainly that a restart is needed.
+            time.sleep(min(a.interval * fail_streak, 300))
+            if fail_streak == 10:
+                say("ERROR name resolution has failed 10 times in a row. The "
+                    "machine is probably fine — this process is not. Restart the "
+                    "watcher; recreating the client does not help.")
             continue
 
         # ---- positions ----
