@@ -1,14 +1,14 @@
 {
-  "updated_at": "2026-09-01T16:17:16+00:00",
+  "updated_at": "2026-09-01T17:14:25+00:00",
   "account": {
     "account_id": "PA3BAT1OOEFE",
     "environment": "comp",
-    "equity": 99984.8,
+    "equity": 100073.65,
     "starting_equity": 100000.0,
-    "total_pnl": -15.2,
-    "total_pnl_pct": -0.00015,
-    "max_drawdown_pct": -0.00053,
-    "open_positions": 6,
+    "total_pnl": 73.65,
+    "total_pnl_pct": 0.00074,
+    "max_drawdown_pct": -0.00101,
+    "open_positions": 7,
     "closed_trades": 0,
     "win_rate": null,
     "realized_pnl": 0
@@ -25,42 +25,86 @@
     {
       "ts": "2026-09-01T16:13:53+00:00",
       "equity": 99946.8
+    },
+    {
+      "ts": "2026-09-01T16:20:13+00:00",
+      "equity": 99998.8
+    },
+    {
+      "ts": "2026-09-01T16:27:20+00:00",
+      "equity": 100088.8
+    },
+    {
+      "ts": "2026-09-01T16:34:08+00:00",
+      "equity": 100123.8
+    },
+    {
+      "ts": "2026-09-01T16:40:20+00:00",
+      "equity": 100074.8
+    },
+    {
+      "ts": "2026-09-01T16:41:38+00:00",
+      "equity": 100059.8
+    },
+    {
+      "ts": "2026-09-01T16:48:20+00:00",
+      "equity": 100064.8
+    },
+    {
+      "ts": "2026-09-01T16:48:28+00:00",
+      "equity": 100060.8
+    },
+    {
+      "ts": "2026-09-01T16:55:51+00:00",
+      "equity": 100023.65
+    },
+    {
+      "ts": "2026-09-01T16:56:56+00:00",
+      "equity": 100022.65
+    },
+    {
+      "ts": "2026-09-01T17:04:39+00:00",
+      "equity": 100053.65
+    },
+    {
+      "ts": "2026-09-01T17:11:40+00:00",
+      "equity": 100068.65
     }
   ],
   "market": [
     {
       "underlying": "SPY",
-      "spot": 763.5,
-      "implied_vol": 0.1107,
-      "realized_vol": 0.0676,
-      "premium_edge": 0.0431,
+      "spot": 761.99,
+      "implied_vol": 0.1194,
+      "realized_vol": 0.0694,
+      "premium_edge": 0.0501,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     },
     {
       "underlying": "QQQ",
-      "spot": 710.27,
-      "implied_vol": 0.1583,
-      "realized_vol": 0.1243,
-      "premium_edge": 0.034,
+      "spot": 708.46,
+      "implied_vol": 0.1651,
+      "realized_vol": 0.1267,
+      "premium_edge": 0.0384,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     },
     {
       "underlying": "IWM",
-      "spot": 291.63,
-      "implied_vol": 0.1586,
-      "realized_vol": 0.1136,
-      "premium_edge": 0.045,
+      "spot": 290.75,
+      "implied_vol": 0.1683,
+      "realized_vol": 0.116,
+      "premium_edge": 0.0522,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     },
     {
       "underlying": "IBIT",
-      "spot": 43.98,
-      "implied_vol": 0.3455,
-      "realized_vol": 0.3892,
-      "premium_edge": -0.0437,
+      "spot": 43.88,
+      "implied_vol": 0.3517,
+      "realized_vol": 0.391,
+      "premium_edge": -0.0393,
       "verdict": "stand aside",
       "reason": "market charges LESS than the real risk"
     }
@@ -155,115 +199,236 @@
       "expiry": "2026-09-04",
       "days_to_expiry": 3,
       "plain_english": "Profits if IBIT rises above $44"
+    },
+    {
+      "id": "bear_put:IWM260904P00282000/IWM260904P00290000",
+      "kind": "bear_put",
+      "underlying": "IWM",
+      "description": "IWM bear put",
+      "opened_at": "2026-09-01T16:50:12+00:00",
+      "qty": 3,
+      "credit_received": 0.0,
+      "cost_paid": 426.0,
+      "max_loss": 418.5,
+      "unrealized_pnl": null,
+      "expiry": "2026-09-04",
+      "days_to_expiry": 3,
+      "plain_english": "Profits if IWM falls below $290"
     }
   ],
   "decisions": [
     {
-      "ts": "2026-09-01T16:15:11+00:00",
+      "ts": "2026-09-01T17:13:07+00:00",
       "underlying": "IBIT",
-      "decision": "hold",
-      "gate": "",
-      "reason": "all 40 candidates rejected; best-EV one because: expected value -1.74% of risk < required 2% (P(win) 95%, VRP -1.9%)",
-      "regime": "LOW_IV_RANGE"
-    },
-    {
-      "ts": "2026-09-01T16:15:07+00:00",
-      "underlying": "IWM",
       "decision": "reject",
-      "gate": "g_sizing",
-      "reason": "one unit risks $178 > per_expiry budget $25",
-      "regime": "HIGH_IV_TREND"
-    },
-    {
-      "ts": "2026-09-01T16:14:43+00:00",
-      "underlying": "QQQ",
-      "decision": "reject",
-      "gate": "g_sizing",
-      "reason": "one unit risks $220 > per_expiry budget $25",
-      "regime": "HIGH_IV_TREND"
-    },
-    {
-      "ts": "2026-09-01T16:14:24+00:00",
-      "underlying": "SPY",
-      "decision": "reject",
-      "gate": "g_sizing",
-      "reason": "one unit risks $322 > per_expiry budget $25",
-      "regime": "HIGH_IV_RANGE"
-    },
-    {
-      "ts": "2026-09-01T16:11:23+00:00",
-      "underlying": "IBIT",
-      "decision": "submit",
-      "gate": "all",
-      "reason": "filled @ 0.37 on the last step",
+      "gate": "g_no_duplicate",
+      "reason": "already holding bull_call:IBIT260904C00044500/IBIT260904C00048000",
       "regime": "LOW_IV_TREND"
     },
     {
-      "ts": "2026-09-01T16:10:10+00:00",
+      "ts": "2026-09-01T17:12:51+00:00",
       "underlying": "IWM",
       "decision": "reject",
-      "gate": "g_sizing",
-      "reason": "one unit risks $138 > per_expiry budget $87",
+      "gate": "g_no_duplicate",
+      "reason": "already holding bear_put:IWM260904P00282000/IWM260904P00290000",
       "regime": "HIGH_IV_TREND"
     },
     {
-      "ts": "2026-09-01T16:09:53+00:00",
+      "ts": "2026-09-01T17:12:29+00:00",
       "underlying": "QQQ",
-      "decision": "submit",
-      "gate": "all",
-      "reason": "filled @ -0.74 after 2 reprice(s)",
-      "regime": "HIGH_IV_RANGE"
+      "decision": "reject",
+      "gate": "g_sizing",
+      "reason": "one unit risks $273 > per_underlying budget $204",
+      "regime": "HIGH_IV_TREND"
     },
     {
-      "ts": "2026-09-01T16:08:23+00:00",
+      "ts": "2026-09-01T17:12:08+00:00",
       "underlying": "SPY",
-      "decision": "submit",
-      "gate": "all",
-      "reason": "filled @ -0.44 after 0 reprice(s)",
+      "decision": "reject",
+      "gate": "g_max_per_underlying",
+      "reason": "already holding 2 position(s) in SPY, cap 2 \u2014 adjacent strikes are the same bet, not diversification",
       "regime": "HIGH_IV_RANGE"
     },
     {
-      "ts": "2026-09-01T16:06:51+00:00",
+      "ts": "2026-09-01T17:06:38+00:00",
       "underlying": "IBIT",
       "decision": "reject",
-      "gate": "g_net_delta",
-      "reason": "portfolio delta would be +3.26, cap \u00b13.00 (current -1.42, adding +4.68)",
+      "gate": "g_no_duplicate",
+      "reason": "already holding bull_call:IBIT260904C00044500/IBIT260904C00048000",
       "regime": "LOW_IV_TREND"
     },
     {
-      "ts": "2026-09-01T16:06:21+00:00",
+      "ts": "2026-09-01T17:06:08+00:00",
       "underlying": "IWM",
-      "decision": "submit",
-      "gate": "all",
-      "reason": "filled @ 1.28 on the last step",
+      "decision": "reject",
+      "gate": "g_max_per_underlying",
+      "reason": "already holding 2 position(s) in IWM, cap 2 \u2014 adjacent strikes are the same bet, not diversification",
       "regime": "HIGH_IV_TREND"
     },
     {
-      "ts": "2026-09-01T16:04:56+00:00",
+      "ts": "2026-09-01T17:05:34+00:00",
       "underlying": "QQQ",
-      "decision": "submit",
-      "gate": "all",
-      "reason": "filled @ -0.68 after 2 reprice(s)",
+      "decision": "reject",
+      "gate": "g_sizing",
+      "reason": "one unit risks $362 > per_underlying budget $204",
+      "regime": "HIGH_IV_TREND"
+    },
+    {
+      "ts": "2026-09-01T17:05:08+00:00",
+      "underlying": "SPY",
+      "decision": "reject",
+      "gate": "g_sizing",
+      "reason": "one unit risks $314 > per_underlying budget $284",
       "regime": "HIGH_IV_RANGE"
     },
     {
-      "ts": "2026-09-01T16:03:35+00:00",
+      "ts": "2026-09-01T16:59:37+00:00",
+      "underlying": "IBIT",
+      "decision": "reject",
+      "gate": "g_no_duplicate",
+      "reason": "already holding bull_call:IBIT260904C00044500/IBIT260904C00048000",
+      "regime": "LOW_IV_TREND"
+    },
+    {
+      "ts": "2026-09-01T16:59:18+00:00",
+      "underlying": "IWM",
+      "decision": "reject",
+      "gate": "g_no_duplicate",
+      "reason": "already holding bear_put:IWM260904P00282000/IWM260904P00290000",
+      "regime": "HIGH_IV_TREND"
+    },
+    {
+      "ts": "2026-09-01T16:58:32+00:00",
+      "underlying": "QQQ",
+      "decision": "reject",
+      "gate": "g_sizing",
+      "reason": "one unit risks $358 > per_underlying budget $203",
+      "regime": "HIGH_IV_TREND"
+    },
+    {
+      "ts": "2026-09-01T16:57:51+00:00",
       "underlying": "SPY",
+      "decision": "reject",
+      "gate": "g_sizing",
+      "reason": "one unit risks $318 > per_underlying budget $283",
+      "regime": "HIGH_IV_RANGE"
+    },
+    {
+      "ts": "2026-09-01T16:50:49+00:00",
+      "underlying": "IBIT",
+      "decision": "reject",
+      "gate": "g_no_duplicate",
+      "reason": "already holding bull_call:IBIT260904C00044500/IBIT260904C00048000",
+      "regime": "LOW_IV_TREND"
+    },
+    {
+      "ts": "2026-09-01T16:50:12+00:00",
+      "underlying": "IWM",
       "decision": "submit",
       "gate": "all",
-      "reason": "filled @ -0.62 after 0 reprice(s)",
+      "reason": "filled @ 1.42 after 0 reprice(s)",
+      "regime": "HIGH_IV_TREND"
+    },
+    {
+      "ts": "2026-09-01T16:49:29+00:00",
+      "underlying": "QQQ",
+      "decision": "reject",
+      "gate": "g_sizing",
+      "reason": "one unit risks $262 > per_underlying budget $204",
+      "regime": "HIGH_IV_TREND"
+    },
+    {
+      "ts": "2026-09-01T16:48:53+00:00",
+      "underlying": "SPY",
+      "decision": "reject",
+      "gate": "g_max_per_underlying",
+      "reason": "already holding 2 position(s) in SPY, cap 2 \u2014 adjacent strikes are the same bet, not diversification",
+      "regime": "HIGH_IV_RANGE"
+    },
+    {
+      "ts": "2026-09-01T16:43:18+00:00",
+      "underlying": "IBIT",
+      "decision": "reject",
+      "gate": "g_sizing",
+      "reason": "one unit risks $29 > per_expiry budget $28",
+      "regime": "LOW_IV_TREND"
+    },
+    {
+      "ts": "2026-09-01T16:42:54+00:00",
+      "underlying": "IWM",
+      "decision": "reject",
+      "gate": "g_sizing",
+      "reason": "one unit risks $143 > per_expiry budget $28",
+      "regime": "HIGH_IV_TREND"
+    },
+    {
+      "ts": "2026-09-01T16:42:24+00:00",
+      "underlying": "QQQ",
+      "decision": "reject",
+      "gate": "g_sizing",
+      "reason": "one unit risks $355 > per_expiry budget $28",
+      "regime": "HIGH_IV_TREND"
+    },
+    {
+      "ts": "2026-09-01T16:42:05+00:00",
+      "underlying": "SPY",
+      "decision": "reject",
+      "gate": "g_sizing",
+      "reason": "one unit risks $236 > per_expiry budget $27",
+      "regime": "HIGH_IV_RANGE"
+    },
+    {
+      "ts": "2026-09-01T16:41:01+00:00",
+      "underlying": "SPY",
+      "decision": "reject",
+      "gate": "g_sizing",
+      "reason": "one unit risks $148 > per_expiry budget $28",
+      "regime": "HIGH_IV_RANGE"
+    },
+    {
+      "ts": "2026-09-01T16:29:06+00:00",
+      "underlying": "IBIT",
+      "decision": "reject",
+      "gate": "g_sizing",
+      "reason": "one unit risks $36 > per_expiry budget $28",
+      "regime": "LOW_IV_TREND"
+    },
+    {
+      "ts": "2026-09-01T16:28:29+00:00",
+      "underlying": "IWM",
+      "decision": "reject",
+      "gate": "g_sizing",
+      "reason": "one unit risks $176 > per_expiry budget $29",
+      "regime": "HIGH_IV_TREND"
+    },
+    {
+      "ts": "2026-09-01T16:28:10+00:00",
+      "underlying": "QQQ",
+      "decision": "reject",
+      "gate": "g_sizing",
+      "reason": "one unit risks $262 > per_expiry budget $29",
+      "regime": "HIGH_IV_TREND"
+    },
+    {
+      "ts": "2026-09-01T16:27:49+00:00",
+      "underlying": "SPY",
+      "decision": "reject",
+      "gate": "g_sizing",
+      "reason": "one unit risks $328 > per_expiry budget $28",
       "regime": "HIGH_IV_RANGE"
     }
   ],
   "funnel": {
-    "considered": 12,
-    "rejected": 5,
-    "submitted": 6,
+    "considered": 41,
+    "rejected": 33,
+    "submitted": 7,
     "held": 1,
     "closed": 0
   },
   "gate_rejections": {
-    "g_sizing": 4,
+    "g_sizing": 23,
+    "g_no_duplicate": 6,
+    "g_max_per_underlying": 3,
     "g_net_delta": 1
   },
   "disclaimer": "Paper trading simulation. Not investment advice. Options involve significant risk."
