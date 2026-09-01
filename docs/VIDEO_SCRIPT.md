@@ -109,3 +109,40 @@ Show that 403 in `docs/SAFETY_TESTS.md`.
   numbers are a *logic* test on daily bars — say so, as the slide does.
 - **Don't** cut the standing-aside beat to save time. It is the strongest thing in
   the demo and the easiest to mistake for the agent doing nothing.
+
+
+---
+
+## Added 1 Sep — the strongest 20 seconds you can show
+
+The most persuasive thing in this project is not the P&L. It is that we measured
+our own strategy and found it was losing money by design, then fixed it.
+
+Show this on screen while you say it:
+
+```
+structure          risk   edge required   round-trip spread
+iron condor SPY    $441   $8.82           $36.00
+iron condor QQQ    $444   $8.88           $27.00
+bear put    IWM    $356   $7.11           $9.00
+```
+
+Script:
+
+> "Our expected-value model priced options at mid and ignored the bid/ask. So on
+> the first live session, every single position had a round-trip spread larger
+> than the edge we were demanding. We were losing money by design, not by bad
+> luck. $68 of an $89 loss was execution cost. We now compute expected value net
+> of the spread crossed twice — and the optimiser immediately started preferring
+> narrower structures, because cost scales with leg count and edge does not."
+
+Then, briefly:
+
+> "Thirteen defects only appeared once real orders were involved. An exception
+> between submitting an order and recording it left a live position with no stop
+> attached. A shared ledger let one account read another's positions. A profit
+> target on directional trades quietly demanded a four-times return. All of them
+> are fixed, and all of them have tests."
+
+Why this lands: every entrant will claim their agent works. Very few can show
+what it got wrong and how they found out.

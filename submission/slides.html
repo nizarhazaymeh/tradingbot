@@ -160,6 +160,28 @@
       per underlying.</div>
   </div>
 </div><div class="n">04</div></section>
+  <section class="slide">
+    <div class="eyebrow">What running it live taught us</div>
+    <h2>The model approved trades that lost money by design</h2>
+    <p class="lead">Our expected-value model priced every leg at mid and ignored the
+    bid/ask. In the first live session, every position the agent opened had a
+    round-trip spread <em>larger than the edge the gate demanded</em>.</p>
+    <table>
+      <tr><th>structure</th><th>risk</th><th>edge required</th><th>round-trip spread</th></tr>
+      <tr><td>iron condor SPY</td><td>$441</td><td>$8.82</td><td>$36.00</td></tr>
+      <tr><td>iron condor QQQ</td><td>$444</td><td>$8.88</td><td>$27.00</td></tr>
+      <tr><td>bear put IWM</td><td>$356</td><td>$7.11</td><td>$9.00</td></tr>
+    </table>
+    <p>$68 of that session's $89 loss was execution cost, not adverse movement. EV is
+    now computed net of the spread crossed twice, and the optimiser responded by
+    preferring narrower structures &mdash; cost scales with leg count, edge does not.</p>
+    <p>Thirteen defects surfaced only by trading live: stale-quote pricing that never
+    filled, an exception between submission and persistence that left a position with
+    no stop attached, a shared ledger that let one account read another's positions,
+    and a profit target on directional trades that demanded a 4&times; return.
+    All fixed, all covered by tests.</p>
+  </section>
+
 
 <!-- 5 -->
 <section class="s"><div class="grid"></div><div class="in">
@@ -194,9 +216,9 @@
   <div class="body">
     <table><thead><tr><th>Layer</th><th>What it enforces</th><th class="num">Verified</th></tr></thead>
     <tbody>
-      <tr><td>Structure gates</td><td>Short strike ≥ 0.9σ from spot · credit ≥ 4% of width · positive theta · net delta ≤ 0.35/unit</td><td class="num g">92 tests</td></tr>
-      <tr><td>Sizing</td><td>0.55% of equity per trade · 4% portfolio heat · caps per underlying and per expiry</td><td class="num g">92 tests</td></tr>
-      <tr><td>Expectancy</td><td>Expected value ≥ 2% of capital at risk, or no trade</td><td class="num g">92 tests</td></tr>
+      <tr><td>Structure gates</td><td>Short strike ≥ 0.9σ from spot · credit ≥ 4% of width · positive theta · net delta ≤ 0.35/unit</td><td class="num g">276 tests</td></tr>
+      <tr><td>Sizing</td><td>0.55% of equity per trade · 4% portfolio heat · caps per underlying and per expiry</td><td class="num g">276 tests</td></tr>
+      <tr><td>Expectancy</td><td>Expected value ≥ 2% of capital at risk, or no trade</td><td class="num g">276 tests</td></tr>
       <tr><td>Circuit breakers</td><td>Daily 2% / total 6% drawdown · order-rate cap · kill-switch file</td><td class="num g">21/21</td></tr>
       <tr><td>Broker-side halt</td><td>Cancel, flatten, then set <span class="mono">suspend_trade</span> on the account itself</td><td class="num g">real 403</td></tr>
       <tr><td>Crash recovery</td><td>Exit plan survives an unclean restart; reconciliation finds ghosts and orphans</td><td class="num g">21/21</td></tr>
