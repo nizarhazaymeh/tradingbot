@@ -336,8 +336,28 @@ ESCALATE_CLOSE_AFTER_ET = _s("ESCALATE_CLOSE_AFTER_ET", "15:30")
 # Without these the judges would mark an open, mid-move position, and anything
 # expiring after the deadline would never reach its own time stop.
 COMPETITION_DEADLINE = _s("COMPETITION_DEADLINE", "2026-09-04T11:00:00-04:00")
-FLATTEN_AT = _s("FLATTEN_AT", "2026-09-04T09:35:00-04:00")
-NO_NEW_AFTER = _s("NO_NEW_AFTER", "2026-09-03T15:30:00-04:00")
+
+# Flatten THURSDAY afternoon, not Friday morning.
+#
+# Every position we can still open expires Fri 4 Sep, and the deadline is 11:00
+# ET that same day — so a Friday flatten means closing a 0-DTE book in the first
+# minutes of the session, the widest-spread moment of the week, on deadline
+# morning. Priced at realised vol on 1 Sep, the difference is small and the risk
+# is not:
+#
+#   flatten Thu 15:30   keeps $728 of the $827 still on the table
+#   flatten Fri 09:35   keeps $823                     (+$95)
+#
+# and that $95 is paid for by carrying a 0-DTE book through one overnight gap.
+# With the short strikes 0.7% away, that bet is worth +$20 at realised vol and
+# -$168 at implied — nothing in expectation, against a $1-2k tail. It also
+# requires the machine to survive Thursday night, and leaves any failed leg to
+# be fixed inside the 85 minutes before judging.
+#
+# Thursday costs ~$95, locks the judged P&L a full day early, and makes Friday
+# morning purely about submitting.
+FLATTEN_AT = _s("FLATTEN_AT", "2026-09-03T15:30:00-04:00")
+NO_NEW_AFTER = _s("NO_NEW_AFTER", "2026-09-02T15:30:00-04:00")
 
 POLL_SECONDS = _i("POLL_SECONDS", 300)
 DRY_RUN = _b("DRY_RUN", True)

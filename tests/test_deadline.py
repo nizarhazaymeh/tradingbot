@@ -22,7 +22,10 @@ def at(y, m, d, hh, mm):
 
 
 # ------------------------------------------------------------- flatten_now
-def test_no_flatten_before_the_cutoff():
+def test_no_flatten_before_the_cutoff(monkeypatch):
+    # Pin the cutoff rather than inheriting whatever FLATTEN_AT is set to, so
+    # this keeps testing the comparison and not the current competition date.
+    monkeypatch.setattr(config, "FLATTEN_AT", "2026-09-04T09:35:00-04:00")
     assert RK.flatten_now(at(2026, 9, 4, 9, 30)) is None
     assert RK.flatten_now(at(2026, 9, 3, 15, 59)) is None
 

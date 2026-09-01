@@ -16,6 +16,14 @@ from agent.spreads import bull_put_spread, bull_call_spread
 
 ET = ZoneInfo("America/New_York")
 
+# Pin the deadline the arithmetic below assumes, so these cases keep testing the
+# gate rather than whatever FLATTEN_AT happens to be set to today.
+FLATTEN = "2026-09-04T09:35:00-04:00"
+
+
+def setup_function():
+    config.FLATTEN_AT = FLATTEN
+
 
 def cv(kind, strike, mid, theta, dte=5, expiry=date(2026, 9, 8)):
     return ContractView(symbol=occ("SPY", expiry, kind, strike), root="SPY",

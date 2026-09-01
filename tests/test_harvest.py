@@ -20,6 +20,11 @@ from agent.expectancy import bs_price, fair_value
 ET = ZoneInfo("America/New_York")
 NOW = datetime(2026, 9, 1, 12, 0, tzinfo=ET)
 
+# The fair values below are computed over a fixed remaining hold, so pin the
+# deadline that defines it.
+def setup_function():
+    config.FLATTEN_AT = "2026-09-04T09:35:00-04:00"
+
 
 def quote(bid, ask):
     return {"latestQuote": {"bp": bid, "ap": ask}}
