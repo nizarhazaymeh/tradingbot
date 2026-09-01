@@ -63,7 +63,26 @@ LLM_MAX_TOKENS = _i("LLM_MAX_TOKENS", 700)
 LLM_TIMEOUT = _i("LLM_TIMEOUT", 90)
 
 # ---------------------------------------------------------------- universe
-UNIVERSE = [s.strip().upper() for s in _s("UNIVERSE", "SPY,QQQ,IWM,IBIT").split(",") if s.strip()]
+# Scanned 19 optionable names on 1 Sep for variance risk premium and chain depth.
+# Eleven qualified; we were trading four, one of which (IBIT) had NEGATIVE VRP at
+# -3.6% — implied volatility BELOW realised, so there was no premium to sell.
+#
+# The gain from expanding is diversification, not more risk. A premium-selling
+# book's real danger is a correlated shock rather than any individual position,
+# since each is defined-risk — so the same 4% heat budget spread across ten
+# underlyings is meaningfully safer than across four.
+#
+# Measured VRP: META +10.5% AAPL +9.3% IWM +7.8% SMH +7.3% SPY +6.8%
+#               MSFT +6.1% QQQ +6.0% TSLA +5.5% DIA +5.3% AMZN +4.9% GOOGL +4.4%
+# Excluded for negative VRP: NVDA -9.4%, IBIT -3.6%, GLD -2.6%
+# Excluded for no edge: AMD +0.1%.  Excluded for thin chains: XLF, XLE, TLT, NFLX.
+# TSLA held back deliberately: 47% IV is genuine premium but the fattest tails
+# in the set, and the EV model's normal-distribution assumption is weakest there.
+#
+# No earnings inside this window — mega-cap Q2 reports landed early August, and
+# the next round is late October.
+UNIVERSE = [s.strip().upper() for s in _s(
+    "UNIVERSE", "SPY,QQQ,IWM,DIA,SMH,AAPL,MSFT,META,AMZN,GOOGL").split(",") if s.strip()]
 
 # ------------------------------------------------------------------- crypto
 # Two facts decide everything here.
@@ -114,7 +133,10 @@ MAX_PER_UNDERLYING_PCT = _f("MAX_PER_UNDERLYING_PCT", 0.0120)
 # with the 4% heat budget two-thirds unused. Aligned with the heat cap so heat
 # is the single binding constraint.
 MAX_PER_EXPIRY_PCT = _f("MAX_PER_EXPIRY_PCT", 0.0400)
-MAX_OPEN_POSITIONS = _i("MAX_OPEN_POSITIONS", 10)
+# Raised with the universe: ten underlyings at two positions each is 20 possible,
+# and the 4% heat cap is what should bind, not an arbitrary count that forces all
+# the risk into a handful of names.
+MAX_OPEN_POSITIONS = _i("MAX_OPEN_POSITIONS", 14)
 # The heat cap limits RISK per underlying but not CORRELATION or churn. Observed
 # live 1 Sep: three QQQ condors at nearly identical strikes — one bet taken three
 # times, paying the bid/ask spread three times for no added diversification.
