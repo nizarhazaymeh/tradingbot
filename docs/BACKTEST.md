@@ -931,3 +931,87 @@ python scripts/backtest_crypto.py
 CRYPTO_ENABLED=true python run.py once      # dry run, the pass is inert when off
 python -m pytest tests/test_crypto.py -q
 ```
+
+---
+
+# Part 9 — Can it predict direction? Measured on 3,985 observations: no
+
+Run 1 Sep 2026 · `scripts/predict_direction.py` · raw data
+[`predict_direction.json`](predict_direction.json)
+
+The README opens by refusing this question. Parts 5–8 agree with it, but every one
+of those was measured on 19 entry dates, which cannot settle anything on its own.
+
+Direction is the exception. Predicting it needs no option chain, so the sample is
+every trading day rather than every expiry the agent traded — **3,985
+observations across SPY, QQQ and IWM** instead of 19. This is the one claim in the
+repo that can actually be settled.
+
+## Method
+
+Predict the sign of the **forward 4-day return** — the horizon the agent holds
+over. Thirteen features, all from bars up to and including the prediction day:
+1/5/20-day returns, distance from the 20/50/200 SMA in ATR, the MA stack, RSI,
+ADX, ATR%, position in the 20-day range, realised vol, and relative volume.
+
+Logistic regression, **walk-forward by calendar year**: to predict any day in
+year Y the model is fitted only on data strictly before Y.
+
+**The baseline is what matters.** Equities rise most of the time, so a model that
+has learned nothing still scores ~59%. Accuracy alone is meaningless; the only
+question is whether it beats "always predict up".
+
+## Result
+
+| Year | n | base rate | model | edge |
+|---|---:|---:|---:|---:|
+| 2023 | 750 | 57.3% | 52.3% | 🔴 −5.1% |
+| 2024 | 756 | 59.0% | 56.5% | 🔴 −2.5% |
+| 2025 | 750 | 63.5% | 58.5% | 🔴 −4.9% |
+| 2026 | 486 | 55.3% | 54.5% | 🔴 −0.8% |
+| **Mean** | | **58.8%** | **55.5%** | **−3.3%** |
+
+**It beat the majority-class baseline in 0 of 4 years.** Every year it was worse
+than a constant that ignores all thirteen features and says "up".
+
+## The confidence buckets are the real finding
+
+A genuine signal gets *more* accurate as it gets surer. This one does the
+opposite:
+
+| p(up) | n | actual up rate | mean forward return |
+|---|---:|---:|---:|
+| 0.45 – 0.50 | 368 | 56.8% | +0.49% |
+| 0.50 – 0.55 | 759 | 60.3% | +0.38% |
+| 0.55 – 0.60 | 850 | 64.1% | +0.52% |
+| **0.60 +** | **517** | 🔴 **50.5%** | 🔴 **−0.03%** |
+
+**Where the model is most confident, it is a coin flip.** The 517 highest-conviction
+calls returned −0.03% on average. Conviction is anti-correlated with being right,
+which is the signature of a model that has fitted momentum that then mean-reverts.
+
+## Why this is the load-bearing result in this document
+
+Every other negative finding here is small-sample and provisional. This one is
+not: 3,985 observations, four years of strictly causal validation, thirteen of the
+most standard features in technical analysis, and the result is *worse than a
+constant*.
+
+It is also why the agent is built the way it is. Selling variance risk premium
+does not need to know where price is going — it collects the same premium whether
+the market drifts up or down, provided it does not move far. **Direction is the one
+input the strategy was designed not to require**, and this is the measurement that
+justifies that design rather than merely asserting it.
+
+Parts 5–8 each tried to reintroduce a directional read — a structure veto, a
+fitted structure model, a retest preference, moving averages, spot crypto. All
+five failed. This explains why: the thing they were all trying to extract is not
+there to extract.
+
+## Reproduce
+
+```bash
+python scripts/predict_direction.py
+python scripts/predict_direction.py --horizon 1 --symbols SPY
+python scripts/train_structure.py --features ma      # the MA-only result
+```

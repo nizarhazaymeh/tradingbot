@@ -102,6 +102,20 @@ BREAK_FEATURES = [
     "retest_barrier",    # a confirmed retested level stands between spot and the strike
     "retest_dist_atr",   # how far away it is, in ATRs (0 when there is none)
 ]
+# Moving averages. The agent ALREADY uses two of these — regime.trend_score()
+# computes its z-score as distance from the 20-SMA and gates direction on the
+# 50-SMA — so this set asks whether MORE of them, or different ones, carry
+# information the z-score alone does not. Every directional one is signed toward
+# the short strike, so POSITIVE always means "pointing at the strike we sold",
+# which is what the shipped trend filter treats as bad.
+MA_FEATURES = [
+    "ma_dist20",      # (spot - SMA20) / ATR, signed toward the strike
+    "ma_dist50",
+    "ma_dist200",
+    "ma_stack",       # +1 when 20>50>200, -1 inverted, 0 mixed; signed
+    "ma_slope20",     # 5-bar change in SMA20, in ATR; signed
+    "ema_cross",      # (EMA12 - EMA26) / ATR, signed
+]
 # Trend and volatility — the filters the agent already ships, as continuous inputs.
 TREND_FEATURES = [
     "threat_trend",      # z-score signed so POSITIVE means trending INTO the short strike
@@ -193,6 +207,22 @@ class Context:
         brks = L.breaks(ohlc)
         last = brks[-1] if brks else None
 
+        def _sma(n):
+            return ind.sma(closes, n) if len(closes) >= n else None
+
+        sma20, sma50, sma200 = _sma(20), _sma(50), _sma(200)
+        s20_series = ind.sma_series(closes, 20)
+        slope20 = None
+        if len(s20_series) > 6 and s20_series[-1] and s20_series[-6]:
+            slope20 = s20_series[-1] - s20_series[-6]
+        stack = 0
+        if sma20 and sma50 and sma200:
+            if sma20 > sma50 > sma200:
+                stack = 1
+            elif sma20 < sma50 < sma200:
+                stack = -1
+        e12, e26 = ind.ema(closes, 12), ind.ema(closes, 26)
+
         hi20, lo20 = max(highs[-20:]), min(lows[-20:])
         range_pos = (spot - lo20) / (hi20 - lo20) if hi20 > lo20 else 0.5
 
@@ -203,6 +233,12 @@ class Context:
 
         return {"spot": spot, "atr": atr, "z": z, "zdir": zdir, "structure": struct,
                 "zones": zones, "range_pos": range_pos, "golden": golden,
+                "ma_dist20": ((spot - sma20) / atr) if sma20 else 0.0,
+                "ma_dist50": ((spot - sma50) / atr) if sma50 else 0.0,
+                "ma_dist200": ((spot - sma200) / atr) if sma200 else 0.0,
+                "ma_stack": stack,
+                "ma_slope20": (slope20 / atr) if slope20 is not None else 0.0,
+                "ema_cross": ((e12 - e26) / atr) if (e12 and e26) else 0.0,
                 "breaks": brks, "bos_dir": L.break_trend(brks),
                 "bos_state": last.state if last else "none",
                 "bos_age": (len(ohlc) - 1 - last.index) if last else 999,
@@ -248,6 +284,7 @@ def features_for(ctx, strategy):
         barrier_atr = abs(off) * spot / atr
         threat = abs(ctx["z"])                 # either direction hurts a condor
         bos_threat = abs(ctx["bos_dir"])
+        ma_sign = 0.0                          # a condor has no single threatened side
     else:
         strike = round(spot * (1 + off))
         protected, pdist, touches = protection(strike, side)
@@ -255,6 +292,7 @@ def features_for(ctx, strategy):
         barrier_atr = abs(strike - spot) / atr
         threat = ctx["z"] if side == "C" else -ctx["z"]
         bos_threat = ctx["bos_dir"] if side == "C" else -ctx["bos_dir"]
+        ma_sign = 1.0 if side == "C" else -1.0
 
     return {
         "struct_up": 1.0 if ctx["structure"] == "up" else 0.0,
@@ -272,6 +310,12 @@ def features_for(ctx, strategy):
         "bos_extent_atr": float(ctx["bos_extent"]),
         "retest_barrier": rbar,
         "retest_dist_atr": rdist,
+        "ma_dist20": ma_sign * ctx["ma_dist20"],
+        "ma_dist50": ma_sign * ctx["ma_dist50"],
+        "ma_dist200": ma_sign * ctx["ma_dist200"],
+        "ma_stack": ma_sign * ctx["ma_stack"],
+        "ma_slope20": ma_sign * ctx["ma_slope20"],
+        "ema_cross": ma_sign * ctx["ema_cross"],
         "threat_trend": threat,
         "rv20": ctx["rv20"],
         "adx": ctx["adx"],
@@ -572,13 +616,15 @@ def profile(rows, cols):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--features",
-                    choices=("all", "structure", "trend", "breaks"), default="all")
+                    choices=("all", "structure", "trend", "breaks", "ma"),
+                    default="all")
     ap.add_argument("--mode", choices=("model", "rules", "both"), default="both")
     ap.add_argument("--refresh", action="store_true", help="rebuild dataset from the API")
     ap.add_argument("--out", default="docs/structure_model.json")
     a = ap.parse_args()
 
-    cols = {"all": STRUCTURE_FEATURES + BREAK_FEATURES + TREND_FEATURES,
+    cols = {"all": STRUCTURE_FEATURES + BREAK_FEATURES + MA_FEATURES + TREND_FEATURES,
+            "ma": MA_FEATURES,
             "structure": STRUCTURE_FEATURES,
             "breaks": BREAK_FEATURES,
             "trend": TREND_FEATURES}[a.features]
