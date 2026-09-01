@@ -412,13 +412,67 @@ def size_spread(spread: Spread, book: Book) -> GateResult:
 
 
 # ------------------------------------------------------------- full pipeline
+def holding_days(expiry: date, now: datetime = None) -> float:
+    """How long we will ACTUALLY hold, not how long the option lives.
+
+    FLATTEN_AT closes the book before judging, so a position opened on 3 Sep with
+    an 8 Sep expiry lives 5 days but is held for 1. It therefore captures roughly
+    a fifth of the decay it was priced on, while paying 100% of the round-trip
+    bid/ask — which does not scale with holding period. Trades opened late are
+    EV-negative for that reason alone.
+    """
+    now_a = _aware(now or now_et())
+    flat = _aware(_iso(config.FLATTEN_AT))
+    end_by_expiry = _aware(datetime.combine(expiry, time(16, 0)))
+    if now_a is None or end_by_expiry is None:
+        return float(max((expiry - date.today()).days, 0))
+    end = min(end_by_expiry, flat) if flat else end_by_expiry
+    return max((end - now_a).total_seconds() / 86400.0, 0.0)
+
+
+def gate_holding_period(spread: Spread, now: datetime = None) -> GateResult:
+    """The carry earned over the ACTUAL hold must beat the round-trip spread.
+
+    Without this the agent keeps opening structures in the final days whose
+    modelled edge assumes holding to expiry — an edge the deadline will not let it
+    collect.
+    """
+    from .expectancy import round_trip_cost
+
+    days = holding_days(spread.expiry, now)
+    if days <= 0:
+        return _fail("g_holding_period", "no holding time left before the flatten")
+
+    theta = spread.net_theta
+    cost = round_trip_cost(spread) * max(spread.qty, 1)
+
+    if theta <= 0:
+        # A debit structure earns from direction, not carry, so the theta test does
+        # not apply — but it still needs time for the move to arrive.
+        if days < config.MIN_HOLDING_DAYS:
+            return _fail("g_holding_period",
+                         f"only {days:.1f} days before the flatten; a directional "
+                         f"structure needs {config.MIN_HOLDING_DAYS:.1f}")
+        return PASS
+
+    expected = theta * days
+    if expected < cost * config.HOLDING_COST_MULTIPLE:
+        return _fail("g_holding_period",
+                     f"carry over the real {days:.1f}-day hold is ${expected:,.0f}, "
+                     f"under {config.HOLDING_COST_MULTIPLE:.1f}x the ${cost:,.0f} "
+                     f"round-trip spread — the deadline closes this before the "
+                     f"modelled edge is collected")
+    return PASS
+
+
 GATE_ORDER = ["g_structure", "g_contracts", "g_sizing", "g_portfolio"]
 
 
 def evaluate(spread: Spread, book: Book, oi_map: Dict[str, int] = None) -> GateResult:
     """Run every gate in order. Mutates spread.qty on success."""
     for check in (gate_structure(spread),
-                  gate_contracts(spread, oi_map)):
+                  gate_contracts(spread, oi_map),
+                  gate_holding_period(spread)):
         if not check:
             return check
 

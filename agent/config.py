@@ -244,6 +244,12 @@ MIN_CREDIT_RATIO = _f("MIN_CREDIT_RATIO", 0.04) # sanity floor only; EV is the r
 # disagreeing with the market's delta-implied probabilities.
 MAX_VIEW_TILT = _f("MAX_VIEW_TILT", 0.35)       # max probability shift at full conviction
 MIN_EV_RATIO = _f("MIN_EV_RATIO", 0.02)         # require EV >= 2% of capital at risk
+
+# FLATTEN_AT closes the book before judging, so late trades are held for a
+# fraction of the option's life while paying 100% of the round-trip bid/ask.
+# The carry earned over the ACTUAL hold must beat that cost with margin.
+HOLDING_COST_MULTIPLE = _f("HOLDING_COST_MULTIPLE", 1.5)
+MIN_HOLDING_DAYS = _f("MIN_HOLDING_DAYS", 1.0)  # directional trades need time to work
 MIN_SHORT_SIGMA = _f("MIN_SHORT_SIGMA", 0.90)   # short strike >= 0.9σ from spot
 
 # OFF, by measurement. See docs/BACKTEST.md Part 7.
