@@ -344,9 +344,15 @@ against realised outcomes before letting it move strikes.
 |---|---|
 | **Mon 31 Aug** | 16:30 local — `t1_fill_test.py --live` on DEV, watch the fill. Switch to COMP if clean. ✅ T6, T7, T8, T9, T10 done pre-market. |
 | **Tue 1 Sep** | Demo website (Ali). Fix whatever Monday exposed. MCP transcript (T5). |
-| **Wed 2 Sep** | 🔴 Record video + slides. Do NOT leave this to Friday. |
-| **Thu 3 Sep** | 15:00 ET stop opening new positions. Write-up, cover image, final checks. |
-| **Fri 4 Sep** | 09:30 ET flatten everything. Run `ACCOUNT=comp python scripts/comp_preflight.py --regenerate` before submitting. Submit by **10:45 ET / 17:45 local**. |
+| **Wed 2 Sep** | 🔴 Record video. **15:30 ET — last moment the agent opens anything** (`NO_NEW_AFTER`). |
+| **Thu 3 Sep** | **15:30 ET — `FLATTEN_AT` closes the whole book.** P&L is final from here. Fill the write-up results table. |
+| **Fri 4 Sep** | Nothing to trade — the book is already flat. Run `ACCOUNT=comp python scripts/comp_preflight.py --regenerate`, then submit by **10:45 ET / 17:45 local**. |
+
+The flatten moved a day earlier on 1 Sep. Judging is Fri 11:00 ET and everything
+we can open expires Fri, so the old cutoff meant closing a 0-DTE book five
+minutes into deadline morning. Measured cost of going early: ~$95. What it buys:
+no overnight gap on expiry day, and no dependency on the laptop surviving
+Thursday night.
 
 ---
 
