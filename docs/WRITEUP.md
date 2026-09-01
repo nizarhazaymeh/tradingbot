@@ -1,7 +1,7 @@
 # Options Alpha Agent — Technical Write-up
 
 **Alpaca AI Trading Agents Hackathon** · lablab.ai × Alpaca · 28 Aug – 4 Sep 2026
-**Alpaca paper trading account ID: `PA3BAT1OOEFE`** (fresh account, $100,000 start)
+**Alpaca paper trading account ID: `PA3BAT1OOEFE`**  (UUID `98f497d2-e669-422b-878c-a5642bcd7cf1`) (fresh account, $100,000 start)
 Repo: `github.com/nizarhazaymeh/tradingbot` · Team: Mahdi Anagreh, Nizar Hazaymeh, Ali
 
 ---
