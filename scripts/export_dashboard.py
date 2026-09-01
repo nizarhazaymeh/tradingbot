@@ -11,10 +11,14 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+# The PUBLIC dashboard must show the account judges will score, not the sandbox.
+# This MUST run before agent.config is imported: config resolves ACCOUNT (and
+# therefore the credentials and ledger path) at import time.
+os.environ["ACCOUNT"] = os.environ.get("DASHBOARD_ACCOUNT", "comp")
 
-from agent import config, options as O, regime as R
-from agent.client import AlpacaClient, AlpacaError
-from agent.state import Store
+from agent import config, options as O, regime as R          # noqa: E402
+from agent.client import AlpacaClient, AlpacaError           # noqa: E402
+from agent.state import Store                                # noqa: E402
 
 OUT = Path(__file__).resolve().parent.parent / "public" / "dashboard.json"
 

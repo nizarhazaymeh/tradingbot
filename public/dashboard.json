@@ -1,171 +1,270 @@
 {
-  "updated_at": "2026-09-01T07:36:10+00:00",
+  "updated_at": "2026-09-01T16:17:16+00:00",
   "account": {
-    "account_id": "PA349BYK6I13",
-    "environment": "dev",
-    "equity": 100000.0,
+    "account_id": "PA3BAT1OOEFE",
+    "environment": "comp",
+    "equity": 99984.8,
     "starting_equity": 100000.0,
-    "total_pnl": 0.0,
-    "total_pnl_pct": 0.0,
-    "max_drawdown_pct": 0.0,
-    "open_positions": 0,
+    "total_pnl": -15.2,
+    "total_pnl_pct": -0.00015,
+    "max_drawdown_pct": -0.00053,
+    "open_positions": 6,
     "closed_trades": 0,
     "win_rate": null,
     "realized_pnl": 0
   },
   "equity_curve": [
     {
-      "ts": "2026-08-30T18:22:58+00:00",
+      "ts": "2026-09-01T16:02:53+00:00",
       "equity": 100000.0
     },
     {
-      "ts": "2026-08-30T18:23:24+00:00",
-      "equity": 100000.0
+      "ts": "2026-09-01T16:07:29+00:00",
+      "equity": 99973.4
     },
     {
-      "ts": "2026-08-30T18:23:51+00:00",
-      "equity": 100000.0
-    },
-    {
-      "ts": "2026-09-01T07:20:32+00:00",
-      "equity": 100000.0
+      "ts": "2026-09-01T16:13:53+00:00",
+      "equity": 99946.8
     }
   ],
   "market": [
     {
       "underlying": "SPY",
-      "spot": 766.87,
-      "implied_vol": 0.1133,
-      "realized_vol": 0.0904,
-      "premium_edge": 0.0229,
+      "spot": 763.5,
+      "implied_vol": 0.1107,
+      "realized_vol": 0.0676,
+      "premium_edge": 0.0431,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     },
     {
       "underlying": "QQQ",
-      "spot": 717,
-      "implied_vol": 0.1604,
-      "realized_vol": 0.1678,
-      "premium_edge": -0.0074,
+      "spot": 710.27,
+      "implied_vol": 0.1583,
+      "realized_vol": 0.1243,
+      "premium_edge": 0.034,
+      "verdict": "trade",
+      "reason": "market charges more than the real risk"
+    },
+    {
+      "underlying": "IWM",
+      "spot": 291.63,
+      "implied_vol": 0.1586,
+      "realized_vol": 0.1136,
+      "premium_edge": 0.045,
+      "verdict": "trade",
+      "reason": "market charges more than the real risk"
+    },
+    {
+      "underlying": "IBIT",
+      "spot": 43.98,
+      "implied_vol": 0.3455,
+      "realized_vol": 0.3892,
+      "premium_edge": -0.0437,
       "verdict": "stand aside",
       "reason": "market charges LESS than the real risk"
-    },
-    {
-      "underlying": "IWM",
-      "spot": 293.99,
-      "implied_vol": 0.1616,
-      "realized_vol": 0.1311,
-      "premium_edge": 0.0304,
-      "verdict": "trade",
-      "reason": "market charges more than the real risk"
     }
   ],
-  "positions": [],
+  "positions": [
+    {
+      "id": "iron_condor:SPY260904C00773000/SPY260904C00776000/SPY260904P00752000/SPY260904P00755000",
+      "kind": "iron_condor",
+      "underlying": "SPY",
+      "description": "SPY iron condor",
+      "opened_at": "2026-09-01T16:03:35+00:00",
+      "qty": 2,
+      "credit_received": 124.0,
+      "cost_paid": 0.0,
+      "max_loss": 476.0,
+      "unrealized_pnl": null,
+      "expiry": "2026-09-04",
+      "days_to_expiry": 3,
+      "plain_english": "Profits if SPY stays between $755 and $773"
+    },
+    {
+      "id": "iron_condor:QQQ260904C00723000/QQQ260904C00726000/QQQ260904P00697000/QQQ260904P00700000",
+      "kind": "iron_condor",
+      "underlying": "QQQ",
+      "description": "QQQ iron condor",
+      "opened_at": "2026-09-01T16:04:56+00:00",
+      "qty": 2,
+      "credit_received": 136.0,
+      "cost_paid": 0.0,
+      "max_loss": 453.0,
+      "unrealized_pnl": null,
+      "expiry": "2026-09-04",
+      "days_to_expiry": 3,
+      "plain_english": "Profits if QQQ stays between $700 and $723"
+    },
+    {
+      "id": "bear_put:IWM260904P00283000/IWM260904P00291000",
+      "kind": "bear_put",
+      "underlying": "IWM",
+      "description": "IWM bear put",
+      "opened_at": "2026-09-01T16:06:21+00:00",
+      "qty": 4,
+      "credit_received": 0.0,
+      "cost_paid": 512.0,
+      "max_loss": 498.0,
+      "unrealized_pnl": null,
+      "expiry": "2026-09-04",
+      "days_to_expiry": 3,
+      "plain_english": "Profits if IWM falls below $291"
+    },
+    {
+      "id": "iron_condor:SPY260904C00773000/SPY260904C00775000/SPY260904P00753000/SPY260904P00755000",
+      "kind": "iron_condor",
+      "underlying": "SPY",
+      "description": "SPY iron condor",
+      "opened_at": "2026-09-01T16:08:23+00:00",
+      "qty": 3,
+      "credit_received": 132.0,
+      "cost_paid": 0.0,
+      "max_loss": 441.0,
+      "unrealized_pnl": null,
+      "expiry": "2026-09-04",
+      "days_to_expiry": 3,
+      "plain_english": "Profits if SPY stays between $755 and $773"
+    },
+    {
+      "id": "iron_condor:QQQ260904C00722500/QQQ260904C00726000/QQQ260904P00697000/QQQ260904P00700000",
+      "kind": "iron_condor",
+      "underlying": "QQQ",
+      "description": "QQQ iron condor",
+      "opened_at": "2026-09-01T16:09:53+00:00",
+      "qty": 2,
+      "credit_received": 148.0,
+      "cost_paid": 0.0,
+      "max_loss": 544.0,
+      "unrealized_pnl": null,
+      "expiry": "2026-09-04",
+      "days_to_expiry": 3,
+      "plain_english": "Profits if QQQ stays between $700 and $722"
+    },
+    {
+      "id": "bull_call:IBIT260904C00044500/IBIT260904C00048000",
+      "kind": "bull_call",
+      "underlying": "IBIT",
+      "description": "IBIT bull call",
+      "opened_at": "2026-09-01T16:11:23+00:00",
+      "qty": 2,
+      "credit_received": 0.0,
+      "cost_paid": 74.0,
+      "max_loss": 62.0,
+      "unrealized_pnl": null,
+      "expiry": "2026-09-04",
+      "days_to_expiry": 3,
+      "plain_english": "Profits if IBIT rises above $44"
+    }
+  ],
   "decisions": [
     {
-      "ts": "2026-09-01T07:20:51+00:00",
+      "ts": "2026-09-01T16:15:11+00:00",
+      "underlying": "IBIT",
+      "decision": "hold",
+      "gate": "",
+      "reason": "all 40 candidates rejected; best-EV one because: expected value -1.74% of risk < required 2% (P(win) 95%, VRP -1.9%)",
+      "regime": "LOW_IV_RANGE"
+    },
+    {
+      "ts": "2026-09-01T16:15:07+00:00",
       "underlying": "IWM",
-      "decision": "submit",
-      "gate": "all",
-      "reason": "dry run",
+      "decision": "reject",
+      "gate": "g_sizing",
+      "reason": "one unit risks $178 > per_expiry budget $25",
       "regime": "HIGH_IV_TREND"
     },
     {
-      "ts": "2026-09-01T07:20:45+00:00",
+      "ts": "2026-09-01T16:14:43+00:00",
       "underlying": "QQQ",
-      "decision": "submit",
-      "gate": "all",
-      "reason": "dry run",
-      "regime": "HIGH_IV_RANGE"
-    },
-    {
-      "ts": "2026-09-01T07:20:38+00:00",
-      "underlying": "SPY",
-      "decision": "submit",
-      "gate": "all",
-      "reason": "dry run",
-      "regime": "HIGH_IV_RANGE"
-    },
-    {
-      "ts": "2026-08-30T18:24:11+00:00",
-      "underlying": "IWM",
-      "decision": "submit",
-      "gate": "all",
-      "reason": "dry run",
-      "regime": "LOW_IV_RANGE"
-    },
-    {
-      "ts": "2026-08-30T18:24:05+00:00",
-      "underlying": "QQQ",
-      "decision": "hold",
-      "gate": "",
-      "reason": "best of 37 candidates rejected: expected value +1.26% of risk < required 2% (P(win) 89%, VRP -0.9%)",
-      "regime": "LOW_IV_RANGE"
-    },
-    {
-      "ts": "2026-08-30T18:23:58+00:00",
-      "underlying": "SPY",
-      "decision": "submit",
-      "gate": "all",
-      "reason": "dry run",
-      "regime": "LOW_IV_RANGE"
-    },
-    {
-      "ts": "2026-08-30T18:23:45+00:00",
-      "underlying": "IWM",
-      "decision": "submit",
-      "gate": "all",
-      "reason": "dry run",
-      "regime": "LOW_IV_RANGE"
-    },
-    {
-      "ts": "2026-08-30T18:23:40+00:00",
-      "underlying": "QQQ",
-      "decision": "hold",
-      "gate": "",
-      "reason": "best of 37 candidates rejected: expected value +1.26% of risk < required 2% (P(win) 89%, VRP -0.9%)",
-      "regime": "LOW_IV_RANGE"
-    },
-    {
-      "ts": "2026-08-30T18:23:30+00:00",
-      "underlying": "SPY",
-      "decision": "submit",
-      "gate": "all",
-      "reason": "dry run",
-      "regime": "LOW_IV_RANGE"
-    },
-    {
-      "ts": "2026-08-30T18:23:22+00:00",
-      "underlying": "IWM",
-      "decision": "hold",
-      "gate": "",
-      "reason": "best of 27 candidates rejected: net delta -0.37/unit exceeds \u00b10.35",
+      "decision": "reject",
+      "gate": "g_sizing",
+      "reason": "one unit risks $220 > per_expiry budget $25",
       "regime": "HIGH_IV_TREND"
     },
     {
-      "ts": "2026-08-30T18:23:16+00:00",
-      "underlying": "QQQ",
-      "decision": "hold",
-      "gate": "",
-      "reason": "best of 37 candidates rejected: expected value +1.26% of risk < required 2% (P(win) 89%, VRP -0.9%)",
-      "regime": "LOW_IV_RANGE"
+      "ts": "2026-09-01T16:14:24+00:00",
+      "underlying": "SPY",
+      "decision": "reject",
+      "gate": "g_sizing",
+      "reason": "one unit risks $322 > per_expiry budget $25",
+      "regime": "HIGH_IV_RANGE"
     },
     {
-      "ts": "2026-08-30T18:23:05+00:00",
+      "ts": "2026-09-01T16:11:23+00:00",
+      "underlying": "IBIT",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "filled @ 0.37 on the last step",
+      "regime": "LOW_IV_TREND"
+    },
+    {
+      "ts": "2026-09-01T16:10:10+00:00",
+      "underlying": "IWM",
+      "decision": "reject",
+      "gate": "g_sizing",
+      "reason": "one unit risks $138 > per_expiry budget $87",
+      "regime": "HIGH_IV_TREND"
+    },
+    {
+      "ts": "2026-09-01T16:09:53+00:00",
+      "underlying": "QQQ",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "filled @ -0.74 after 2 reprice(s)",
+      "regime": "HIGH_IV_RANGE"
+    },
+    {
+      "ts": "2026-09-01T16:08:23+00:00",
       "underlying": "SPY",
       "decision": "submit",
       "gate": "all",
-      "reason": "dry run",
-      "regime": "LOW_IV_RANGE"
+      "reason": "filled @ -0.44 after 0 reprice(s)",
+      "regime": "HIGH_IV_RANGE"
+    },
+    {
+      "ts": "2026-09-01T16:06:51+00:00",
+      "underlying": "IBIT",
+      "decision": "reject",
+      "gate": "g_net_delta",
+      "reason": "portfolio delta would be +3.26, cap \u00b13.00 (current -1.42, adding +4.68)",
+      "regime": "LOW_IV_TREND"
+    },
+    {
+      "ts": "2026-09-01T16:06:21+00:00",
+      "underlying": "IWM",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "filled @ 1.28 on the last step",
+      "regime": "HIGH_IV_TREND"
+    },
+    {
+      "ts": "2026-09-01T16:04:56+00:00",
+      "underlying": "QQQ",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "filled @ -0.68 after 2 reprice(s)",
+      "regime": "HIGH_IV_RANGE"
+    },
+    {
+      "ts": "2026-09-01T16:03:35+00:00",
+      "underlying": "SPY",
+      "decision": "submit",
+      "gate": "all",
+      "reason": "filled @ -0.62 after 0 reprice(s)",
+      "regime": "HIGH_IV_RANGE"
     }
   ],
   "funnel": {
     "considered": 12,
-    "rejected": 0,
-    "submitted": 8,
-    "held": 4,
+    "rejected": 5,
+    "submitted": 6,
+    "held": 1,
     "closed": 0
   },
-  "gate_rejections": {},
+  "gate_rejections": {
+    "g_sizing": 4,
+    "g_net_delta": 1
+  },
   "disclaimer": "Paper trading simulation. Not investment advice. Options involve significant risk."
 }
