@@ -218,6 +218,20 @@ class Agent:
             except Exception as e:
                 log.exception("crypto entry %s", sym)
                 out.append({"symbol": sym, "decision": "error", "reason": str(e)[:200]})
+
+        # One line so the pass is visible even when nothing happens. Skips —
+        # "no confirmed bullish break", the overwhelmingly common outcome — were
+        # appended to the result and never logged, and `run.py loop` prints no
+        # JSON summary (only `once` does). So in normal operation there was no
+        # way to tell from the log whether crypto had run, been skipped by
+        # CRYPTO_ENABLED, or thrown. Absence of evidence looked like absence of
+        # the feature, which is exactly the question asked of it on 2 Sep.
+        tally = {}
+        for r in out:
+            tally[r.get("decision", "?")] = tally.get(r.get("decision", "?"), 0) + 1
+        log.info("    crypto: %d symbol(s) — %s",
+                 len(config.CRYPTO_UNIVERSE),
+                 ", ".join(f"{v} {k}" for k, v in sorted(tally.items())) or "nothing to do")
         return out
 
     def _cancel_stale_orders(self) -> list:
