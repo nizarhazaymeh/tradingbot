@@ -279,7 +279,8 @@ class Agent:
                      str(oid)[:8], age, pos["signature"][:52])
         return cancelled
 
-    def _retire_ghosts(self, ghosts: list) -> list:
+    def _retire_ghosts(self, ghosts: list, *, broker_legs: int = None,
+                       tracked: int = None) -> list:
         """Close tracked rows the broker has held no leg of for N cycles running.
 
         reconcile() has always identified these exactly and then only logged
@@ -307,6 +308,27 @@ class Agent:
         if n <= 0:
             self._ghost_streak.clear()
             return []
+
+        # "the broker holds nothing" and "we could not ask the broker" are not
+        # the same observation, and client.positions() returns `... or []` so a
+        # failed or thin response is indistinguishable from an empty book.
+        #
+        # On 1 Sep, during a 30-minute name-resolution outage, that produced an
+        # empty position list for consecutive cycles. Every tracked structure
+        # looked like a ghost and two REAL ones were retired at 18:29 and 18:56 —
+        # QQQ 727/729 and 720/723, whose four legs the broker still holds, one at
+        # +$212. They lost their exit plans and no gate would re-enter them.
+        #
+        # If the ledger has open rows and the broker reports ZERO option legs,
+        # that is far more likely a failed read than a flattened account, so the
+        # streak is neither advanced nor reset — the next verifiable cycle
+        # decides. A genuine flatten is reported by the next cycle that can see.
+        if broker_legs == 0 and (tracked or 0) > 0:
+            log.warning("    ghost check SKIPPED: broker reported 0 option legs "
+                        "while %d structures are tracked — treating as an "
+                        "unverified read, not an empty book", tracked)
+            return []
+
         live = set(ghosts or [])
         for sig in list(self._ghost_streak):
             if sig not in live:
@@ -776,7 +798,10 @@ class Agent:
         # Retire ghosts AFTER reconcile — it is what identifies them — and before
         # the risk book is built, so a retired row stops consuming heat this
         # cycle rather than the next one.
-        rec["retired_ghosts"] = self._retire_ghosts(rec.get("ghosts"))
+        rec["retired_ghosts"] = self._retire_ghosts(
+            rec.get("ghosts"),
+            broker_legs=rec.get("broker_option_legs"),
+            tracked=rec.get("tracked_structures"))
         if not rec["clean"]:
             log.warning("RECONCILE: ghosts=%s partial=%s orphans=%s",
                         rec["ghosts"], rec.get("partial"), rec["orphans"])
