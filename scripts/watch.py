@@ -38,14 +38,23 @@ def say(*parts):
 
 
 def leg_line(p):
-    q = int(float(p.get("qty") or 0))
+    """One position. Crypto quantities are fractional, so they are not cast to
+    int the way an option contract count can be."""
+    ac = p.get("asset_class") or ""
+    raw = float(p.get("qty") or 0)
+    q = f"{raw:+.6f}".rstrip("0").rstrip(".") if ac == "crypto" else f"{int(raw):+d}"
     upl = p.get("unrealized_pl")
-    return (f"{p['symbol']} qty {q:+d} @ {p.get('avg_entry_price')}"
+    tag = "CRYPTO " if ac == "crypto" else ""
+    return (f"{tag}{p['symbol']} qty {q} @ {p.get('avg_entry_price')}"
             + (f" upl {float(upl):+.0f}" if upl not in (None, "") else ""))
 
 
 def snapshot(c):
-    pos = {p["symbol"]: p for p in c.option_positions()}
+    # ALL positions, not just options. c.option_positions() filters to
+    # asset_class == "us_option", so a spot-crypto fill would have opened and
+    # closed without ever being reported — the watcher could not see the thing
+    # it was explicitly asked to watch for.
+    pos = {p["symbol"]: p for p in c.positions()}
     orders = {o["id"]: o for o in c.orders(status="all", limit=60)}
     acct = c.account()
     return pos, orders, acct
