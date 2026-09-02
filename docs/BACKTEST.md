@@ -889,9 +889,32 @@ Against the only baseline that matters for a long-only strategy:
 It beat buy-and-hold only where buy-and-hold lost money. That is what a strategy
 that is mostly flat looks like, not an edge.
 
-**`CRYPTO_ENABLED = False`.** A test pins it, so turning it on requires a new
-measurement. This is the fourth structural/directional rule measured in this repo
-and the fourth that did not earn a decision.
+**`CRYPTO_ENABLED = False`** in the shipped default; a test pins the default,
+not any local override. This is the fourth structural/directional rule measured
+in this repo and the fourth that did not earn a decision.
+
+### Update, 2 Sep 2026 — enabled on the paper account; SOL/USD measured and added
+
+Enabled against this evidence, not in ignorance of it — operator decision, paper
+account. `CRYPTO_UNIVERSE` extended to `BTC/USD, ETH/USD, SOL/USD`. SOL was not
+in the original run, so it was measured on the identical walk-forward harness
+before being added:
+
+| symbol | n | win% | net | PF | R/trade | vs buy-and-hold |
+|---|---:|---:|---:|---:|---:|---|
+| BTC/USD | 37 | 27% | −$202 | 0.94 | −0.176 | loses to holding |
+| ETH/USD | 32 | 31% | +$1,178 | 1.35 | −0.062 | beats holding |
+| **SOL/USD** | **42** | **29%** | **−$2,782** | **0.59** | **−0.176** | **loses to holding** |
+
+SOL is the worst of the three — PF 0.59, and in a window where SOL fell 39.3% the
+strategy lost **more** than simply holding (−$2,782 vs −$1,966). That is a
+long-only signal actively hurting in the one condition — a falling market —
+where a mostly-flat strategy should look no worse than doing nothing.
+
+Reproduce: `python scripts/backtest_crypto.py --symbols SOL/USD`. Sizing is the
+only protection this pipeline has — spot has no long wing, so a gap goes
+straight through a stop — and it is unchanged: 0.40% risk per trade, 5% max
+notional, 2 concurrent positions.
 
 ## 🔴 The risk model is genuinely weaker, and says so
 
