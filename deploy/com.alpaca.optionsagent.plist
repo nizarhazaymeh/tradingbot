@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Keeps the live loop alive across terminal death, logout and sleep.
+
+  scripts/watchdog.sh is idempotent: it starts the loop only if this account's
+  loop is not already running, and refuses to start one it has no credentials
+  for. Firing it every 5 minutes is therefore safe, and RunAtLoad plus
+  StartInterval together mean it also recovers after the machine wakes.
+
+  This exists because the loop was never actually protected. The watchdog was
+  written for launchd but no plist was ever committed and none was loaded, so on
+  2 Sep the competition account had 10 positions open, expiring on the 4th, with
+  nothing managing them.
+
+  ACCOUNT is set explicitly: run.py reads it from the environment, and launchd
+  does not inherit a shell profile.
+
+  install:    launchctl load -w ~/Library/LaunchAgents/com.alpaca.optionsagent.plist
+  uninstall:  launchctl unload -w ~/Library/LaunchAgents/com.alpaca.optionsagent.plist
+  status:     launchctl list | grep optionsagent
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.alpaca.optionsagent</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>scripts/watchdog.sh</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/nizarhazaymeh/Desktop/bot</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>ACCOUNT</key>
+    <string>comp</string>
+    <key>INTERVAL</key>
+    <string>300</string>
+  </dict>
+
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StartInterval</key>
+  <integer>300</integer>
+
+  <key>StandardOutPath</key>
+  <string>/Users/nizarhazaymeh/Desktop/bot/logs/watchdog.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/nizarhazaymeh/Desktop/bot/logs/watchdog.log</string>
+</dict>
+</plist>
