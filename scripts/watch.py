@@ -122,11 +122,23 @@ def main():
                 closed_streak = 0
             time.sleep(a.interval)
         else:
-            if not closed_streak:
-                say(f"MARKET CLOSED — slowing to {a.closed_interval}s, "
-                    f"heartbeats suppressed")
-            closed_streak += 1
-            time.sleep(a.closed_interval)
+            # The slow overnight cadence assumed nothing can fill outside the
+            # equity session. That stopped being true when spot crypto was
+            # enabled: it has no market clock and can fill at 03:00 or on a
+            # Sunday. Slowing to 600s would have reported a crypto entry up to
+            # ten minutes late, which defeats the point of watching for it.
+            if config.CRYPTO_ENABLED:
+                if not closed_streak:
+                    say(f"MARKET CLOSED — options quiet, but crypto trades 24/7 "
+                        f"so holding the {a.interval}s cadence")
+                closed_streak += 1
+                time.sleep(a.interval)
+            else:
+                if not closed_streak:
+                    say(f"MARKET CLOSED — slowing to {a.closed_interval}s, "
+                        f"heartbeats suppressed")
+                closed_streak += 1
+                time.sleep(a.closed_interval)
         n += 1
         try:
             npos, norders, nacct = snapshot(c)
@@ -214,7 +226,12 @@ def main():
 
         pos, orders, acct = npos, norders, nacct
 
-        if a.heartbeat and not closed_streak and n % a.heartbeat == 0:
+        # Suppressed only in the genuinely slow cadence. While crypto keeps the
+        # fast cadence overnight the watcher must still prove it is alive, or a
+        # dead process is indistinguishable from a quiet market until morning —
+        # which is the failure heartbeats exist to catch.
+        quiet = closed_streak and not config.CRYPTO_ENABLED
+        if a.heartbeat and not quiet and n % a.heartbeat == 0:
             say(f"heartbeat: {len(pos)} leg(s), equity ${ne:,.2f}, poll #{n}")
 
 
