@@ -156,9 +156,18 @@ def main():
                           key=lambda i: norders[i].get("created_at") or ""):
             o = norders[oid]
             legs = o.get("legs") or []
-            # our code always sets a descriptive client_order_id; a bare UUID
-            # means the order came from Alpaca's own endpoint or dashboard
-            who = "EXTERNAL" if _is_uuid(o.get("client_order_id")) else "ours"
+            # Our code sets a descriptive client_order_id on the ORIGINAL
+            # order, but executor.py walks the price ladder via
+            # PATCH /v2/orders/{id} (replace_order), and Alpaca issues a fresh
+            # bare-UUID coid for each replacement object even though it is the
+            # same logical order being reprice — confirmed live on 2 Sep, a DIA
+            # condor that replaced -0.36 -> -0.33 -> filled -0.30, all ours.
+            # `replaces` links a replacement back to the order it superseded;
+            # only an order with NO replaces link and a UUID coid is a genuine
+            # external submission.
+            is_replacement = bool(o.get("replaces"))
+            who = ("ours (reprice)" if is_replacement else
+                  "EXTERNAL" if _is_uuid(o.get("client_order_id")) else "ours")
             say(f"ORDER NEW {o.get('order_class')} {o.get('status')} "
                 f"{o.get('side') or ''} qty={o.get('qty')} "
                 f"limit={o.get('limit_price')} legs={len(legs)} "
