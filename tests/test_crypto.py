@@ -207,7 +207,36 @@ def test_no_baseline_means_no_opinion():
     assert RK.crypto_day_drawdown(100_000, 0)
 
 
-def test_crypto_is_off_by_default():
-    """Pinned. docs/BACKTEST.md Part 8 measured PF 1.14 and mean R -0.123 over
-    69 trades, which is not an edge. Turning it on needs a new measurement."""
-    assert config.CRYPTO_ENABLED is False
+def test_crypto_is_off_in_the_shipped_default():
+    """The guardrail is that nobody enables spot crypto by ACCIDENT.
+
+    docs/BACKTEST.md Part 8 measured PF 1.14 and mean R -0.123 over 69
+    walk-forward trades, and it lost to buy-and-hold on BTC — that is not an
+    edge, so the shipped default must stay off.
+
+    This asserts the DEFAULT rather than the runtime value. An operator who
+    edits .env has made a deliberate choice and the test should not fail on it;
+    a contributor who ships a new default that is on should. Enabled locally on
+    2 Sep 2026 by operator decision on the paper account, which is why the
+    distinction now matters.
+    """
+    import re
+    from pathlib import Path as _P
+
+    root = _P(__file__).resolve().parent.parent
+
+    # the code fallback when .env says nothing
+    src = (root / "agent" / "config.py").read_text()
+    m = re.search(r'CRYPTO_ENABLED\s*=\s*_b\(\s*"CRYPTO_ENABLED"\s*,\s*(\w+)', src)
+    assert m, "CRYPTO_ENABLED default not found in config.py"
+    assert m.group(1) == "False", (
+        f"the code default is {m.group(1)}; spot crypto must not be on unless "
+        "someone turns it on")
+
+    # and the example env a new clone copies
+    ex = root / ".env.example"
+    if ex.exists():
+        for line in ex.read_text().splitlines():
+            if line.startswith("CRYPTO_ENABLED="):
+                assert line.split("=", 1)[1].strip().lower() in ("", "false", "0", "no"), (
+                    f".env.example ships crypto enabled: {line}")
