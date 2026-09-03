@@ -1,17 +1,17 @@
 {
-  "updated_at": "2026-09-03T14:21:32+00:00",
+  "updated_at": "2026-09-03T15:09:03+00:00",
   "account": {
     "account_id": "PA3BAT1OOEFE",
     "environment": "comp",
-    "equity": 99911.01,
+    "equity": 99794.81,
     "starting_equity": 100000.0,
-    "total_pnl": -88.99,
-    "total_pnl_pct": -0.00089,
-    "max_drawdown_pct": -0.00401,
-    "open_positions": 3,
-    "closed_trades": 11,
-    "win_rate": 0.7273,
-    "realized_pnl": 372.0
+    "total_pnl": -205.19,
+    "total_pnl_pct": -0.00205,
+    "max_drawdown_pct": -0.00593,
+    "open_positions": 1,
+    "closed_trades": 13,
+    "win_rate": 0.6923,
+    "realized_pnl": 68.0
   },
   "equity_curve": [
     {
@@ -1629,116 +1629,141 @@
     {
       "ts": "2026-09-03T14:14:43+00:00",
       "equity": 99991.01
+    },
+    {
+      "ts": "2026-09-03T14:21:38+00:00",
+      "equity": 99959.01
+    },
+    {
+      "ts": "2026-09-03T14:26:53+00:00",
+      "equity": 99987.01
+    },
+    {
+      "ts": "2026-09-03T14:31:59+00:00",
+      "equity": 100023.01
+    },
+    {
+      "ts": "2026-09-03T14:37:06+00:00",
+      "equity": 100015.01
+    },
+    {
+      "ts": "2026-09-03T14:42:13+00:00",
+      "equity": 99951.01
+    },
+    {
+      "ts": "2026-09-03T14:47:20+00:00",
+      "equity": 99931.01
+    },
+    {
+      "ts": "2026-09-03T14:52:27+00:00",
+      "equity": 99923.01
+    },
+    {
+      "ts": "2026-09-03T14:57:33+00:00",
+      "equity": 99919.01
+    },
+    {
+      "ts": "2026-09-03T15:02:39+00:00",
+      "equity": 99823.01
+    },
+    {
+      "ts": "2026-09-03T15:07:45+00:00",
+      "equity": 99798.81
     }
   ],
   "market": [
     {
       "underlying": "SPY",
-      "spot": 768.81,
-      "implied_vol": 0.0976,
-      "realized_vol": 0.0741,
-      "premium_edge": 0.0235,
+      "spot": 770.7,
+      "implied_vol": 0.0955,
+      "realized_vol": 0.0764,
+      "premium_edge": 0.019,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     },
     {
       "underlying": "QQQ",
-      "spot": 713.25,
-      "implied_vol": 0.1442,
-      "realized_vol": 0.1262,
-      "premium_edge": 0.018,
+      "spot": 715.18,
+      "implied_vol": 0.1419,
+      "realized_vol": 0.1282,
+      "premium_edge": 0.0137,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     },
     {
       "underlying": "IWM",
-      "spot": 294.26,
-      "implied_vol": 0.1394,
-      "realized_vol": 0.1235,
-      "premium_edge": 0.0159,
+      "spot": 294.86,
+      "implied_vol": 0.1342,
+      "realized_vol": 0.124,
+      "premium_edge": 0.0102,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     },
     {
       "underlying": "DIA",
-      "spot": 533.83,
-      "implied_vol": 0.1076,
-      "realized_vol": 0.0793,
-      "premium_edge": 0.0284,
+      "spot": 535.77,
+      "implied_vol": 0.1066,
+      "realized_vol": 0.0839,
+      "premium_edge": 0.0227,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     },
     {
       "underlying": "SMH",
-      "spot": 545.54,
-      "implied_vol": 0.2918,
-      "realized_vol": 0.3001,
-      "premium_edge": -0.0082,
+      "spot": 547.67,
+      "implied_vol": 0.2839,
+      "realized_vol": 0.2993,
+      "premium_edge": -0.0154,
       "verdict": "stand aside",
       "reason": "market charges LESS than the real risk"
     },
     {
       "underlying": "AAPL",
-      "spot": 328.74,
-      "implied_vol": 0.2726,
-      "realized_vol": 0.1841,
-      "premium_edge": 0.0885,
+      "spot": 329.7,
+      "implied_vol": 0.2692,
+      "realized_vol": 0.1862,
+      "premium_edge": 0.083,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     },
     {
       "underlying": "MSFT",
-      "spot": 511.27,
-      "implied_vol": 0.2361,
-      "realized_vol": 0.2178,
-      "premium_edge": 0.0183,
+      "spot": 511.36,
+      "implied_vol": 0.2299,
+      "realized_vol": 0.2176,
+      "premium_edge": 0.0123,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     },
     {
       "underlying": "META",
-      "spot": 611.13,
-      "implied_vol": 0.3384,
-      "realized_vol": 0.3208,
-      "premium_edge": 0.0177,
+      "spot": 611.06,
+      "implied_vol": 0.3334,
+      "realized_vol": 0.3194,
+      "premium_edge": 0.014,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     },
     {
       "underlying": "AMZN",
-      "spot": 257.3,
-      "implied_vol": 0.263,
-      "realized_vol": 0.2569,
-      "premium_edge": 0.0061,
+      "spot": 257.74,
+      "implied_vol": 0.2652,
+      "realized_vol": 0.2578,
+      "premium_edge": 0.0074,
       "verdict": "stand aside",
       "reason": "market charges LESS than the real risk"
     },
     {
       "underlying": "GOOGL",
-      "spot": 342.54,
-      "implied_vol": 0.2526,
-      "realized_vol": 0.2119,
-      "premium_edge": 0.0407,
+      "spot": 341.41,
+      "implied_vol": 0.2523,
+      "realized_vol": 0.2089,
+      "premium_edge": 0.0434,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     }
   ],
   "positions": [
-    {
-      "id": "iron_condor:SPY260904C00773000/SPY260904C00775000/SPY260904P00753000/SPY260904P00755000",
-      "kind": "iron_condor",
-      "underlying": "SPY",
-      "description": "SPY iron condor",
-      "opened_at": "2026-09-01T16:08:23+00:00",
-      "qty": 3,
-      "credit_received": 132.0,
-      "cost_paid": 0.0,
-      "max_loss": 441.0,
-      "unrealized_pnl": null,
-      "expiry": "2026-09-04",
-      "days_to_expiry": 1,
-      "plain_english": "Profits if SPY stays between $755 and $773"
-    },
     {
       "id": "bear_put:IWM260908P00284000/IWM260908P00292000",
       "kind": "bear_put",
@@ -1753,24 +1778,25 @@
       "expiry": "2026-09-08",
       "days_to_expiry": 5,
       "plain_english": "Profits if IWM falls below $292"
-    },
-    {
-      "id": "bear_put:IWM260908P00283000/IWM260908P00291000",
-      "kind": "bear_put",
-      "underlying": "IWM",
-      "description": "IWM bear put",
-      "opened_at": "2026-09-02T15:29:26+00:00",
-      "qty": 4,
-      "credit_received": 0.0,
-      "cost_paid": 492.0,
-      "max_loss": 464.0,
-      "unrealized_pnl": null,
-      "expiry": "2026-09-08",
-      "days_to_expiry": 5,
-      "plain_english": "Profits if IWM falls below $291"
     }
   ],
   "decisions": [
+    {
+      "ts": "2026-09-03T15:02:44+00:00",
+      "underlying": "IWM",
+      "decision": "close",
+      "gate": "close_market",
+      "reason": "stop: P&L $-316 <= -60% of $492 debit",
+      "regime": "-"
+    },
+    {
+      "ts": "2026-09-03T14:21:51+00:00",
+      "underlying": "SPY",
+      "decision": "close",
+      "gate": "close_limit",
+      "reason": "time stop at DTE 1",
+      "regime": "-"
+    },
     {
       "ts": "2026-09-03T14:15:28+00:00",
       "underlying": "SPY",
@@ -1954,30 +1980,14 @@
       "gate": "close_limit",
       "reason": "time stop at DTE 1",
       "regime": "-"
-    },
-    {
-      "ts": "2026-09-03T10:42:12+00:00",
-      "underlying": "SPY",
-      "decision": "close",
-      "gate": "close_limit",
-      "reason": "time stop at DTE 1",
-      "regime": "-"
-    },
-    {
-      "ts": "2026-09-03T10:37:04+00:00",
-      "underlying": "SPY",
-      "decision": "close",
-      "gate": "close_limit",
-      "reason": "time stop at DTE 1",
-      "regime": "-"
     }
   ],
   "funnel": {
-    "considered": 381,
+    "considered": 383,
     "rejected": 126,
     "submitted": 14,
     "held": 140,
-    "closed": 100
+    "closed": 102
   },
   "gate_rejections": {
     "g_sizing": 68,
