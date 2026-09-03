@@ -69,11 +69,11 @@ Then the demo page — reload it live:
 ## 2:40–3:05 · Risk
 
 ```sh
-./.venv/bin/python -m pytest tests/ -q          # 108 passed
+./.venv/bin/python -m pytest tests/ -q          # 305 passed
 ./.venv/bin/python scripts/test_safety.py       # 21/21
 ```
 
-> "108 unit tests. And the halt path is tested against the live broker, not
+> "305 unit tests. And the halt path is tested against the live broker, not
 > mocked — it cancels, flattens, sets `suspend_trade` on the account, and Alpaca
 > then rejects a real order with a 403."
 
@@ -95,7 +95,7 @@ Show that 403 in `docs/SAFETY_TESTS.md`.
 
 > "Rules-only bots can't read context. LLM-first agents can't be trusted with the
 > order ticket. The differentiator isn't the model — it's the boundary. One
-> schema-constrained view in, 22 deterministic gates before anything is sent.
+> schema-constrained view in, 29 deterministic gates before anything is sent.
 > Paper account PA3BAT1OOEFE. Repo and demo are public."
 
 ---

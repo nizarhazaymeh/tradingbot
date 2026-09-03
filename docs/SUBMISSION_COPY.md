@@ -24,7 +24,7 @@ Shorter alternative — 145 characters:
 
 ```
 An autonomous Alpaca options agent that sells premium only when implied
-volatility exceeds realised. 22 risk gates. The LLM opines; code decides.
+volatility exceeds realised. 29 risk gates. The LLM opines; code decides.
 ```
 
 ---
@@ -60,7 +60,7 @@ The LLM returns exactly one thing: a JSON view of direction, magnitude and
 confidence, which tilts the market-implied probabilities. It never picks a
 strike, sizes a position or builds an order. That split is also the prompt-
 injection defence: the agent reads news, and a fully compromised response can
-only produce a wrong opinion that 22 deterministic gates must still accept.
+only produce a wrong opinion that 29 deterministic gates must still accept.
 ```
 
 ---

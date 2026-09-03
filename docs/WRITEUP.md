@@ -38,7 +38,7 @@ nothing at all. The agent refuses to trade it.
 | 3 | Candidate enumeration — ~37 structures across deltas, widths, sides | ❌ |
 | 4 | Expected-value scoring — N(d₂) probabilities under realised vol, tilted by the view | ❌ |
 | 5 | Critic — structural coherence check | ✅ |
-| 6 | Risk gates — 22 deterministic checks | ❌ |
+| 6 | Risk gates — 29 deterministic checks | ❌ |
 | 7 | Execution — 4-leg `mleg` order via the Alpaca CLI | ❌ |
 
 **Where the model is, and is not.** The LLM (Featherless AI, `zai-org/GLM-5.2`)
@@ -120,7 +120,7 @@ discipline that found the strategy in the first place.
 | 3 | Candidate enumeration — ~37 structures across deltas, widths, sides | ❌ |
 | 4 | Expected-value scoring — N(d₂) probabilities under realised vol, tilted by the view | ❌ |
 | 5 | Critic — structural coherence check | ✅ |
-| 6 | Risk gates — 22 deterministic checks | ❌ |
+| 6 | Risk gates — 29 deterministic checks | ❌ |
 | 7 | Execution — 4-leg `mleg` order via the Alpaca CLI | ❌ |
 
 **Where the model is, and is not.** The LLM (Featherless AI, `zai-org/GLM-5.2`)
