@@ -1,6 +1,6 @@
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 import pytest
 
 from agent import config
@@ -22,7 +22,9 @@ def _far_deadline(monkeypatch):
     monkeypatch.setattr(config, "FLATTEN_AT", "2099-01-01T00:00:00-05:00")
     monkeypatch.setattr(config, "NO_NEW_AFTER", "2099-01-01T00:00:00-05:00")
 
-E = date(2026, 9, 4)
+E = date.today() + timedelta(days=5)   # relative, not a fixed date: a hard-coded
+                                       # expiry silently drifts under MIN_HOLDING_DAYS
+                                       # as real time passes, and did on 3 Sep
 
 
 BUDGET = config.RISK_PER_TRADE_PCT * 100_000      # derive, never hardcode
