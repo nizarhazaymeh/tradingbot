@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-03T14:48:05+00:00",
+  "generated_at": "2026-09-03T15:49:00+00:00",
   "source": "alpaca /v2/account/portfolio/history",
   "account": "PA3BAT1OOEFE",
   "account_kind": "comp",
@@ -7,11 +7,11 @@
   "timeframe": "1D",
   "base_value": 100000.0,
   "base_value_asof": "2026-08-27",
-  "current_equity": 99891.01,
+  "current_equity": 99798.61,
   "stats": {
     "points": 5,
-    "total_pnl": -108.99,
-    "total_pnl_pct": -0.00109,
+    "total_pnl": -201.39,
+    "total_pnl_pct": -0.002014,
     "max_drawdown_pct": -0.002377,
     "first": "2026-08-28T00:00:00+00:00",
     "last": "2026-09-03T00:00:00+00:00"

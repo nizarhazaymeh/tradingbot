@@ -329,19 +329,48 @@ and reports ghosts and orphans in both directions.
 
 ## 4. Results
 
-*(Filled in after the competition window from `GET /v2/account/portfolio_history`,
-archived daily. The account is flattened before the deadline so the reported
-figure is realised and cannot drift.)*
+From `GET /v2/account/portfolio_history` on account **PA3BAT1OOEFE**. The book
+went flat on 3 Sep, before the deadline, so this figure is realised and cannot
+drift.
 
 | Metric | Value |
 |---|---|
 | Starting equity | $100,000.00 |
-| Final equity | — |
-| Total return | — |
-| Max drawdown | — |
-| Closed positions | — |
-| Win rate | — |
-| Proposal → gate → filled funnel | — |
+| Final equity | **$99,798.61** |
+| Total return | **−0.20%** (−$201.39) |
+| Max drawdown | −0.24% |
+| Closed positions | 14 |
+| Win rate | 9/14 (64%) |
+| Realised P&L, from fills | −$195.00 (the −$6.39 balance is OCC clearing fees) |
+| Proposal → gate → filled funnel | 384 considered → 126 rejected → 14 filled |
+| Positions open at the deadline | **0** |
+
+**We finished down 0.20%, and the reason is worth stating plainly.** Nine of
+fourteen trades won. Every winner was small, because a credit spread's maximum
+gain is the credit. The loss came from two trades:
+
+| Trade | P&L | Why |
+|---|---|---|
+| `bear_put:IWM` ×4, 8 Sep expiry | −$316 | bought 6 days of option, allowed to hold 1 |
+| `bear_put:IWM` ×4, 8 Sep expiry | −$312 | same |
+
+−$628 from two positions the agent should never have opened, against +$433 from
+the other twelve. Both were admitted by the hole in `gate_holding_period`
+described in §2: they cleared a 1.0-day holding floor while using 17% of the
+life they paid for. The gate that now rejects them was written after they had
+already lost the money.
+
+Both were closed by the stop loss, at −60% of the debit, before the deadline
+flatten needed to act. The risk framework did what it was built to do — it
+bounded a bad entry. It just could not un-make it.
+
+The drawdown figure is the one we would point at: **−0.24% peak-to-trough on a
+$100k account**, across 14 option structures in five sessions, with zero
+positions open when the account was marked. The strategy's own thesis was
+correct where it was applied — the twelve credit structures that respected the
+holding rule returned +$433 with a 75% win rate. It was applied twice to
+structures that could not benefit from it, and that cost more than everything
+else earned.
 
 ## 5. Limitations and Disclosure
 
