@@ -219,6 +219,45 @@ at realised vol, −$168 at implied. Nothing in expectation, against a $1–2k t
 — and holding also makes the judged figure depend on a laptop staying awake
 overnight. We buy the certainty for $95.
 
+**The deadline gate that was not strict enough — and what it cost.** Moving the
+flatten forward created a second-order problem we got wrong. Any structure opened
+near the end is held for a fraction of its life, so `gate_holding_period` requires
+the carry earned over the *actual* hold to beat the round-trip spread. For a
+credit structure that is the right test. For a debit structure there is no carry
+to measure, so it fell through to a floor: at least `MIN_HOLDING_DAYS` (1.0) of
+holding.
+
+That floor tested the wrong quantity, and the market collected on it. On 2 Sep at
+14:12 and 15:29 the agent bought two IWM bear put spreads expiring 8 Sep. Both
+passed: each had a ~1.05-day hold against a 1.0-day floor. But one day of holding
+is most of a two-day option and **17% of a six-day one**, at the same price per
+day of theta. A debit structure pays for the entire life up front, so buying six
+days to use one is a guaranteed loss of the difference before direction is even
+considered.
+
+They cost $1,036 and were worth $536 by Thursday morning. That single mistake —
+**−$500** — turned a +$384 realised book into −$53 of equity.
+
+The fix is to ask the question the floor was standing in for. `option_life_days()`
+measures the *contract's* remaining life, as distinct from `holding_days()`, which
+measures ours; the two diverge exactly when it matters. A theta-negative structure
+must now get at least `MIN_LIFE_FRACTION` (50%) of the life it is paying for.
+Replayed against the two real entries:
+
+| Opened | Hold | Option life | Used | Verdict |
+|---|---|---|---|---|
+| Wed 14:12 | 1.05d | 6.08d | 17% | rejected |
+| Wed 15:29 | 1.00d | 6.02d | 17% | rejected |
+
+Credit structures stay exempt and stay judged on carry: selling time and buying
+it back early collects a share of the decay, so the life-fraction argument is
+specific to having paid up front.
+
+The lesson we would carry into any future version of this: a threshold expressed
+in absolute units (one day, fifty dollars) silently changes meaning as the thing
+it measures changes scale. Both of the two real losses in this project came from
+that — this one, and the harvest rule's dollar edge floor.
+
 **Kill switch.** A halt sets `suspend_trade: true` via
 `PATCH /v2/account/configurations` — a server-side block that survives our process
 dying — and writes a `HALTED` file the loop refuses to start past.
