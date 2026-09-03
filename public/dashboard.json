@@ -1,17 +1,17 @@
 {
-  "updated_at": "2026-09-03T15:09:38+00:00",
+  "updated_at": "2026-09-03T15:25:42+00:00",
   "account": {
     "account_id": "PA3BAT1OOEFE",
     "environment": "comp",
-    "equity": 99806.81,
+    "equity": 99798.61,
     "starting_equity": 100000.0,
-    "total_pnl": -193.19,
-    "total_pnl_pct": -0.00193,
+    "total_pnl": -201.39,
+    "total_pnl_pct": -0.00201,
     "max_drawdown_pct": -0.00593,
-    "open_positions": 1,
-    "closed_trades": 13,
-    "win_rate": 0.6923,
-    "realized_pnl": 68.0
+    "open_positions": 0,
+    "closed_trades": 14,
+    "win_rate": 0.6429,
+    "realized_pnl": -260.0
   },
   "equity_curve": [
     {
@@ -1669,118 +1669,122 @@
     {
       "ts": "2026-09-03T15:07:45+00:00",
       "equity": 99798.81
+    },
+    {
+      "ts": "2026-09-03T15:12:51+00:00",
+      "equity": 99822.81
+    },
+    {
+      "ts": "2026-09-03T15:17:55+00:00",
+      "equity": 99798.81
+    },
+    {
+      "ts": "2026-09-03T15:23:01+00:00",
+      "equity": 99798.61
     }
   ],
   "market": [
     {
       "underlying": "SPY",
-      "spot": 770.64,
-      "implied_vol": 0.0952,
-      "realized_vol": 0.0764,
-      "premium_edge": 0.0187,
+      "spot": 772.14,
+      "implied_vol": 0.0976,
+      "realized_vol": 0.0789,
+      "premium_edge": 0.0188,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     },
     {
       "underlying": "QQQ",
-      "spot": 715.28,
-      "implied_vol": 0.1414,
-      "realized_vol": 0.1282,
-      "premium_edge": 0.0132,
+      "spot": 716.59,
+      "implied_vol": 0.1429,
+      "realized_vol": 0.1299,
+      "premium_edge": 0.013,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     },
     {
       "underlying": "IWM",
-      "spot": 294.77,
-      "implied_vol": 0.1334,
-      "realized_vol": 0.124,
-      "premium_edge": 0.0094,
-      "verdict": "stand aside",
-      "reason": "market charges LESS than the real risk"
+      "spot": 295.04,
+      "implied_vol": 0.1345,
+      "realized_vol": 0.1242,
+      "premium_edge": 0.0103,
+      "verdict": "trade",
+      "reason": "market charges more than the real risk"
     },
     {
       "underlying": "DIA",
-      "spot": 535.77,
-      "implied_vol": 0.1079,
-      "realized_vol": 0.0839,
-      "premium_edge": 0.0241,
+      "spot": 536.52,
+      "implied_vol": 0.1101,
+      "realized_vol": 0.0861,
+      "premium_edge": 0.024,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     },
     {
       "underlying": "SMH",
-      "spot": 547.18,
-      "implied_vol": 0.2627,
-      "realized_vol": 0.2993,
-      "premium_edge": -0.0366,
+      "spot": 548.74,
+      "implied_vol": 0.2572,
+      "realized_vol": 0.2991,
+      "premium_edge": -0.0419,
       "verdict": "stand aside",
       "reason": "market charges LESS than the real risk"
     },
     {
       "underlying": "AAPL",
-      "spot": 329.76,
-      "implied_vol": 0.2674,
-      "realized_vol": 0.1865,
-      "premium_edge": 0.0809,
+      "spot": 329.58,
+      "implied_vol": 0.2665,
+      "realized_vol": 0.1859,
+      "premium_edge": 0.0807,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     },
     {
       "underlying": "MSFT",
-      "spot": 511.45,
-      "implied_vol": 0.2316,
-      "realized_vol": 0.2185,
-      "premium_edge": 0.0131,
-      "verdict": "trade",
-      "reason": "market charges more than the real risk"
+      "spot": 512.71,
+      "implied_vol": 0.2276,
+      "realized_vol": 0.2226,
+      "premium_edge": 0.005,
+      "verdict": "stand aside",
+      "reason": "market charges LESS than the real risk"
     },
     {
       "underlying": "META",
-      "spot": 611.67,
-      "implied_vol": 0.3321,
-      "realized_vol": 0.3206,
-      "premium_edge": 0.0115,
-      "verdict": "trade",
-      "reason": "market charges more than the real risk"
+      "spot": 618.17,
+      "implied_vol": 0.3348,
+      "realized_vol": 0.337,
+      "premium_edge": -0.0022,
+      "verdict": "stand aside",
+      "reason": "market charges LESS than the real risk"
     },
     {
       "underlying": "AMZN",
-      "spot": 257.9,
-      "implied_vol": 0.2643,
-      "realized_vol": 0.2579,
-      "premium_edge": 0.0064,
+      "spot": 258.34,
+      "implied_vol": 0.2673,
+      "realized_vol": 0.2606,
+      "premium_edge": 0.0067,
       "verdict": "stand aside",
       "reason": "market charges LESS than the real risk"
     },
     {
       "underlying": "GOOGL",
-      "spot": 341.7,
-      "implied_vol": 0.2525,
-      "realized_vol": 0.2089,
-      "premium_edge": 0.0435,
+      "spot": 342.86,
+      "implied_vol": 0.2515,
+      "realized_vol": 0.2135,
+      "premium_edge": 0.038,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     }
   ],
-  "positions": [
-    {
-      "id": "bear_put:IWM260908P00284000/IWM260908P00292000",
-      "kind": "bear_put",
-      "underlying": "IWM",
-      "description": "IWM bear put",
-      "opened_at": "2026-09-02T14:12:11+00:00",
-      "qty": 4,
-      "credit_received": 0.0,
-      "cost_paid": 544.0,
-      "max_loss": 512.0,
-      "unrealized_pnl": null,
-      "expiry": "2026-09-08",
-      "days_to_expiry": 5,
-      "plain_english": "Profits if IWM falls below $292"
-    }
-  ],
+  "positions": [],
   "decisions": [
+    {
+      "ts": "2026-09-03T15:17:59+00:00",
+      "underlying": "IWM",
+      "decision": "close",
+      "gate": "close_market",
+      "reason": "stop: P&L $-328 <= -60% of $544 debit",
+      "regime": "-"
+    },
     {
       "ts": "2026-09-03T15:02:44+00:00",
       "underlying": "IWM",
@@ -1972,22 +1976,14 @@
       "gate": "close_limit",
       "reason": "time stop at DTE 1",
       "regime": "-"
-    },
-    {
-      "ts": "2026-09-03T10:47:19+00:00",
-      "underlying": "SPY",
-      "decision": "close",
-      "gate": "close_limit",
-      "reason": "time stop at DTE 1",
-      "regime": "-"
     }
   ],
   "funnel": {
-    "considered": 383,
+    "considered": 384,
     "rejected": 126,
     "submitted": 14,
     "held": 140,
-    "closed": 102
+    "closed": 103
   },
   "gate_rejections": {
     "g_sizing": 68,
