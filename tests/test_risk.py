@@ -9,6 +9,19 @@ from agent.risk import (Book, circuit_breakers, size_spread, gate_structure,
 from agent.options import ContractView, occ
 from agent.spreads import iron_condor, bull_put_spread, bull_call_spread
 
+
+@pytest.fixture(autouse=True)
+def _far_deadline(monkeypatch):
+    """Keep the competition calendar out of these tests.
+
+    They exercise sizing and contract quality, not the deadline. With the real
+    FLATTEN_AT they passed until it came within a day of them and then started
+    failing on g_holding_period — on 3 Sep, two of them did, for a reason that
+    has nothing to do with what they assert.
+    """
+    monkeypatch.setattr(config, "FLATTEN_AT", "2099-01-01T00:00:00-05:00")
+    monkeypatch.setattr(config, "NO_NEW_AFTER", "2099-01-01T00:00:00-05:00")
+
 E = date(2026, 9, 4)
 
 

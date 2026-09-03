@@ -430,6 +430,20 @@ def holding_days(expiry: date, now: datetime = None) -> float:
     return max((end - now_a).total_seconds() / 86400.0, 0.0)
 
 
+def option_life_days(expiry: date, now: datetime = None) -> float:
+    """How much life the OPTION has left — ignoring our deadline entirely.
+
+    holding_days() answers a different question (how long WE get to hold it) and
+    the two diverge exactly when it matters: on 2 Sep a 8 Sep expiry had 5.1 days
+    of life and a 1.05-day hold.
+    """
+    now_a = _aware(now or now_et())
+    end = _aware(datetime.combine(expiry, time(16, 0)))
+    if now_a is None or end is None:
+        return float(max((expiry - date.today()).days, 0))
+    return max((end - now_a).total_seconds() / 86400.0, 0.0)
+
+
 def gate_holding_period(spread: Spread, now: datetime = None) -> GateResult:
     """The carry earned over the ACTUAL hold must beat the round-trip spread.
 
@@ -453,6 +467,19 @@ def gate_holding_period(spread: Spread, now: datetime = None) -> GateResult:
             return _fail("g_holding_period",
                          f"only {days:.1f} days before the flatten; a directional "
                          f"structure needs {config.MIN_HOLDING_DAYS:.1f}")
+        # And it must not pay for a life it will not get to use. The floor above
+        # is not enough on its own: one day of holding is most of a 2-day option
+        # and a fifth of a 6-day one, at the same price per day of theta.
+        life = option_life_days(spread.expiry, now)
+        if life > 0:
+            used = days / life
+            if used < config.MIN_LIFE_FRACTION:
+                return _fail("g_holding_period",
+                             f"the flatten allows {days:.1f} of this option's "
+                             f"{life:.1f} remaining days ({used:.0%}); a debit "
+                             f"structure pays for the whole life up front, so "
+                             f"under {config.MIN_LIFE_FRACTION:.0%} is buying time "
+                             f"we never use")
         return PASS
 
     expected = theta * days

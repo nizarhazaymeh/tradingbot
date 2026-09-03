@@ -249,7 +249,19 @@ MIN_EV_RATIO = _f("MIN_EV_RATIO", 0.02)         # require EV >= 2% of capital at
 # fraction of the option's life while paying 100% of the round-trip bid/ask.
 # The carry earned over the ACTUAL hold must beat that cost with margin.
 HOLDING_COST_MULTIPLE = _f("HOLDING_COST_MULTIPLE", 1.5)
-MIN_HOLDING_DAYS = _f("MIN_HOLDING_DAYS", 1.0)  # directional trades need time to work
+MIN_HOLDING_DAYS = _f("MIN_HOLDING_DAYS", 1.0)
+
+# A debit structure pays up-front for a whole option's life. If the deadline
+# only lets us hold a fifth of it, we bought time we will never use — and the
+# MIN_HOLDING_DAYS floor alone does not catch that, because "one day of holding"
+# is generous on a 2-day option and nearly worthless on a 6-day one.
+#
+# This is not hypothetical. On 2 Sep at 14:12 and 15:29 the agent bought two IWM
+# bear put spreads expiring 8 Sep — 5.1 days of option, of which the 3 Sep
+# flatten let it hold 1.05 (21%). They cost $1,036 and were worth $536 by
+# Thursday morning: the single largest loss of the run, and the reason a
+# +$372 realised book showed -$53 equity.
+MIN_LIFE_FRACTION = _f("MIN_LIFE_FRACTION", 0.5)  # directional trades need time to work
 MIN_SHORT_SIGMA = _f("MIN_SHORT_SIGMA", 0.90)   # short strike >= 0.9σ from spot
 
 # OFF, by measurement. See docs/BACKTEST.md Part 7.

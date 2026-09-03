@@ -76,13 +76,48 @@ def test_no_holding_time_left_is_rejected():
     assert not r and "no holding time" in r.reason
 
 
+def debit(expiry=date(2026, 9, 4)):
+    sp = bull_call_spread(cv("C", 764, 3.00, -0.40, expiry=expiry),
+                          cv("C", 769, 1.00, -0.15, expiry=expiry))
+    sp.qty = 1
+    assert sp.net_theta < 0
+    return sp
+
+
 def test_directional_structure_uses_a_time_floor_not_carry():
     """A debit spread earns from direction, so the carry test cannot apply — but
     it still needs time for the move to arrive."""
-    sp = bull_call_spread(cv("C", 764, 3.00, -0.40), cv("C", 769, 1.00, -0.15))
-    sp.qty = 1
-    assert sp.net_theta < 0
-    late = RK.gate_holding_period(sp, datetime(2026, 9, 4, 9, 0, tzinfo=ET))
+    late = RK.gate_holding_period(debit(), datetime(2026, 9, 4, 9, 0, tzinfo=ET))
     assert not late and "directional" in late.reason
-    early = RK.gate_holding_period(sp, datetime(2026, 9, 1, 10, 0, tzinfo=ET))
-    assert early
+    # Same expiry as the flatten, opened early: nearly the whole life is ours.
+    assert RK.gate_holding_period(debit(), datetime(2026, 9, 1, 10, 0, tzinfo=ET))
+
+
+# ------------------------------------------------- paying for unused life
+def test_debit_rejected_when_the_flatten_takes_most_of_the_option_life():
+    """The 2 Sep case: a 8 Sep expiry bought while the book flattens on the 4th.
+
+    It clears MIN_HOLDING_DAYS — nearly three days of holding — and is still the
+    wrong trade, because those three days are 41% of what was paid for.
+    """
+    sp = debit(expiry=date(2026, 9, 8))
+    r = RK.gate_holding_period(sp, datetime(2026, 9, 1, 10, 0, tzinfo=ET))
+    assert not r and "never use" in r.reason
+    assert RK.holding_days(date(2026, 9, 8),
+                           datetime(2026, 9, 1, 10, 0, tzinfo=ET)) > config.MIN_HOLDING_DAYS
+
+
+def test_option_life_ignores_our_deadline():
+    """holding_days is about us; option_life_days is about the contract."""
+    at = datetime(2026, 9, 1, 10, 0, tzinfo=ET)
+    assert 7.0 < RK.option_life_days(date(2026, 9, 8), at) < 7.5
+    assert RK.holding_days(date(2026, 9, 8), at) < 3.1
+
+
+def test_a_credit_structure_is_judged_on_carry_not_life_fraction():
+    """Selling time and buying it back early collects a share of the decay — the
+    life-fraction argument is specific to having PAID up front."""
+    sp = credit(expiry=date(2026, 9, 4)); sp.qty = 3
+    assert sp.net_theta > 0
+    r = RK.gate_holding_period(sp, datetime(2026, 9, 1, 10, 0, tzinfo=ET))
+    assert r, r.reason
