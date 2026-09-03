@@ -15,9 +15,16 @@
   ACCOUNT is set explicitly: run.py reads it from the environment, and launchd
   does not inherit a shell profile.
 
-  install:    launchctl load -w ~/Library/LaunchAgents/com.alpaca.optionsagent.plist
-  uninstall:  launchctl unload -w ~/Library/LaunchAgents/com.alpaca.optionsagent.plist
+  DO NOT copy this file to ~/Library/LaunchAgents directly. launchd needs
+  absolute paths, so the ones below belong to whichever machine last committed
+  it. Installed anywhere else it loads without error and silently never runs —
+  the same failure this job exists to prevent.
+
+  install:    ./scripts/install_watchdog.sh          # generates the paths
+  uninstall:  ./scripts/install_watchdog.sh --uninstall
   status:     launchctl list | grep optionsagent
+
+  This copy is the reference for what the generated job should contain.
 -->
 <plist version="1.0">
 <dict>
