@@ -9,7 +9,7 @@
 |---|---|
 | 📊 Alpaca paper account | `PA3BAT1OOEFE` (fresh, $100,000 start) |
 | 🧠 LLM | Featherless AI · `zai-org/GLM-5.2` |
-| ⌨️ Execution | Alpaca CLI (unattended loop) |
+| ⌨️ Execution | REST `POST /v2/orders` (unattended loop) |
 | 🔌 Research & oversight | Alpaca MCP Server |
 | 📈 Instrument | US index options — multi-leg (`mleg`) spreads only |
 
@@ -84,7 +84,7 @@ every 5 minutes
   ├─ 7. score expected value    [no LLM]  N(d₂) probabilities under realised vol,
   │                                          tilted by the view's conviction
   ├─ 8. risk gates              [no LLM]  22 deterministic, unit-tested checks
-  └─ 9. execute                           4-leg mleg via Alpaca CLI, idempotent
+  └─ 9. execute                           4-leg mleg via REST, idempotent client_order_id
 ```
 
 **The LLM has exactly one job**: state a directional view with a confidence.

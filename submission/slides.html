@@ -196,8 +196,8 @@
       <li><span>Candidate enumeration — ~37 structures across deltas, widths, sides</span><span class="tag code">CODE</span></li>
       <li><span>Expected-value scoring — N(d₂) under realised vol, tilted by the view</span><span class="tag code">CODE</span></li>
       <li><span>Critic — structural coherence check</span><span class="tag llm">LLM</span></li>
-      <li><span>Risk gates — 22 deterministic checks</span><span class="tag code">CODE</span></li>
-      <li><span>Execution — four-leg <span class="mono">mleg</span> order via the Alpaca CLI</span><span class="tag code">CODE</span></li>
+      <li><span>Risk gates — 29 deterministic checks</span><span class="tag code">CODE</span></li>
+      <li><span>Execution — four-leg <span class="mono">mleg</span> order via <span class="mono">POST /v2/orders</span></span><span class="tag code">CODE</span></li>
     </ol>
     <div class="quote">This split is also the prompt-injection defence. The agent reads
       news, which is attacker-influenceable. Because model output is schema-constrained and
@@ -233,14 +233,20 @@
 <!-- 7 -->
 <section class="s"><div class="grid"></div><div class="in">
   <div class="eyebrow">Alpaca infrastructure</div>
-  <h2>Both surfaces, each for what it is good at</h2>
-  <p class="lede">The hackathon requires the MCP server or the CLI. We use both, for
-    different jobs, and options are the only instrument the agent can trade.</p>
+  <h2>Each surface, for what it actually did</h2>
+  <p class="lede">The hackathon requires the MCP server or the CLI. The MCP server is the
+    one wired in; orders go over REST. Options are the only instrument the agent trades.</p>
   <div class="body two">
-    <div class="card"><h3>CLI — the unattended loop</h3>
+    <div class="card"><h3>REST — the unattended loop</h3>
       <p>Drives a five-minute cycle: clock check, batched snapshots, option chain with
-      Greeks and IV, then a four-leg <span class="mono">mleg</span> submission. Measured at
-      <strong class="g">23 requests per cycle</strong> — 2% of the 200/min budget.</p></div>
+      Greeks and IV, then a four-leg <span class="mono">mleg</span> submission to
+      <span class="mono">POST /v2/orders</span>. Measured at
+      <strong class="g">23 requests per cycle</strong> — 2% of the 200/min budget.
+      Throttled from <span class="mono">X-RateLimit-*</span>, not a hard-coded ceiling.</p>
+      <p style="margin-top:.5em">The CLI earned its place differently: inspecting
+      <span class="mono">alpaca</span> v0.0.14 is how we learned it defaults to
+      <span class="mono">--feed opra</span>, which 403s on a free account. That fixed
+      every options call we make.</p></div>
     <div class="card"><h3>MCP — research and oversight</h3>
       <p><strong class="b">54 tools</strong> discovered over stdio JSON-RPC, 12 of them
       options-specific. Used to inspect the account in natural language and to let the agent

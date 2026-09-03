@@ -85,9 +85,11 @@ Show that 403 in `docs/SAFETY_TESTS.md`.
 ./.venv/bin/python scripts/mcp_session.py | head -40
 ```
 
-> "The hackathon asks for the MCP server or the CLI. We use both. The CLI drives
-> the unattended loop — 23 requests a cycle, 2% of the rate budget. MCP is the
-> oversight surface: 54 tools, 12 options-specific."
+> "The hackathon asks for the MCP server or the CLI. The MCP server is what's
+> wired in — here it is answering against the live account. Orders themselves go
+> over the REST API. The CLI earned its place differently: inspecting it is how we
+> found that it defaults to the OPRA feed, which 403s on a free account, and that
+> fixed every options call we make."
 
 ## 3:25–3:45 · Close
 

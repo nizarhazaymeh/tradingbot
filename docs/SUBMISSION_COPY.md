@@ -52,9 +52,11 @@ of 12 structures cleared a 2%-of-risk threshold, and QQQ — whose implied vol s
 below its realised vol — produced nothing. The agent refuses to trade it.
 
 Every position is options-only: iron condors and credit or debit verticals,
-submitted as four-leg mleg orders through Alpaca. Both required surfaces are
-used — the CLI drives the unattended five-minute loop, and the MCP server is the
-research and oversight surface.
+submitted as four-leg mleg orders over Alpaca's REST API from an unattended
+five-minute loop. The MCP server is the research and oversight surface, with a
+reproducible session recorded in the repo; the CLI was used to establish
+multi-leg flag support and the OPRA feed default, both of which changed the
+agent.
 
 The LLM returns exactly one thing: a JSON view of direction, magnitude and
 confidence, which tilts the market-implied probabilities. It never picks a

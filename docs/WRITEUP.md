@@ -39,7 +39,7 @@ nothing at all. The agent refuses to trade it.
 | 4 | Expected-value scoring — N(d₂) probabilities under realised vol, tilted by the view | ❌ |
 | 5 | Critic — structural coherence check | ✅ |
 | 6 | Risk gates — 29 deterministic checks | ❌ |
-| 7 | Execution — 4-leg `mleg` order via the Alpaca CLI | ❌ |
+| 7 | Execution — 4-leg `mleg` order via `POST /v2/orders` | ❌ |
 
 **Where the model is, and is not.** The LLM (Featherless AI, `zai-org/GLM-5.2`)
 returns exactly one thing: a JSON view of `{direction, magnitude, horizon_days,
@@ -121,7 +121,7 @@ discipline that found the strategy in the first place.
 | 4 | Expected-value scoring — N(d₂) probabilities under realised vol, tilted by the view | ❌ |
 | 5 | Critic — structural coherence check | ✅ |
 | 6 | Risk gates — 29 deterministic checks | ❌ |
-| 7 | Execution — 4-leg `mleg` order via the Alpaca CLI | ❌ |
+| 7 | Execution — 4-leg `mleg` order via `POST /v2/orders` | ❌ |
 
 **Where the model is, and is not.** The LLM (Featherless AI, `zai-org/GLM-5.2`)
 returns exactly one thing: a JSON view of `{direction, magnitude, horizon_days,
@@ -303,11 +303,22 @@ least-privilege control. Used for research, human oversight, and for the agent t
 look up its own API documentation via `search_alpaca_api_specs`. A real,
 reproducible session is recorded in `docs/mcp_session_transcript.md`.
 
-**Alpaca CLI** — drives the unattended execution loop. State snapshots via
-`alpaca account get / position list / order list`; every order previewed with
-`--dry-run` into the audit log, then submitted with a deterministic
-`--client-order-id`. We rely on the CLI's built-in 429/5xx retry and deliberately
-do not stack a second backoff layer, per Alpaca's own guidance.
+**Alpaca CLI** — used to establish behaviour we could not get from the docs, not
+to execute. `alpaca` v0.0.14 was inspected directly to confirm that `--legs`,
+`--order-class`, `--position-intent` and `--dry-run` are real flags (our own
+notes had claimed `--legs` did not exist), and to establish that it defaults to
+`--feed opra`, which returns 403 on a free account. Both findings are recorded in
+`docs/FINDINGS.md` and both changed the agent.
+
+**To be exact about which surface does what:** every one of the 14 orders in the
+results above was submitted over the REST API — `POST /v2/orders` from
+`agent/client.py`, with our own `RateGovernor` reading `X-RateLimit-*` headers.
+Nothing in `agent/` shells out to the CLI; there is no `subprocess` import in the
+package. Earlier drafts of this write-up, the slides and the README all said the
+CLI drove the unattended loop and that we relied on its built-in retry. That was
+wrong on both counts and is corrected here rather than left to a judge reading
+`client.py` to discover. The hackathon requires the MCP server *or* the CLI; the
+MCP server is the surface genuinely wired in, with a reproducible transcript.
 
 **Resilience** — throttling is driven by `X-RateLimit-Remaining/Limit/Reset`
 headers rather than a hard-coded ceiling. Order submission is never blind-retried:
