@@ -1,20 +1,20 @@
 {
-  "generated_at": "2026-08-31T10:58:44+00:00",
+  "generated_at": "2026-09-03T14:48:05+00:00",
   "source": "alpaca /v2/account/portfolio/history",
-  "account": "PA3YD776IS6I",
-  "account_kind": "dev",
+  "account": "PA3BAT1OOEFE",
+  "account_kind": "comp",
   "period": "1M",
   "timeframe": "1D",
   "base_value": 100000.0,
   "base_value_asof": "2026-08-27",
-  "current_equity": 100000.0,
+  "current_equity": 99891.01,
   "stats": {
-    "points": 2,
-    "total_pnl": 0.0,
-    "total_pnl_pct": 0.0,
-    "max_drawdown_pct": 0.0,
+    "points": 5,
+    "total_pnl": -108.99,
+    "total_pnl_pct": -0.00109,
+    "max_drawdown_pct": -0.002377,
     "first": "2026-08-28T00:00:00+00:00",
-    "last": "2026-08-29T00:00:00+00:00"
+    "last": "2026-09-03T00:00:00+00:00"
   },
   "points": [
     {
@@ -30,6 +30,27 @@
       "equity": 100000.0,
       "pnl": 0.0,
       "pnl_pct": 0.0
+    },
+    {
+      "ts": 1788220800,
+      "iso": "2026-09-01T00:00:00+00:00",
+      "equity": 100000.0,
+      "pnl": 0.0,
+      "pnl_pct": 0.0
+    },
+    {
+      "ts": 1788307200,
+      "iso": "2026-09-02T00:00:00+00:00",
+      "equity": 100335.4,
+      "pnl": 335.4,
+      "pnl_pct": 0.0034
+    },
+    {
+      "ts": 1788393600,
+      "iso": "2026-09-03T00:00:00+00:00",
+      "equity": 100096.91,
+      "pnl": -238.49,
+      "pnl_pct": -0.0024
     }
   ]
 }

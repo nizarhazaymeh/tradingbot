@@ -110,9 +110,23 @@ def main():
     previous = []
     if out_path.exists():
         try:
-            previous = json.loads(out_path.read_text()).get("points") or []
+            existing = json.loads(out_path.read_text())
         except (json.JSONDecodeError, OSError) as e:
             print(f"  warning: could not read existing {out_path.name} ({e}); starting fresh")
+            existing = {}
+        prev_acct = existing.get("account")
+        # The merge is by timestamp only and knew nothing about which account the
+        # points came from, so running this once on DEV left a COMP submission
+        # artifact holding DEV history. On 3 Sep comp_preflight caught
+        # docs/equity_curve.json still reporting PA3YD776IS6I (dev) — two flat
+        # $100k points from before the agent had traded at all.
+        if prev_acct and prev_acct != acct["account_number"]:
+            print(f"  REFUSING to merge: {out_path.name} holds {prev_acct} and this "
+                  f"is {acct['account_number']} ({config.ACCOUNT}).")
+            print(f"  An equity curve must belong to exactly one account. Move or "
+                  f"delete the file, or pass --out for this account.")
+            sys.exit(2)
+        previous = existing.get("points") or []
 
     points = merge(previous, fresh)
 
