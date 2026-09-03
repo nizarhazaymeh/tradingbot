@@ -38,7 +38,7 @@ cat > "$DEST" <<PLIST
   <key>ProgramArguments</key>
   <array>
     <string>/bin/bash</string>
-    <string>$ROOT/scripts/watchdog.sh</string>
+    <string>$ROOT/scripts/supervise.sh</string>
   </array>
   <key>WorkingDirectory</key><string>$ROOT</string>
   <key>EnvironmentVariables</key>
@@ -47,7 +47,11 @@ cat > "$DEST" <<PLIST
     <key>INTERVAL</key><string>$INTERVAL</string>
   </dict>
   <key>RunAtLoad</key><true/>
-  <key>StartInterval</key><integer>$INTERVAL</integer>
+  <!-- KeepAlive, not StartInterval. A periodic nondemand spawn is advisory and
+       launchd deferred it indefinitely on 3 Sep (runs=1 after 29 minutes).
+       supervise.sh sleeps internally, so the cadence is ours, and KeepAlive
+       only has to do the one thing it is reliable at: restart a dead process. -->
+  <key>KeepAlive</key><true/>
   <key>StandardOutPath</key><string>$ROOT/logs/watchdog.log</string>
   <key>StandardErrorPath</key><string>$ROOT/logs/watchdog.log</string>
 </dict>
