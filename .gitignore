@@ -28,3 +28,4 @@ searching_docs/09_raw_sources/
 # committed — a HALTED file in the repo would halt the agent from a fresh clone.
 HALTED
 state/*.db*
+build/
