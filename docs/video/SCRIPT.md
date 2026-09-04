@@ -12,7 +12,7 @@ a macOS `say` voice as a placeholder; this script is what to replace it with.
 minute. Let the pauses sit; the on-screen numbers do half the work. Bold marks a
 word to lean on. `(beat)` is a deliberate one-second pause.
 
-**Total narration: 11 segments, ~2:55 of speech inside a 3:11 runtime.** The
+**Total narration: 11 segments, ~3:05 of speech inside a 3:31 runtime.** The
 title card and the tail are silent by design.
 
 ---
@@ -26,7 +26,7 @@ you start speaking.
 
 ---
 
-## [0:04–0:18] · THE QUESTION
+## [0:04–0:19] · THE QUESTION
 
 *On screen: slide — "Predicting direction is the wrong question".*
 
@@ -36,7 +36,7 @@ you start speaking.
 
 ---
 
-## [0:18–0:32] · THE MEASUREMENT
+## [0:19–0:34] · THE MEASUREMENT
 
 *On screen: slide — "Zero of 60 spreads were positive-EV".*
 
@@ -46,7 +46,7 @@ you start speaking.
 
 ---
 
-## [0:32–0:45] · THE EDGE
+## [0:34–0:48] · THE EDGE
 
 *On screen: slide — "Price with implied vol. Score probability with realised vol."*
 
@@ -56,7 +56,7 @@ you start speaking.
 
 ---
 
-## [0:45–1:08] · THE CYCLE BEGINS
+## [0:48–1:12] · THE CYCLE BEGINS
 
 *On screen: terminal — cycle 68 header, reconcile, the seven open positions.*
 
@@ -68,7 +68,7 @@ you start speaking.
 
 ---
 
-## [1:08–1:36] · SPY: RICH, AND REFUSED
+## [1:12–1:44] · SPY: RICH, AND REFUSED
 
 *On screen: terminal reveals the SPY block, ending on the red `REJECT` line.*
 
@@ -81,7 +81,7 @@ you start speaking.
 
 ---
 
-## [1:36–1:57] · QQQ: SUBMIT
+## [1:44–2:06] · QQQ: SUBMIT
 
 *On screen: terminal reveals the QQQ block, ending on the green `SUBMIT` line.*
 
@@ -92,7 +92,7 @@ you start speaking.
 
 ---
 
-## [1:57–2:16] · IWM AND IBIT: STAND ASIDE
+## [2:06–2:27] · IWM AND IBIT: STAND ASIDE
 
 *On screen: terminal reveals IWM (refused) and IBIT (stand aside), then
 `cycle 68 done`.*
@@ -104,7 +104,7 @@ you start speaking.
 
 ---
 
-## [2:16–2:25] · THE FILL
+## [2:27–2:37] · THE FILL
 
 *On screen: terminal — Alpaca's own order record for the QQQ order.*
 
@@ -113,7 +113,7 @@ you start speaking.
 
 ---
 
-## [2:25–2:43] · THE FINDING
+## [2:37–2:56] · THE FINDING
 
 *On screen: slide — "The model approved trades that lost money by design".*
 
@@ -124,7 +124,7 @@ you start speaking.
 
 ---
 
-## [2:43–2:49] · THE TESTS
+## [2:56–3:03] · THE TESTS
 
 *On screen: terminal — the live `pytest` run, "319 passed".*
 
@@ -133,7 +133,7 @@ you start speaking.
 
 ---
 
-## [2:49–3:09] · CLOSE
+## [3:03–3:28] · CLOSE
 
 *On screen: slide — "Where this sits" (competitive analysis).*
 
@@ -144,7 +144,7 @@ you start speaking.
 
 ---
 
-## [3:09–3:11] · TAIL — silent
+## [3:28–3:31] · TAIL — silent
 
 *On screen: title card returns briefly, then out.*
 
