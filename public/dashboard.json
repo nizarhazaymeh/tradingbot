@@ -1,12 +1,12 @@
 {
-  "updated_at": "2026-09-03T15:48:56+00:00",
+  "updated_at": "2026-09-04T09:23:42+00:00",
   "account": {
     "account_id": "PA3BAT1OOEFE",
     "environment": "comp",
-    "equity": 99798.61,
+    "equity": 99797.69,
     "starting_equity": 100000.0,
-    "total_pnl": -201.39,
-    "total_pnl_pct": -0.00201,
+    "total_pnl": -202.31,
+    "total_pnl_pct": -0.00202,
     "max_drawdown_pct": -0.00593,
     "open_positions": 0,
     "closed_trades": 14,
@@ -1697,96 +1697,418 @@
     {
       "ts": "2026-09-03T15:45:09+00:00",
       "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T15:50:11+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T15:55:12+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T16:00:14+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T16:05:16+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T16:10:17+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T16:15:19+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T16:20:21+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T16:25:23+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T16:30:25+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T16:35:26+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T16:40:28+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T16:45:30+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T16:50:32+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T16:55:34+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T17:00:36+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T17:05:37+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T17:10:39+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T17:15:41+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T17:20:44+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T17:25:45+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T17:30:47+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T17:35:49+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T17:40:50+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T17:45:52+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T17:50:55+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T17:55:56+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T18:00:58+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T18:06:00+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T18:11:02+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T18:16:04+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T18:21:06+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T18:26:07+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T18:31:09+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T18:36:11+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T18:41:13+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T18:46:15+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T18:51:17+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T18:56:19+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T19:01:21+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T19:06:22+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T19:11:24+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T19:16:26+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T19:21:28+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T19:26:30+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T19:31:31+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T19:36:33+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T19:41:35+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T19:46:37+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T19:51:38+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T19:56:40+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T20:01:42+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T20:06:44+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T20:11:46+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T20:16:47+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T20:21:49+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T20:26:51+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T20:31:52+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T20:36:54+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T20:41:57+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T20:46:58+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T20:52:01+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T20:57:02+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T21:02:04+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T21:07:06+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T21:12:07+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T21:17:09+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T21:22:11+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T21:27:13+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T21:32:15+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T21:37:16+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T21:42:18+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T21:47:20+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T21:52:21+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T21:57:23+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T22:02:25+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T22:07:26+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T22:12:28+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T22:17:29+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T22:22:31+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T22:27:33+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-03T23:07:39+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-04T03:00:16+00:00",
+      "equity": 99798.61
+    },
+    {
+      "ts": "2026-09-04T07:13:06+00:00",
+      "equity": 99798.61
     }
   ],
   "market": [
     {
       "underlying": "SPY",
-      "spot": 772.75,
-      "implied_vol": 0.0972,
-      "realized_vol": 0.08,
-      "premium_edge": 0.0172,
+      "spot": 772.39,
+      "implied_vol": 0.0952,
+      "realized_vol": 0.0808,
+      "premium_edge": 0.0145,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     },
     {
       "underlying": "QQQ",
-      "spot": 717.09,
-      "implied_vol": 0.1428,
-      "realized_vol": 0.1306,
-      "premium_edge": 0.0122,
-      "verdict": "trade",
-      "reason": "market charges more than the real risk"
+      "error": "The read operation timed out"
     },
     {
       "underlying": "IWM",
-      "spot": 295.06,
-      "implied_vol": 0.1365,
-      "realized_vol": 0.1243,
-      "premium_edge": 0.0122,
+      "spot": 295.07,
+      "implied_vol": 0.1407,
+      "realized_vol": 0.1244,
+      "premium_edge": 0.0162,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     },
     {
       "underlying": "DIA",
-      "spot": 537.15,
-      "implied_vol": 0.1113,
-      "realized_vol": 0.0881,
-      "premium_edge": 0.0232,
+      "spot": 536.86,
+      "implied_vol": 0.1099,
+      "realized_vol": 0.0871,
+      "premium_edge": 0.0228,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     },
     {
       "underlying": "SMH",
-      "spot": 549.06,
-      "implied_vol": 0.2635,
-      "realized_vol": 0.2991,
-      "premium_edge": -0.0356,
+      "spot": 552.72,
+      "implied_vol": 0.2829,
+      "realized_vol": 0.2998,
+      "premium_edge": -0.0168,
       "verdict": "stand aside",
       "reason": "market charges LESS than the real risk"
     },
     {
       "underlying": "AAPL",
-      "spot": 329.76,
-      "implied_vol": 0.2679,
-      "realized_vol": 0.1857,
-      "premium_edge": 0.0822,
+      "error": "Remote end closed connection without response"
+    },
+    {
+      "underlying": "MSFT",
+      "spot": 510.15,
+      "implied_vol": 0.2363,
+      "realized_vol": 0.2147,
+      "premium_edge": 0.0216,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     },
     {
-      "underlying": "MSFT",
-      "spot": 512.98,
-      "implied_vol": 0.2268,
-      "realized_vol": 0.2236,
-      "premium_edge": 0.0033,
-      "verdict": "stand aside",
-      "reason": "market charges LESS than the real risk"
-    },
-    {
       "underlying": "META",
-      "spot": 617.26,
-      "implied_vol": 0.3311,
-      "realized_vol": 0.3339,
-      "premium_edge": -0.0028,
+      "spot": 610.68,
+      "implied_vol": 0.328,
+      "realized_vol": 0.3197,
+      "premium_edge": 0.0083,
       "verdict": "stand aside",
       "reason": "market charges LESS than the real risk"
     },
     {
       "underlying": "AMZN",
-      "spot": 259.09,
-      "implied_vol": 0.2619,
-      "realized_vol": 0.2623,
-      "premium_edge": -0.0004,
-      "verdict": "stand aside",
-      "reason": "market charges LESS than the real risk"
+      "spot": 258.93,
+      "implied_vol": 0.2741,
+      "realized_vol": 0.2616,
+      "premium_edge": 0.0125,
+      "verdict": "trade",
+      "reason": "market charges more than the real risk"
     },
     {
       "underlying": "GOOGL",
-      "spot": 342.54,
-      "implied_vol": 0.248,
-      "realized_vol": 0.2127,
-      "premium_edge": 0.0354,
+      "spot": 342.39,
+      "implied_vol": 0.2719,
+      "realized_vol": 0.2118,
+      "premium_edge": 0.0601,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     }
