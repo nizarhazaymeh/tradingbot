@@ -313,7 +313,7 @@ def candidates(reg: Regime, views: List[O.ContractView], expiry: date,
 
     # --- credit verticals on both sides ----------------------------------
     for kind in ("P", "C"):
-        if trend_ok and bias:
+        if trend_ok and bias and config.TREND_SIDE_FILTER:
             # only sell the side the trend moves away from
             if (bias > 0 and kind == "C") or (bias < 0 and kind == "P"):
                 continue

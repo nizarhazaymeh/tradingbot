@@ -213,6 +213,12 @@ IV_RANK_CHEAP = _f("IV_RANK_CHEAP", 0.35)
 IV_OVER_RV_RICH = _f("IV_OVER_RV_RICH", 1.10)   # implied >= 1.10x realised -> rich
 IV_OVER_RV_CHEAP = _f("IV_OVER_RV_CHEAP", 0.95)
 TREND_Z_MIN = _f("TREND_Z_MIN", 1.0)
+# In a trending regime, sell only the side the trend moves away from. ON is the
+# behaviour the agent has always had. The knob exists so the rule can be A/B'd
+# over history by scripts/backtest_full.py — docs/BACKTEST.md Part 5 found it
+# blocks the better bucket on both sides over 19 entry dates, which is not
+# enough to act on. Part 10 is the same question on two years of expiries.
+TREND_SIDE_FILTER = _b("TREND_SIDE_FILTER", True)
 
 # ---------------------------------------------------------------- structure
 SHORT_DELTA_CONDOR = _f("SHORT_DELTA_CONDOR", 0.16)

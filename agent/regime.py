@@ -141,16 +141,36 @@ def classify(underlying: str, spot: float, views: List[ContractView], closes: Li
         return Regime(LOW_IV_RANGE, underlying, spot, iv, rank, z, direction, em, dte,
                       "no usable option data", detail)
 
-    # Without IV history we fall back to comparing implied against realised vol:
-    # implied meaningfully above realised == premium is rich.
-    if rank is not None:
-        rich = rank > config.IV_RANK_RICH
-        cheap = rank < config.IV_RANK_CHEAP
-        basis = f"IV rank {rank:.2f}"
-    elif rv:
+    # Rich or cheap is decided by implied AGAINST REALISED vol — the variance
+    # risk premium — whenever realised vol can be computed. IV rank is the
+    # fallback, not the other way round.
+    #
+    # This used to be reversed, and the reversal was invisible because rank needs
+    # MIN_IV_HISTORY readings and the agent had never run long enough to have
+    # them: every regime it ever classified used this branch while the code said
+    # it was the fallback. When scripts/backfill_iv.py supplied the history on
+    # 4 Sep 2026 the two paths disagreed on 8 of 10 underlyings, and disagreed
+    # in the direction that fights the strategy. AAPL read IV 26.6% against
+    # realised 18.3% — a 1.45x premium, the widest on the board, exactly what the
+    # agent exists to sell — and rank called it CHEAP (0.15) because 26.6% sat
+    # near the bottom of its own 120-day range, flipping the regime from selling
+    # credit spreads to buying debit ones.
+    #
+    # Rank measures the LEVEL of IV against its own past. The edge in the README
+    # is the GAP between IV and realised. In a calm market those point opposite
+    # ways, and the gap is the one the expected-value model is built on. Rank
+    # still reaches the LLM as context and is still recorded on every regime; it
+    # just no longer decides what gets sold.
+    if rv:
         rich = iv > rv * config.IV_OVER_RV_RICH
         cheap = iv < rv * config.IV_OVER_RV_CHEAP
         basis = f"IV {iv:.1%} vs realised {rv:.1%} ({iv/rv:.2f}x)"
+        if rank is not None:
+            basis += f", rank {rank:.2f}"
+    elif rank is not None:
+        rich = rank > config.IV_RANK_RICH
+        cheap = rank < config.IV_RANK_CHEAP
+        basis = f"IV rank {rank:.2f} (no realised-vol baseline)"
     else:
         rich = cheap = False
         basis = "no volatility baseline"
