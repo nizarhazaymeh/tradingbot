@@ -42,6 +42,48 @@ ls HALTED && cat HALTED && rm HALTED
 > not a bug — that's an efficient market. So the edge had to come from somewhere
 > real: the variance risk premium."
 
+## ⚠️ READ FIRST — added 4 Sep, 08:00 ET
+
+**The live beat below no longer works as written.** The competition cutoffs have
+passed (`NO_NEW_AFTER` 2 Sep, `FLATTEN_AT` 3 Sep), so `run.py once --live` on the
+competition account correctly refuses to open anything and prints
+`considered: []`. Nothing to narrate.
+
+Two ways to record it honestly. Pick by whether the market is open.
+
+**A — market open (09:30–11:00 ET only).** Run the real agent on the PRACTICE
+account with the competition cutoffs relaxed, and say so out loud:
+
+```sh
+ACCOUNT=dev DRY_RUN=false \
+NO_NEW_AFTER="2026-09-30T15:30:00-04:00" \
+FLATTEN_AT="2026-09-30T15:30:00-04:00" \
+./.venv/bin/python run.py once --live
+```
+
+> "The competition account is already closed out and locked, so this is the same
+> agent on our practice account, with the deadline cutoffs relaxed. Everything
+> else is live — real quotes, real order, real fill."
+
+**B — market closed, or no time.** Do not fake a cycle. Show the real log of the
+sessions that produced the submitted P&L — these are actual lines from
+`logs/comp-live-*.log`:
+
+```sh
+grep -E "IV .* vs realised" logs/comp-live-20260901.log | head -6
+grep -E "SUBMIT .* -> filled"  logs/*.log | tail -4
+grep -E "EXIT .*(stop|take profit)" logs/*.log | tail -3
+```
+
+> "This is the actual log from the sessions that produced the result. Regime
+> first, then the structure it chose, then the fill — and here the stop loss
+> firing on its own and closing a losing position at minus sixty percent."
+
+Option B is weaker television and completely defensible. A faked live cycle is
+neither.
+
+---
+
 ## 0:45–2:40 · 🔴 LIVE. This is the whole video.
 
 Screen recording only, no slides. Run one cycle and narrate what scrolls past.
