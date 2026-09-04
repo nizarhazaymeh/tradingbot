@@ -220,6 +220,22 @@ TREND_Z_MIN = _f("TREND_Z_MIN", 1.0)
 # enough to act on. Part 10 is the same question on two years of expiries.
 TREND_SIDE_FILTER = _b("TREND_SIDE_FILTER", True)
 
+# Event detection from the options market itself. regime.EVENT_RISK existed from
+# the start and had never fired: classify() takes has_catalyst and nothing
+# passed it. With single names in the universe that is a hole — the agent
+# would sell a 4-DTE condor on AAPL the day before earnings.
+#
+# Alpaca has no earnings calendar, but the market prices events as a kink in
+# the IV term structure: the expiry that CONTAINS the event carries far more
+# implied vol than the one after it. On 4 Sep 2026, with no events in window,
+# near/far read 0.89-1.09 across all ten names. An earnings week on a single
+# name typically reads 1.5-3.0. The threshold sits above normal backwardation
+# and well below a real event.
+#
+# Unmeasured on history — the ratio is logged on every regime so it can be.
+EVENT_IV_RATIO = _f("EVENT_IV_RATIO", 1.35)
+EVENT_FAR_MIN_DAYS = _i("EVENT_FAR_MIN_DAYS", 5)     # far expiry at least this far past near
+
 # ---------------------------------------------------------------- structure
 SHORT_DELTA_CONDOR = _f("SHORT_DELTA_CONDOR", 0.16)
 # Delta ~= probability of finishing ITM, so delta 0.16 ~= the 1-sigma strike.

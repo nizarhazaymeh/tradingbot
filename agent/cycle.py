@@ -431,6 +431,37 @@ class Agent:
         views = O.usable_contracts(chain, collect_rejects=rejects)
         return views, rejects
 
+    def _event_check(self, underlying: str, spot: float, near: date, near_views) -> tuple:
+        """(has_event, note, near/far IV ratio) from the term structure.
+
+        Fetches one further expiry — the first at least EVENT_FAR_MIN_DAYS past
+        the target, because SPY and QQQ list daily expiries and "the next one" can
+        be tomorrow, which tells you nothing. One extra chain call per underlying
+        per cycle. Anything failing here is "no opinion": a data hiccup must not
+        read as an event, and must not stop the cycle.
+        """
+        try:
+            iv_near = O.atm_iv(near_views, spot, near)
+            lo = (near + timedelta(days=config.EVENT_FAR_MIN_DAYS)).isoformat()
+            hi = (near + timedelta(days=config.EVENT_FAR_MIN_DAYS + 21)).isoformat()
+            exps = self.c.expirations(underlying, lo, hi)
+            if not exps:
+                return False, "", None
+            far = date.fromisoformat(exps[0])
+            far_views, _ = self._chain(underlying, spot, far)
+            iv_far = O.atm_iv(far_views, spot, far)
+            has, ratio = R.event_priced(iv_near, iv_far)
+            note = ""
+            if has:
+                note = (f"IV term structure {ratio:.2f}x (near {near} {iv_near:.1%} vs "
+                        f"{far} {iv_far:.1%}) — the market is pricing an event "
+                        f"inside the option's life")
+            return has, note, ratio
+        except Exception as e:                  # never let this break a cycle
+            log.warning("event check failed for %s: %s: %s", underlying,
+                        type(e).__name__, e)
+            return False, "", None
+
     # --------------------------------------------------------------- phases
     def observe(self) -> dict:
         acct = self.c.account()
@@ -639,8 +670,12 @@ class Agent:
 
         views, rejects = self._chain(underlying, spot, expiry)
         iv_hist = self.store.iv_history(underlying)
+        has_event, event_note, term = self._event_check(underlying, spot, expiry, views)
         reg = R.classify(underlying, spot, views, closes, expiry=expiry,
-                         iv_history=iv_hist, structure=structure, breaks=brks)
+                         iv_history=iv_hist, structure=structure, breaks=brks,
+                         has_catalyst=has_event, catalyst_note=event_note)
+        reg.detail["iv_term_ratio"] = term
+        out["iv_term_ratio"] = term
 
         if reg.iv > 0:
             self.store.record_iv(underlying, date.today(), reg.iv)

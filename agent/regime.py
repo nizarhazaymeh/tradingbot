@@ -106,6 +106,26 @@ def trend_score(closes: List[float], fast: int = 20, slow: int = 50,
     return z, direction
 
 
+def event_priced(iv_near: Optional[float], iv_far: Optional[float],
+                 ratio: float = None) -> tuple:
+    """(has_event, near/far ratio). Reads the IV term structure for a kink.
+
+    An expiry that contains a scheduled event carries the event's implied jump
+    on top of diffusive vol; the expiry after it does not. So near/far well above
+    1 means the market is pricing something inside the near window that the
+    agent's diffusive N(d2) model does not know about — a binary outcome dressed
+    up as variance risk premium. Selling into that is a different bet from the
+    one the strategy is built on.
+
+    Missing data on either side is "no opinion", never "no event".
+    """
+    thr = ratio if ratio is not None else config.EVENT_IV_RATIO
+    if not iv_near or not iv_far or iv_near <= 0 or iv_far <= 0:
+        return False, None
+    r = iv_near / iv_far
+    return r >= thr, round(r, 3)
+
+
 def realized_vol(closes: List[float], window: int = 20) -> Optional[float]:
     """Annualised realised volatility, for comparison against implied."""
     if len(closes) < window + 1:
