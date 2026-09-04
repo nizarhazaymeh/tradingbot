@@ -383,6 +383,28 @@ holding rule returned +$433 with a 75% win rate. It was applied twice to
 structures that could not benefit from it, and that cost more than everything
 else earned.
 
+**What we did with that after the book went flat.** Fourteen trades cannot settle
+whether a strategy works, so on 4 Sep we ran the real pipeline — the same
+`classify() → propose() → replay()` the live agent runs, strikes chosen by delta,
+the bid/ask charged twice on every trade — over **109 weekly expiries from Aug
+2024 to Aug 2026** (`scripts/backtest_full.py`, `docs/BACKTEST.md` Part 10). The
+agent as it traded this week was **+$109 gross and −$3,940 net** over 157 trades:
+break-even before costs, and costs were $26 a trade. The losses had three sources,
+each with a mechanism and each corroborated by an earlier independent sample: iron
+condors (four legs pay twice the spread for a credit that is not twice as large),
+debit verticals (the strategy sells variance premium; a debit buys it — the two
+trades above were not bad luck), and short calls (index variance premium lives in
+puts; the optimiser was choosing calls 69 to 1 in the no-trend regime, a model
+artifact). With those three families switched off, the same two years return
+**+$424 net over 49 trades, 90% win, worst trade −$86**, positive in every year.
+That result is in-sample by construction and small, and Part 10 says so plainly;
+the out-of-sample test is every fill from here. **The code on `main` reflects it**
+— `CONDORS_ENABLED`, `DEBIT_VERTICALS_ENABLED` and `CREDIT_SIDES` default off,
+off and puts-only, each pinned by a test — so the repository now describes a
+narrower agent than the one that produced the figures above. The account that was
+judged traded the version described in §1–§3. The same discipline that found the
+strategy, and that killed the harvest rule, is what changed it.
+
 ## 5. Limitations and Disclosure
 
 Paper trading is a simulation. It does not model market impact, information
