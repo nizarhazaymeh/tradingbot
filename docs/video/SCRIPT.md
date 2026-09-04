@@ -1,9 +1,9 @@
 # Demo video — full script
 
 **Options Alpha Agent · Alpaca AI Trading Agents Hackathon**
-Runtime **3:11** · 1920×1080 · matches `submission/demo_video.mp4` shot-for-shot.
+Runtime **3:31** · 1920×1080 · matches `submission/demo_video.mp4` shot-for-shot.
 
-This is the word-for-word script for the cut that is already built. Read it into a
+This is the word-for-word script for the cut that is already built (3:31). Read it into a
 mic against the video with the sound muted and you will land on every frame — the
 timings below are the real segment boundaries of the file. The current video uses
 a macOS `say` voice as a placeholder; this script is what to replace it with.

@@ -1,4 +1,4 @@
-# The 3:20 video — narration over the real log
+# The video — narration over the real log
 
 **Why this and not the shot list.** `VIDEO_SCRIPT.md` needs a live cycle that
 submits and fills. It cannot be recorded today: `NO_NEW_AFTER` blocks new
@@ -7,7 +7,7 @@ banned on camera. So this narrates the **real** cycle 68 from the 1 Sep live
 session — `dry_run=False`, real orders, the fill confirmed from Alpaca's own
 record. Nothing is edited out. Rough and present beats polished and absent.
 
-**Target 3:20.** The rubric scores anything under 3:00 a 2. Do not cut.
+**Runtime 3:31 (rubric floor is 3:00).** The rubric scores anything under 3:00 a 2. Do not cut.
 
 ## Setup (5 minutes)
 
