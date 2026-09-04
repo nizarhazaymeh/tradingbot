@@ -213,14 +213,81 @@ def test_portfolio_delta_gate_allows_offsetting():
 
 # ---------------------------------------------- condor volatility ceiling
 def test_condors_offered_in_quiet_markets():
+    """The vol ceiling mechanics, with the family switched on for the test.
+
+    CONDORS_ENABLED defaults to False (Part 10: PF 0.47 over 42 trades, the
+    largest single drain) but the ceiling must still work when it is on.
+    """
     from agent.strategy import candidates, View
     from agent.regime import Regime, HIGH_IV_RANGE
     views = ([cv("P", s, mid=1.0) for s in range(740, 770)] +
              [cv("C", s, mid=1.0) for s in range(770, 800)])
     reg = Regime(HIGH_IV_RANGE, "SPY", 769, 0.12, None, 0.1, 0, 8.0, 5, "quiet",
                  {"realized_vol": 0.10})
-    kinds = {c.kind for c in candidates(reg, views, E, View(), 10_000)}
+    old = config.CONDORS_ENABLED
+    try:
+        config.CONDORS_ENABLED = True
+        kinds = {c.kind for c in candidates(reg, views, E, View(), 10_000)}
+    finally:
+        config.CONDORS_ENABLED = old
     assert "iron_condor" in kinds
+
+
+def vertical_chain():
+    """A chain the DELTA-placed vertical builder can use: premium and delta decay
+    with distance from spot, so different target deltas land on different strikes.
+    The flat cv() fixture above lands every delta on the same strike and produces
+    no verticals at all."""
+    import math
+    out = []
+    for kind, rng in (("P", range(740, 769)), ("C", range(770, 800))):
+        for st in rng:
+            d = abs(st - 769)
+            out.append(cv(kind, st, mid=max(0.06, 4.0 * math.exp(-d / 7.0)),
+                          delta=max(0.02, 0.48 * math.exp(-d / 11.0))))
+    return out
+
+
+def test_condors_are_off_by_default():
+    """Pinned. docs/BACKTEST.md Part 10: 42 trades, 55% win, -$1,843, PF 0.47,
+    with a structural mechanism — four legs pay twice the spread for a credit
+    that is not twice as large. Turning them back on needs a new measurement."""
+    from agent.strategy import candidates, View
+    from agent.regime import Regime, HIGH_IV_RANGE
+    assert config.CONDORS_ENABLED is False
+    views = vertical_chain()
+    reg = Regime(HIGH_IV_RANGE, "SPY", 769, 0.12, None, 0.1, 0, 8.0, 5, "quiet",
+                 {"realized_vol": 0.10})
+    kinds = {c.kind for c in candidates(reg, views, E, View(), 10_000)}
+    assert "iron_condor" not in kinds
+    assert "bull_put" in kinds, "put credit verticals must still be offered"
+
+
+def test_credit_verticals_are_puts_only_by_default():
+    """Pinned. Part 10: bear_call 126 trades PF 0.59, bull_put 25 trades PF 2.91,
+    and the optimiser chose calls 69:1 in the no-trend regime — a model artifact.
+    Equity-index VRP lives in puts. CREDIT_SIDES=P,C restores both."""
+    from agent.strategy import candidates, View
+    from agent.regime import Regime, HIGH_IV_RANGE
+    assert config.CREDIT_SIDES == ["P"]
+    views = vertical_chain()
+    reg = Regime(HIGH_IV_RANGE, "SPY", 769, 0.12, None, 0.1, 0, 8.0, 5, "quiet",
+                 {"realized_vol": 0.10})
+    kinds = {c.kind for c in candidates(reg, views, E, View(), 10_000)}
+    assert "bear_call" not in kinds and "bull_put" in kinds
+
+
+def test_debit_verticals_are_off_by_default():
+    """Pinned. Part 10: 24 trades, 17% win, PF 0.14. The competition's only two
+    losers were debit spreads. The strategy sells premium; a debit buys it."""
+    from agent.strategy import candidates, View
+    from agent.regime import Regime, LOW_IV_TREND
+    assert config.DEBIT_VERTICALS_ENABLED is False
+    views = vertical_chain()
+    reg = Regime(LOW_IV_TREND, "SPY", 769, 0.12, None, 1.8, 1, 8.0, 5, "cheap, up",
+                 {"realized_vol": 0.10})
+    kinds = {c.kind for c in candidates(reg, views, E, View(), 10_000)}
+    assert not (kinds & {"bull_call", "bear_put"})
 
 
 def test_condors_withheld_in_high_vol():

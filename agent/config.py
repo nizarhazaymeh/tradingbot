@@ -255,6 +255,57 @@ CONDOR_SIGMAS = [float(x) for x in _s("CONDOR_SIGMAS", "1.0,1.25,1.5,1.75").spli
 # So we refuse to open condors above this realised-vol ceiling. Directional
 # credit spreads, which do not need the price to sit still, are unaffected.
 MAX_VOL_FOR_CONDOR = _f("MAX_VOL_FOR_CONDOR", 0.18)
+
+# Two structure families are OFF by default, by measurement. docs/BACKTEST.md
+# Part 10 ran the real pipeline — classify() -> propose() -> replay() — over
+# 109 weekly expiries on SPY/QQQ/IWM, Aug 2024 to Aug 2026, net of the bid/ask
+# crossed twice. 157 trades. The strategy as a whole was +$109 gross and
+# -$3,940 net; costs were $26 a trade against $0.69 of gross edge.
+#
+# IRON CONDORS: 42 trades, 55% win, -$1,843, PF 0.47 — the single largest
+# drain. The mechanism is structural: four legs pay twice the spread a vertical
+# pays ($48 vs ~$15) for a credit that is not twice as large; avg gross P&L was
+# +$5 against $48 of cost. Part 2 had already found they collapse above 18%
+# realised vol. Part 10 finds they lose net in the calm regime too. Two
+# independent samples and a mechanism.
+#
+# DEBIT VERTICALS: 24 trades, 17% win, -$1,970, PF 0.14. The strategy exists to
+# SELL variance risk premium; a debit structure buys it. The competition's only
+# two losers were debit spreads (-$628 of 14 trades) and the harvest experiment
+# (Part 9 of WRITEUP) was an attempt to rescue them that did not survive its
+# own A/B. LOW_IV_TREND, the regime that produces them, went 0 for 5.
+#
+# With both off the agent trades credit verticals only, which Part 10 measured
+# at -$127 net over 91 trades (PF 0.94): approximately break-even, not an edge.
+# That is stated plainly there. These knobs turn off what demonstrably loses;
+# they do not make what remains profitable.
+CONDORS_ENABLED = _b("CONDORS_ENABLED", False)
+DEBIT_VERTICALS_ENABLED = _b("DEBIT_VERTICALS_ENABLED", False)
+
+# Which sides credit verticals may be sold on. Default: puts only.
+#
+# Part 10, with condors and debits off, 151 credit verticals over two years:
+#
+#   bear_call  126 trades  69% win  -$2,209  PF 0.59   lost in 2024 AND 2025
+#   bull_put    25 trades  88% win    +$196  PF 2.91   profitable every year
+#
+# The ratio is the tell. In HIGH_IV_RANGE — no trend, both sides eligible — the
+# EV optimiser picked a bear call 69 times and a bull put ONCE. That is not a
+# market fact, it is the model: at the same delta a call sits closer to spot in
+# sigma terms and shows ~3x the credit per dollar of width (0.28 vs 0.10), and
+# N(d2) under realised vol at zero drift prices that as safe. The market then
+# drifted up through it, which is what an index does.
+#
+# The mechanism is well known. Equity-index variance risk premium is asymmetric:
+# it lives in puts, the crash-insurance side. OTM calls carry little or none —
+# covered-call supply keeps them cheap — so "IV above realised" at the money
+# does not mean the CALL wing is rich. Part 2's independent fixed-offset sample
+# found the same thing: put credit profitable in all four regimes, call credit
+# PF 0.8-1.1 and positive only in the selloff.
+#
+# 25 surviving trades is a small sample and is said so in Part 10. What this
+# turns off is measured on 126. Set to "P,C" to restore both sides.
+CREDIT_SIDES = [x.strip().upper() for x in _s("CREDIT_SIDES", "P").split(",") if x.strip()]
 # In elevated vol, push condor short strikes further out before giving up.
 CONDOR_SIGMA_VOL_BOOST = _f("CONDOR_SIGMA_VOL_BOOST", 0.5)
 CREDIT_DELTAS = [float(x) for x in _s("CREDIT_DELTAS", "0.10,0.14,0.18,0.22").split(",") if x.strip()]

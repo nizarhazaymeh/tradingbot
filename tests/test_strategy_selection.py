@@ -23,6 +23,26 @@ from agent.options import ContractView, occ
 from agent.regime import Regime, HIGH_IV_RANGE, HIGH_IV_TREND
 from agent.strategy import View, candidates, propose, quality_gate
 
+import pytest
+
+
+@pytest.fixture(autouse=True)
+def _all_families_enabled():
+    """These tests exercise selection MECHANICS across every structure family.
+
+    CONDORS_ENABLED and DEBIT_VERTICALS_ENABLED default to False by measurement
+    (docs/BACKTEST.md Part 10), but the enumeration, ranking and gating code for
+    those families must keep working for when a measurement turns one back on.
+    Switched on here for the duration of each test and restored after.
+    """
+    old = (config.CONDORS_ENABLED, config.DEBIT_VERTICALS_ENABLED, config.CREDIT_SIDES)
+    config.CONDORS_ENABLED = config.DEBIT_VERTICALS_ENABLED = True
+    config.CREDIT_SIDES = ["P", "C"]
+    try:
+        yield
+    finally:
+        config.CONDORS_ENABLED, config.DEBIT_VERTICALS_ENABLED, config.CREDIT_SIDES = old
+
 E = date(2026, 9, 4)
 SPOT = 769.0
 # 1s = $13, so 0.9s = $11.70. The premium/delta curves below put the richest

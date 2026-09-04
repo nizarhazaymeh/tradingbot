@@ -1,0 +1,2979 @@
+{
+ "start": "2024-08-01",
+ "end": "2026-08-28",
+ "universe": [
+  "SPY",
+  "QQQ",
+  "IWM"
+ ],
+ "dte": 4,
+ "trades": [
+  {
+   "und": "QQQ",
+   "expiry": "2024-11-01",
+   "entry": "2024-10-28",
+   "year": "2024",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": 1,
+   "iv": 0.2712,
+   "rv": 0.131,
+   "qty": 1,
+   "max_loss": 369.0,
+   "gross": 22.0,
+   "cost": 9.36,
+   "net": 12.64,
+   "exit": "take profit: $18 >= 35% of $31 max gain",
+   "describe": "bull_put QQQ 2024-11-01 x1 [-479P / +475P] CREDIT $0.31 | maxloss $369 | delta +0.05 theta +7.66"
+  },
+  {
+   "und": "SPY",
+   "expiry": "2024-11-08",
+   "entry": "2024-11-04",
+   "year": "2024",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_RANGE",
+   "trend_dir": 0,
+   "iv": 0.3807,
+   "rv": 0.1043,
+   "qty": 1,
+   "max_loss": 375.0,
+   "gross": 18.0,
+   "cost": 10.32,
+   "net": 7.68,
+   "exit": "take profit: $14 >= 35% of $25 max gain",
+   "describe": "bull_put SPY 2024-11-08 x1 [-546P / +542P] CREDIT $0.25 | maxloss $375 | delta +0.04 theta +5.40"
+  },
+  {
+   "und": "QQQ",
+   "expiry": "2024-11-08",
+   "entry": "2024-11-04",
+   "year": "2024",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_RANGE",
+   "trend_dir": 0,
+   "iv": 0.3655,
+   "rv": 0.1502,
+   "qty": 1,
+   "max_loss": 240.0,
+   "gross": 47.0,
+   "cost": 21.28,
+   "net": 25.72,
+   "exit": "take profit: $43 >= 35% of $60 max gain",
+   "describe": "bull_put QQQ 2024-11-08 x1 [-469P / +466P] CREDIT $0.60 | maxloss $240 | delta +0.06 theta +11.36"
+  },
+  {
+   "und": "IWM",
+   "expiry": "2024-11-08",
+   "entry": "2024-11-04",
+   "year": "2024",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_RANGE",
+   "trend_dir": 0,
+   "iv": 0.5215,
+   "rv": 0.1492,
+   "qty": 1,
+   "max_loss": 343.0,
+   "gross": 36.0,
+   "cost": 10.8,
+   "net": 25.2,
+   "exit": "take profit: $32 >= 35% of $57 max gain",
+   "describe": "bull_put IWM 2024-11-08 x1 [-210P / +206P] CREDIT $0.57 | maxloss $343 | delta +0.11 theta +10.65"
+  },
+  {
+   "und": "QQQ",
+   "expiry": "2025-02-07",
+   "entry": "2025-02-03",
+   "year": "2025",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_RANGE",
+   "trend_dir": 0,
+   "iv": 0.3018,
+   "rv": 0.2016,
+   "qty": 1,
+   "max_loss": 180.0,
+   "gross": 17.0,
+   "cost": 8.64,
+   "net": 8.36,
+   "exit": "take profit: $13 >= 35% of $20 max gain",
+   "describe": "bull_put QQQ 2025-02-07 x1 [-496P / +494P] CREDIT $0.20 | maxloss $180 | delta +0.02 theta +6.46"
+  },
+  {
+   "und": "QQQ",
+   "expiry": "2025-06-27",
+   "entry": "2025-06-23",
+   "year": "2025",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": 1,
+   "iv": 0.2064,
+   "rv": 0.1371,
+   "qty": 1,
+   "max_loss": 377.0,
+   "gross": 19.0,
+   "cost": 7.76,
+   "net": 11.24,
+   "exit": "take profit: $15 >= 35% of $23 max gain",
+   "describe": "bull_put QQQ 2025-06-27 x1 [-513P / +509P] CREDIT $0.23 | maxloss $377 | delta +0.04 theta +6.98"
+  },
+  {
+   "und": "QQQ",
+   "expiry": "2025-07-11",
+   "entry": "2025-07-07",
+   "year": "2025",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": 1,
+   "iv": 0.1832,
+   "rv": 0.1247,
+   "qty": 1,
+   "max_loss": 260.0,
+   "gross": 24.0,
+   "cost": 12.48,
+   "net": 11.52,
+   "exit": "take profit: $20 >= 35% of $40 max gain",
+   "describe": "bull_put QQQ 2025-07-11 x1 [-540P / +537P] CREDIT $0.40 | maxloss $260 | delta +0.06 theta +8.16"
+  },
+  {
+   "und": "IWM",
+   "expiry": "2025-07-18",
+   "entry": "2025-07-14",
+   "year": "2025",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": 1,
+   "iv": 0.2823,
+   "rv": 0.1643,
+   "qty": 1,
+   "max_loss": 184.0,
+   "gross": 14.0,
+   "cost": 3.84,
+   "net": 10.16,
+   "exit": "take profit: $10 >= 35% of $16 max gain",
+   "describe": "bull_put IWM 2025-07-18 x1 [-215P / +213P] CREDIT $0.16 | maxloss $184 | delta +0.06 theta +4.50"
+  },
+  {
+   "und": "IWM",
+   "expiry": "2025-07-25",
+   "entry": "2025-07-21",
+   "year": "2025",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_RANGE",
+   "trend_dir": 0,
+   "iv": 0.2523,
+   "rv": 0.1659,
+   "qty": 1,
+   "max_loss": 186.0,
+   "gross": 13.0,
+   "cost": 2.24,
+   "net": 10.76,
+   "exit": "take profit: $9 >= 35% of $14 max gain",
+   "describe": "bull_put IWM 2025-07-25 x1 [-213P / +211P] CREDIT $0.14 | maxloss $186 | delta +0.06 theta +5.21"
+  },
+  {
+   "und": "QQQ",
+   "expiry": "2025-08-01",
+   "entry": "2025-07-28",
+   "year": "2025",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": 1,
+   "iv": 0.1872,
+   "rv": 0.0768,
+   "qty": 1,
+   "max_loss": 350.0,
+   "gross": 35.0,
+   "cost": 15.04,
+   "net": 19.96,
+   "exit": "take profit: $31 >= 35% of $50 max gain",
+   "describe": "bull_put QQQ 2025-08-01 x1 [-559P / +555P] CREDIT $0.50 | maxloss $350 | delta +0.09 theta +6.69"
+  },
+  {
+   "und": "IWM",
+   "expiry": "2025-08-01",
+   "entry": "2025-07-28",
+   "year": "2025",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_RANGE",
+   "trend_dir": 0,
+   "iv": 0.2832,
+   "rv": 0.1621,
+   "qty": 1,
+   "max_loss": 286.0,
+   "gross": -7.0,
+   "cost": 2.4,
+   "net": -9.4,
+   "exit": "time stop at DTE 1",
+   "describe": "bull_put IWM 2025-08-01 x1 [-215P / +212P] CREDIT $0.14 | maxloss $286 | delta +0.05 theta +5.11"
+  },
+  {
+   "und": "QQQ",
+   "expiry": "2025-08-15",
+   "entry": "2025-08-11",
+   "year": "2025",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": 1,
+   "iv": 0.1918,
+   "rv": 0.1231,
+   "qty": 1,
+   "max_loss": 280.0,
+   "gross": 18.0,
+   "cost": 8.0,
+   "net": 10.0,
+   "exit": "take profit: $14 >= 35% of $20 max gain",
+   "describe": "bull_put QQQ 2025-08-15 x1 [-555P / +552P] CREDIT $0.20 | maxloss $280 | delta +0.03 theta +5.82"
+  },
+  {
+   "und": "IWM",
+   "expiry": "2025-08-15",
+   "entry": "2025-08-11",
+   "year": "2025",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_RANGE",
+   "trend_dir": 0,
+   "iv": 0.3152,
+   "rv": 0.1698,
+   "qty": 1,
+   "max_loss": 180.0,
+   "gross": 19.0,
+   "cost": 5.92,
+   "net": 13.08,
+   "exit": "take profit: $15 >= 35% of $20 max gain",
+   "describe": "bull_put IWM 2025-08-15 x1 [-212P / +210P] CREDIT $0.20 | maxloss $180 | delta +0.06 theta +4.56"
+  },
+  {
+   "und": "IWM",
+   "expiry": "2025-09-19",
+   "entry": "2025-09-15",
+   "year": "2025",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": 1,
+   "iv": 0.3102,
+   "rv": 0.1728,
+   "qty": 1,
+   "max_loss": 277.0,
+   "gross": 16.0,
+   "cost": 5.84,
+   "net": 10.16,
+   "exit": "take profit: $12 >= 35% of $23 max gain",
+   "describe": "bull_put IWM 2025-09-19 x1 [-229P / +226P] CREDIT $0.23 | maxloss $277 | delta +0.06 theta +5.95"
+  },
+  {
+   "und": "QQQ",
+   "expiry": "2025-09-26",
+   "entry": "2025-09-22",
+   "year": "2025",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": 1,
+   "iv": 0.1586,
+   "rv": 0.0867,
+   "qty": 1,
+   "max_loss": 374.0,
+   "gross": -23.0,
+   "cost": 11.2,
+   "net": -34.2,
+   "exit": "time stop at DTE 1",
+   "describe": "bull_put QQQ 2025-09-26 x1 [-589P / +585P] CREDIT $0.26 | maxloss $374 | delta +0.05 theta +4.89"
+  },
+  {
+   "und": "QQQ",
+   "expiry": "2025-10-03",
+   "entry": "2025-09-29",
+   "year": "2025",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": 1,
+   "iv": 0.1684,
+   "rv": 0.0814,
+   "qty": 1,
+   "max_loss": 372.0,
+   "gross": 22.0,
+   "cost": 11.2,
+   "net": 10.8,
+   "exit": "take profit: $18 >= 35% of $28 max gain",
+   "describe": "bull_put QQQ 2025-10-03 x1 [-585P / +581P] CREDIT $0.28 | maxloss $372 | delta +0.05 theta +5.70"
+  },
+  {
+   "und": "QQQ",
+   "expiry": "2025-10-10",
+   "entry": "2025-10-06",
+   "year": "2025",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": 1,
+   "iv": 0.1612,
+   "rv": 0.0726,
+   "qty": 1,
+   "max_loss": 363.0,
+   "gross": 30.0,
+   "cost": 13.68,
+   "net": 16.32,
+   "exit": "take profit: $26 >= 35% of $37 max gain",
+   "describe": "bull_put QQQ 2025-10-10 x1 [-597P / +593P] CREDIT $0.37 | maxloss $363 | delta +0.07 theta +5.60"
+  },
+  {
+   "und": "IWM",
+   "expiry": "2026-01-16",
+   "entry": "2026-01-12",
+   "year": "2026",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": 1,
+   "iv": 0.2194,
+   "rv": 0.1426,
+   "qty": 1,
+   "max_loss": 188.0,
+   "gross": 10.0,
+   "cost": 3.52,
+   "net": 6.48,
+   "exit": "take profit: $6 >= 35% of $12 max gain",
+   "describe": "bull_put IWM 2026-01-16 x1 [-253P / +251P] CREDIT $0.12 | maxloss $188 | delta +0.04 theta +3.73"
+  },
+  {
+   "und": "SPY",
+   "expiry": "2026-01-30",
+   "entry": "2026-01-26",
+   "year": "2026",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_RANGE",
+   "trend_dir": 0,
+   "iv": 0.1642,
+   "rv": 0.1023,
+   "qty": 1,
+   "max_loss": 377.0,
+   "gross": 18.0,
+   "cost": 7.92,
+   "net": 10.08,
+   "exit": "take profit: $14 >= 35% of $23 max gain",
+   "describe": "bull_put SPY 2026-01-30 x1 [-674P / +670P] CREDIT $0.23 | maxloss $377 | delta +0.04 theta +6.64"
+  },
+  {
+   "und": "QQQ",
+   "expiry": "2026-01-30",
+   "entry": "2026-01-26",
+   "year": "2026",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_RANGE",
+   "trend_dir": 0,
+   "iv": 0.2116,
+   "rv": 0.1243,
+   "qty": 1,
+   "max_loss": 349.0,
+   "gross": 27.0,
+   "cost": 19.92,
+   "net": 7.08,
+   "exit": "take profit: $23 >= 35% of $51 max gain",
+   "describe": "bull_put QQQ 2026-01-30 x1 [-611P / +607P] CREDIT $0.51 | maxloss $349 | delta +0.06 theta +9.02"
+  },
+  {
+   "und": "IWM",
+   "expiry": "2026-01-30",
+   "entry": "2026-01-26",
+   "year": "2026",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": 1,
+   "iv": 0.2358,
+   "rv": 0.1541,
+   "qty": 1,
+   "max_loss": 276.0,
+   "gross": 20.0,
+   "cost": 5.44,
+   "net": 14.56,
+   "exit": "take profit: $16 >= 35% of $24 max gain",
+   "describe": "bull_put IWM 2026-01-30 x1 [-256P / +253P] CREDIT $0.24 | maxloss $276 | delta +0.07 theta +6.13"
+  },
+  {
+   "und": "QQQ",
+   "expiry": "2026-02-13",
+   "entry": "2026-02-09",
+   "year": "2026",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_RANGE",
+   "trend_dir": 0,
+   "iv": 0.2258,
+   "rv": 0.1742,
+   "qty": 1,
+   "max_loss": 375.0,
+   "gross": 15.0,
+   "cost": 11.92,
+   "net": 3.08,
+   "exit": "take profit: $11 >= 35% of $25 max gain",
+   "describe": "bull_put QQQ 2026-02-13 x1 [-590P / +586P] CREDIT $0.25 | maxloss $375 | delta +0.03 theta +7.22"
+  },
+  {
+   "und": "IWM",
+   "expiry": "2026-02-13",
+   "entry": "2026-02-09",
+   "year": "2026",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": 1,
+   "iv": 0.2588,
+   "rv": 0.1952,
+   "qty": 1,
+   "max_loss": 378.0,
+   "gross": -30.0,
+   "cost": 4.16,
+   "net": -34.16,
+   "exit": "stop: P&L $-34 <= -150% of $22 credit",
+   "describe": "bull_put IWM 2026-02-13 x1 [-256P / +252P] CREDIT $0.22 | maxloss $378 | delta +0.06 theta +7.41"
+  },
+  {
+   "und": "IWM",
+   "expiry": "2026-02-27",
+   "entry": "2026-02-23",
+   "year": "2026",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_RANGE",
+   "trend_dir": 0,
+   "iv": 0.3132,
+   "rv": 0.1895,
+   "qty": 1,
+   "max_loss": 162.0,
+   "gross": 33.0,
+   "cost": 11.04,
+   "net": 21.96,
+   "exit": "take profit: $29 >= 35% of $38 max gain",
+   "describe": "bull_put IWM 2026-02-27 x1 [-251P / +249P] CREDIT $0.38 | maxloss $162 | delta +0.06 theta +8.29"
+  },
+  {
+   "und": "SPY",
+   "expiry": "2026-03-06",
+   "entry": "2026-03-02",
+   "year": "2026",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_RANGE",
+   "trend_dir": 0,
+   "iv": 0.2163,
+   "rv": 0.1276,
+   "qty": 1,
+   "max_loss": 375.0,
+   "gross": 14.0,
+   "cost": 12.08,
+   "net": 1.92,
+   "exit": "take profit: $10 >= 35% of $25 max gain",
+   "describe": "bull_put SPY 2026-03-06 x1 [-660P / +656P] CREDIT $0.25 | maxloss $375 | delta +0.03 theta +7.13"
+  },
+  {
+   "und": "QQQ",
+   "expiry": "2026-03-06",
+   "entry": "2026-03-02",
+   "year": "2026",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_RANGE",
+   "trend_dir": 0,
+   "iv": 0.2618,
+   "rv": 0.1775,
+   "qty": 1,
+   "max_loss": 332.0,
+   "gross": 48.0,
+   "cost": 27.2,
+   "net": 20.8,
+   "exit": "take profit: $44 >= 35% of $68 max gain",
+   "describe": "bull_put QQQ 2026-03-06 x1 [-588P / +584P] CREDIT $0.68 | maxloss $332 | delta +0.05 theta +13.37"
+  },
+  {
+   "und": "IWM",
+   "expiry": "2026-03-06",
+   "entry": "2026-03-02",
+   "year": "2026",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_RANGE",
+   "trend_dir": 0,
+   "iv": 0.2945,
+   "rv": 0.199,
+   "qty": 1,
+   "max_loss": 378.0,
+   "gross": 12.0,
+   "cost": 5.6,
+   "net": 6.4,
+   "exit": "take profit: $8 >= 35% of $22 max gain",
+   "describe": "bull_put IWM 2026-03-06 x1 [-250P / +246P] CREDIT $0.22 | maxloss $378 | delta +0.04 theta +7.08"
+  },
+  {
+   "und": "QQQ",
+   "expiry": "2026-03-13",
+   "entry": "2026-03-09",
+   "year": "2026",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_RANGE",
+   "trend_dir": 0,
+   "iv": 0.2964,
+   "rv": 0.1592,
+   "qty": 1,
+   "max_loss": 356.0,
+   "gross": 27.0,
+   "cost": 23.36,
+   "net": 3.64,
+   "exit": "take profit: $23 >= 35% of $44 max gain",
+   "describe": "bull_put QQQ 2026-03-13 x1 [-582P / +578P] CREDIT $0.44 | maxloss $356 | delta +0.03 theta +9.93"
+  },
+  {
+   "und": "QQQ",
+   "expiry": "2026-03-20",
+   "entry": "2026-03-16",
+   "year": "2026",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_RANGE",
+   "trend_dir": 0,
+   "iv": 0.2614,
+   "rv": 0.1578,
+   "qty": 1,
+   "max_loss": 364.0,
+   "gross": 24.0,
+   "cost": 18.24,
+   "net": 5.76,
+   "exit": "take profit: $20 >= 35% of $36 max gain",
+   "describe": "bull_put QQQ 2026-03-20 x1 [-580P / +576P] CREDIT $0.36 | maxloss $364 | delta +0.04 theta +7.77"
+  },
+  {
+   "und": "IWM",
+   "expiry": "2026-04-10",
+   "entry": "2026-04-06",
+   "year": "2026",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_RANGE",
+   "trend_dir": 0,
+   "iv": 0.3374,
+   "rv": 0.2313,
+   "qty": 1,
+   "max_loss": 277.0,
+   "gross": 22.0,
+   "cost": 6.48,
+   "net": 15.52,
+   "exit": "take profit: $18 >= 35% of $23 max gain",
+   "describe": "bull_put IWM 2026-04-10 x1 [-239P / +236P] CREDIT $0.23 | maxloss $277 | delta +0.04 theta +7.15"
+  },
+  {
+   "und": "QQQ",
+   "expiry": "2026-05-01",
+   "entry": "2026-04-27",
+   "year": "2026",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": 1,
+   "iv": 0.2407,
+   "rv": 0.1715,
+   "qty": 1,
+   "max_loss": 374.0,
+   "gross": 25.0,
+   "cost": 12.8,
+   "net": 12.2,
+   "exit": "take profit: $21 >= 35% of $26 max gain",
+   "describe": "bull_put QQQ 2026-05-01 x1 [-638P / +634P] CREDIT $0.26 | maxloss $374 | delta +0.03 theta +7.71"
+  },
+  {
+   "und": "IWM",
+   "expiry": "2026-05-01",
+   "entry": "2026-04-27",
+   "year": "2026",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": 1,
+   "iv": 0.2366,
+   "rv": 0.1813,
+   "qty": 1,
+   "max_loss": 379.0,
+   "gross": -30.0,
+   "cost": 4.24,
+   "net": -34.24,
+   "exit": "stop: P&L $-34 <= -150% of $21 credit",
+   "describe": "bull_put IWM 2026-05-01 x1 [-267P / +263P] CREDIT $0.21 | maxloss $379 | delta +0.05 theta +6.82"
+  },
+  {
+   "und": "QQQ",
+   "expiry": "2026-05-08",
+   "entry": "2026-05-04",
+   "year": "2026",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": 1,
+   "iv": 0.2136,
+   "rv": 0.1502,
+   "qty": 1,
+   "max_loss": 366.0,
+   "gross": 31.0,
+   "cost": 12.64,
+   "net": 18.36,
+   "exit": "take profit: $27 >= 35% of $34 max gain",
+   "describe": "bull_put QQQ 2026-05-08 x1 [-648P / +644P] CREDIT $0.34 | maxloss $366 | delta +0.03 theta +10.36"
+  },
+  {
+   "und": "IWM",
+   "expiry": "2026-05-08",
+   "entry": "2026-05-04",
+   "year": "2026",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": 1,
+   "iv": 0.2548,
+   "rv": 0.1656,
+   "qty": 1,
+   "max_loss": 352.0,
+   "gross": 43.0,
+   "cost": 10.56,
+   "net": 32.44,
+   "exit": "take profit: $39 >= 35% of $48 max gain",
+   "describe": "bull_put IWM 2026-05-08 x1 [-270P / +266P] CREDIT $0.48 | maxloss $352 | delta +0.09 theta +9.40"
+  },
+  {
+   "und": "SPY",
+   "expiry": "2026-05-15",
+   "entry": "2026-05-11",
+   "year": "2026",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": 1,
+   "iv": 0.1534,
+   "rv": 0.0994,
+   "qty": 1,
+   "max_loss": 377.0,
+   "gross": 20.0,
+   "cost": 9.52,
+   "net": 10.48,
+   "exit": "take profit: $16 >= 35% of $23 max gain",
+   "describe": "bull_put SPY 2026-05-15 x1 [-719P / +715P] CREDIT $0.23 | maxloss $377 | delta +0.03 theta +6.60"
+  },
+  {
+   "und": "QQQ",
+   "expiry": "2026-05-15",
+   "entry": "2026-05-11",
+   "year": "2026",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": 1,
+   "iv": 0.226,
+   "rv": 0.1508,
+   "qty": 1,
+   "max_loss": 373.0,
+   "gross": 21.0,
+   "cost": 14.16,
+   "net": 6.84,
+   "exit": "take profit: $17 >= 35% of $27 max gain",
+   "describe": "bull_put QQQ 2026-05-15 x1 [-686P / +682P] CREDIT $0.27 | maxloss $373 | delta +0.02 theta +7.77"
+  },
+  {
+   "und": "IWM",
+   "expiry": "2026-05-15",
+   "entry": "2026-05-11",
+   "year": "2026",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": 1,
+   "iv": 0.2389,
+   "rv": 0.1624,
+   "qty": 1,
+   "max_loss": 273.0,
+   "gross": 23.0,
+   "cost": 6.96,
+   "net": 16.04,
+   "exit": "take profit: $19 >= 35% of $27 max gain",
+   "describe": "bull_put IWM 2026-05-15 x1 [-276P / +273P] CREDIT $0.27 | maxloss $273 | delta +0.06 theta +6.87"
+  },
+  {
+   "und": "SPY",
+   "expiry": "2026-05-22",
+   "entry": "2026-05-18",
+   "year": "2026",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": 1,
+   "iv": 0.1799,
+   "rv": 0.1039,
+   "qty": 1,
+   "max_loss": 359.0,
+   "gross": 31.0,
+   "cost": 13.2,
+   "net": 17.8,
+   "exit": "take profit: $27 >= 35% of $41 max gain",
+   "describe": "bull_put SPY 2026-05-22 x1 [-721P / +717P] CREDIT $0.41 | maxloss $359 | delta +0.05 theta +10.11"
+  },
+  {
+   "und": "QQQ",
+   "expiry": "2026-05-22",
+   "entry": "2026-05-18",
+   "year": "2026",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": 1,
+   "iv": 0.2639,
+   "rv": 0.168,
+   "qty": 1,
+   "max_loss": 340.0,
+   "gross": 46.0,
+   "cost": 28.0,
+   "net": 18.0,
+   "exit": "take profit: $42 >= 35% of $60 max gain",
+   "describe": "bull_put QQQ 2026-05-22 x1 [-686P / +682P] CREDIT $0.60 | maxloss $340 | delta +0.04 theta +11.23"
+  },
+  {
+   "und": "IWM",
+   "expiry": "2026-05-22",
+   "entry": "2026-05-18",
+   "year": "2026",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_RANGE",
+   "trend_dir": 0,
+   "iv": 0.2491,
+   "rv": 0.1753,
+   "qty": 1,
+   "max_loss": 270.0,
+   "gross": 24.0,
+   "cost": 7.04,
+   "net": 16.96,
+   "exit": "take profit: $20 >= 35% of $30 max gain",
+   "describe": "bull_put IWM 2026-05-22 x1 [-268P / +265P] CREDIT $0.30 | maxloss $270 | delta +0.07 theta +7.12"
+  },
+  {
+   "und": "SPY",
+   "expiry": "2026-06-12",
+   "entry": "2026-06-08",
+   "year": "2026",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_RANGE",
+   "trend_dir": 0,
+   "iv": 0.1905,
+   "rv": 0.1252,
+   "qty": 1,
+   "max_loss": 358.0,
+   "gross": -70.0,
+   "cost": 16.32,
+   "net": -86.32,
+   "exit": "stop: P&L $-74 <= -150% of $42 credit",
+   "describe": "bull_put SPY 2026-06-12 x1 [-720P / +716P] CREDIT $0.42 | maxloss $358 | delta +0.04 theta +9.69"
+  },
+  {
+   "und": "IWM",
+   "expiry": "2026-06-12",
+   "entry": "2026-06-08",
+   "year": "2026",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_RANGE",
+   "trend_dir": 0,
+   "iv": 0.2786,
+   "rv": 0.2235,
+   "qty": 1,
+   "max_loss": 278.0,
+   "gross": 22.0,
+   "cost": 5.76,
+   "net": 16.24,
+   "exit": "take profit: $19 >= 35% of $22 max gain",
+   "describe": "bull_put IWM 2026-06-12 x1 [-272P / +269P] CREDIT $0.22 | maxloss $278 | delta +0.04 theta +6.87"
+  },
+  {
+   "und": "SPY",
+   "expiry": "2026-07-17",
+   "entry": "2026-07-13",
+   "year": "2026",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "LOW_IV_RANGE",
+   "trend_dir": 0,
+   "iv": 0.1459,
+   "rv": 0.1344,
+   "qty": 1,
+   "max_loss": 368.0,
+   "gross": 25.0,
+   "cost": 8.96,
+   "net": 16.04,
+   "exit": "take profit: $21 >= 35% of $32 max gain",
+   "describe": "bull_put SPY 2026-07-17 x1 [-730P / +726P] CREDIT $0.32 | maxloss $368 | delta +0.04 theta +10.37"
+  },
+  {
+   "und": "IWM",
+   "expiry": "2026-07-17",
+   "entry": "2026-07-13",
+   "year": "2026",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_RANGE",
+   "trend_dir": 0,
+   "iv": 0.2257,
+   "rv": 0.1342,
+   "qty": 1,
+   "max_loss": 343.0,
+   "gross": 35.0,
+   "cost": 13.36,
+   "net": 21.64,
+   "exit": "take profit: $31 >= 35% of $57 max gain",
+   "describe": "bull_put IWM 2026-07-17 x1 [-288P / +284P] CREDIT $0.57 | maxloss $343 | delta +0.11 theta +8.25"
+  },
+  {
+   "und": "SPY",
+   "expiry": "2026-07-24",
+   "entry": "2026-07-20",
+   "year": "2026",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_RANGE",
+   "trend_dir": 0,
+   "iv": 0.1613,
+   "rv": 0.1107,
+   "qty": 1,
+   "max_loss": 372.0,
+   "gross": 24.0,
+   "cost": 10.4,
+   "net": 13.6,
+   "exit": "take profit: $20 >= 35% of $28 max gain",
+   "describe": "bull_put SPY 2026-07-24 x1 [-722P / +718P] CREDIT $0.28 | maxloss $372 | delta +0.03 theta +8.39"
+  },
+  {
+   "und": "IWM",
+   "expiry": "2026-07-24",
+   "entry": "2026-07-20",
+   "year": "2026",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_RANGE",
+   "trend_dir": 0,
+   "iv": 0.2161,
+   "rv": 0.1054,
+   "qty": 1,
+   "max_loss": 346.0,
+   "gross": 43.0,
+   "cost": 10.88,
+   "net": 32.12,
+   "exit": "take profit: $39 >= 35% of $54 max gain",
+   "describe": "bull_put IWM 2026-07-24 x1 [-287P / +283P] CREDIT $0.54 | maxloss $346 | delta +0.12 theta +9.02"
+  },
+  {
+   "und": "IWM",
+   "expiry": "2026-07-31",
+   "entry": "2026-07-27",
+   "year": "2026",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_RANGE",
+   "trend_dir": 0,
+   "iv": 0.2481,
+   "rv": 0.1103,
+   "qty": 1,
+   "max_loss": 343.0,
+   "gross": 50.0,
+   "cost": 13.52,
+   "net": 36.48,
+   "exit": "take profit: $46 >= 35% of $57 max gain",
+   "describe": "bull_put IWM 2026-07-31 x1 [-287P / +283P] CREDIT $0.57 | maxloss $343 | delta +0.11 theta +8.62"
+  },
+  {
+   "und": "IWM",
+   "expiry": "2026-08-14",
+   "entry": "2026-08-10",
+   "year": "2026",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": 1,
+   "iv": 0.174,
+   "rv": 0.1482,
+   "qty": 1,
+   "max_loss": 189.0,
+   "gross": 10.0,
+   "cost": 3.76,
+   "net": 6.24,
+   "exit": "take profit: $6 >= 35% of $11 max gain",
+   "describe": "bull_put IWM 2026-08-14 x1 [-291P / +289P] CREDIT $0.11 | maxloss $189 | delta +0.03 theta +3.55"
+  },
+  {
+   "und": "IWM",
+   "expiry": "2026-08-28",
+   "entry": "2026-08-24",
+   "year": "2026",
+   "kind": "bull_put",
+   "credit": true,
+   "regime": "HIGH_IV_RANGE",
+   "trend_dir": 0,
+   "iv": 0.1752,
+   "rv": 0.153,
+   "qty": 1,
+   "max_loss": 378.0,
+   "gross": 14.0,
+   "cost": 4.0,
+   "net": 10.0,
+   "exit": "take profit: $10 >= 35% of $22 max gain",
+   "describe": "bull_put IWM 2026-08-28 x1 [-290P / +286P] CREDIT $0.22 | maxloss $378 | delta +0.06 theta +6.92"
+  }
+ ],
+ "stood_aside": [
+  {
+   "und": "SPY",
+   "entry": "2024-07-29",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: short 525P is only 0.76\u03c3 from s"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2024-07-29",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "IWM",
+   "entry": "2024-07-29",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -1.69% of risk <"
+  },
+  {
+   "und": "SPY",
+   "entry": "2024-08-05",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2024-08-05",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "IWM",
+   "entry": "2024-08-05",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "SPY",
+   "entry": "2024-08-12",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2024-08-12",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "IWM",
+   "entry": "2024-08-12",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "SPY",
+   "entry": "2024-08-19",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: short 542P is only 0.28\u03c3 from s"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2024-08-19",
+   "regime": "LOW_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.14 is only 4% of $4 w"
+  },
+  {
+   "und": "IWM",
+   "entry": "2024-08-19",
+   "regime": "LOW_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.08 is only 2% of $4 w"
+  },
+  {
+   "und": "SPY",
+   "entry": "2024-08-26",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: short 544P is only 0.22\u03c3 from s"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2024-08-26",
+   "regime": "LOW_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -8.45% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2024-08-26",
+   "regime": "LOW_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.12 is only 3% of $4 w"
+  },
+  {
+   "und": "SPY",
+   "entry": "2024-09-09",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2024-09-09",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "IWM",
+   "entry": "2024-09-09",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "SPY",
+   "entry": "2024-09-16",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.09 is only 2% of $4 w"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2024-09-16",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -3.43% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2024-09-16",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.15 is only 4% of $4 w"
+  },
+  {
+   "und": "SPY",
+   "entry": "2024-09-23",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: short 553P is only 0.34\u03c3 from s"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2024-09-23",
+   "regime": "LOW_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -11.74% of risk "
+  },
+  {
+   "und": "IWM",
+   "entry": "2024-09-23",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.08 is only 2% of $4 w"
+  },
+  {
+   "und": "SPY",
+   "entry": "2024-09-30",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: short 555P is only 0.88\u03c3 from s"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2024-09-30",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -3.66% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2024-09-30",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -2.17% of risk <"
+  },
+  {
+   "und": "SPY",
+   "entry": "2024-10-07",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.11 is only 3% of $4 w"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2024-10-07",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +1.75% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2024-10-07",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +0.60% of risk <"
+  },
+  {
+   "und": "SPY",
+   "entry": "2024-10-14",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: short 566P is only 0.42\u03c3 from s"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2024-10-14",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -0.61% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2024-10-14",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.08 is only 2% of $4 w"
+  },
+  {
+   "und": "SPY",
+   "entry": "2024-10-21",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: short 568P is only 0.28\u03c3 from s"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2024-10-21",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -0.09% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2024-10-21",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.08 is only 2% of $4 w"
+  },
+  {
+   "und": "SPY",
+   "entry": "2024-10-28",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: short 561P is only 0.87\u03c3 from s"
+  },
+  {
+   "und": "IWM",
+   "entry": "2024-10-28",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.11 is only 3% of $4 w"
+  },
+  {
+   "und": "SPY",
+   "entry": "2024-11-11",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: short 581P is only 0.37\u03c3 from s"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2024-11-11",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.15 is only 4% of $4 w"
+  },
+  {
+   "und": "IWM",
+   "entry": "2024-11-11",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.15 is only 4% of $4 w"
+  },
+  {
+   "und": "SPY",
+   "entry": "2024-11-18",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: short 570P is only 0.74\u03c3 from s"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2024-11-18",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -3.29% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2024-11-18",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.11 is only 3% of $4 w"
+  },
+  {
+   "und": "SPY",
+   "entry": "2024-11-25",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: short 582P is only 0.21\u03c3 from s"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2024-11-25",
+   "regime": "LOW_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.13 is only 3% of $4 w"
+  },
+  {
+   "und": "IWM",
+   "entry": "2024-11-25",
+   "regime": "LOW_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.08 is only 2% of $4 w"
+  },
+  {
+   "und": "SPY",
+   "entry": "2024-12-02",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: short 588P is only 0.21\u03c3 from s"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2024-12-02",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -7.90% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2024-12-02",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.10 is only 2% of $4 w"
+  },
+  {
+   "und": "SPY",
+   "entry": "2024-12-09",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: short 589P is only 0.21\u03c3 from s"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2024-12-09",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.15 is only 4% of $4 w"
+  },
+  {
+   "und": "IWM",
+   "entry": "2024-12-09",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.09 is only 2% of $4 w"
+  },
+  {
+   "und": "SPY",
+   "entry": "2024-12-16",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: short 587P is only 0.49\u03c3 from s"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2024-12-16",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.14 is only 4% of $4 w"
+  },
+  {
+   "und": "IWM",
+   "entry": "2024-12-16",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +1.36% of risk <"
+  },
+  {
+   "und": "SPY",
+   "entry": "2024-12-23",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2024-12-23",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.11 is only 4% of $3 w"
+  },
+  {
+   "und": "IWM",
+   "entry": "2024-12-23",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "SPY",
+   "entry": "2024-12-30",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2024-12-30",
+   "regime": "LOW_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -5.04% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2024-12-30",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-01-06",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: short 579P is only 0.82\u03c3 from s"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-01-06",
+   "regime": "LOW_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -10.86% of risk "
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-01-06",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.12 is only 3% of $4 w"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-01-13",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-01-13",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-01-13",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-01-27",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.14 is only 4% of $4 w"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-01-27",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +0.31% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-01-27",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +1.10% of risk <"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-02-03",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.15 is only 4% of $4 w"
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-02-03",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.15 is only 4% of $4 w"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-02-10",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.12 is only 3% of $4 w"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-02-10",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -3.35% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-02-10",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.08 is only 2% of $4 w"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-02-24",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-02-24",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-02-24",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-03-03",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-03-03",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-03-03",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-03-10",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-03-10",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-03-10",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-03-17",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-03-17",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-03-17",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-03-24",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.15 is only 4% of $4 w"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-03-24",
+   "regime": "LOW_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -9.43% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-03-24",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.13 is only 3% of $4 w"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-03-31",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -0.41% of risk <"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-03-31",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-03-31",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-04-07",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-04-07",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-04-07",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-04-21",
+   "regime": "LOW_IV_TREND",
+   "why": "LOW_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-04-21",
+   "regime": "LOW_IV_TREND",
+   "why": "LOW_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-04-21",
+   "regime": "LOW_IV_TREND",
+   "why": "LOW_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-04-28",
+   "regime": "LOW_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -20.90% of risk "
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-04-28",
+   "regime": "LOW_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -16.44% of risk "
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-04-28",
+   "regime": "LOW_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -13.45% of risk "
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-05-05",
+   "regime": "LOW_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -20.85% of risk "
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-05-05",
+   "regime": "LOW_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -17.29% of risk "
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-05-05",
+   "regime": "LOW_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -12.01% of risk "
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-05-12",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.14 is only 4% of $4 w"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-05-12",
+   "regime": "LOW_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -6.62% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-05-12",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.13 is only 3% of $4 w"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-05-19",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -7.03% of risk <"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-05-19",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -0.14% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-05-19",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.13 is only 3% of $4 w"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-06-02",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -8.07% of risk <"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-06-02",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -0.99% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-06-02",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -1.40% of risk <"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-06-09",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -10.75% of risk "
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-06-09",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -3.20% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-06-09",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.13 is only 3% of $4 w"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-06-16",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.11 is only 3% of $4 w"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-06-16",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +1.00% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-06-16",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.11 is only 4% of $3 w"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-06-23",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.12 is only 3% of $4 w"
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-06-23",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +1.75% of risk <"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-07-07",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +0.47% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-07-07",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +1.59% of risk <"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-07-14",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.13 is only 3% of $4 w"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-07-14",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +0.61% of risk <"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-07-21",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -0.55% of risk <"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-07-21",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +1.39% of risk <"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-07-28",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.14 is only 4% of $4 w"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-08-04",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.12 is only 3% of $4 w"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-08-04",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +1.63% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-08-04",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -0.14% of risk <"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-08-11",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +1.62% of risk <"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-08-18",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.12 is only 3% of $4 w"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-08-18",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -0.40% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-08-18",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.14 is only 4% of $4 w"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-08-25",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.14 is only 4% of $4 w"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-08-25",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -0.55% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-08-25",
+   "regime": "LOW_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.12 is only 3% of $4 w"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-09-08",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.11 is only 3% of $4 w"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-09-08",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +1.04% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-09-08",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -3.13% of risk <"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-09-15",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.13 is only 3% of $4 w"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-09-15",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +1.78% of risk <"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-09-22",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.10 is only 2% of $4 w"
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-09-22",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 10 candidates rejected; best-EV one because: expected value +1.79% of risk <"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-09-29",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +1.88% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-09-29",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +0.69% of risk <"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-10-06",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.12 is only 3% of $4 w"
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-10-06",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.10 is only 3% of $3 w"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-10-13",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.14 is only 4% of $4 w"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-10-13",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -0.06% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-10-13",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +0.24% of risk <"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-10-20",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -2.44% of risk <"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-10-20",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -0.47% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-10-20",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -0.12% of risk <"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-10-27",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.13 is only 3% of $4 w"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-10-27",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +0.37% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-10-27",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -1.40% of risk <"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-11-03",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.14 is only 4% of $4 w"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-11-03",
+   "regime": "LOW_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -3.13% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-11-03",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -1.20% of risk <"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-11-10",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.15 is only 4% of $4 w"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-11-10",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -0.92% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-11-10",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.13 is only 3% of $4 w"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-11-17",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-11-17",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-11-17",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-11-24",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.13 is only 3% of $4 w"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-11-24",
+   "regime": "LOW_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -3.20% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-11-24",
+   "regime": "LOW_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.14 is only 4% of $4 w"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-12-01",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -5.62% of risk <"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-12-01",
+   "regime": "LOW_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -4.01% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-12-01",
+   "regime": "LOW_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.12 is only 3% of $4 w"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-12-08",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -2.82% of risk <"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-12-08",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +0.17% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-12-08",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -0.77% of risk <"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-12-15",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +0.68% of risk <"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-12-15",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +0.47% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-12-15",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +0.48% of risk <"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-12-22",
+   "regime": "LOW_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.10 is only 2% of $4 w"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-12-22",
+   "regime": "LOW_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -10.73% of risk "
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-12-22",
+   "regime": "LOW_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.09 is only 2% of $4 w"
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-12-29",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.14 is only 4% of $4 w"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-12-29",
+   "regime": "LOW_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -1.04% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-12-29",
+   "regime": "LOW_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.08 is only 3% of $3 w"
+  },
+  {
+   "und": "SPY",
+   "entry": "2026-01-05",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +0.09% of risk <"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2026-01-05",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +1.83% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2026-01-05",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +1.63% of risk <"
+  },
+  {
+   "und": "SPY",
+   "entry": "2026-01-12",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.15 is only 4% of $4 w"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2026-01-12",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +0.31% of risk <"
+  },
+  {
+   "und": "SPY",
+   "entry": "2026-02-02",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +1.82% of risk <"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2026-02-02",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +1.61% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2026-02-02",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +1.37% of risk <"
+  },
+  {
+   "und": "SPY",
+   "entry": "2026-02-09",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -1.38% of risk <"
+  },
+  {
+   "und": "SPY",
+   "entry": "2026-02-23",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2026-02-23",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "SPY",
+   "entry": "2026-03-09",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "IWM",
+   "entry": "2026-03-09",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "SPY",
+   "entry": "2026-03-16",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "IWM",
+   "entry": "2026-03-16",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "SPY",
+   "entry": "2026-03-23",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2026-03-23",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "IWM",
+   "entry": "2026-03-23",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "SPY",
+   "entry": "2026-04-06",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +1.70% of risk <"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2026-04-06",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +0.95% of risk <"
+  },
+  {
+   "und": "SPY",
+   "entry": "2026-04-13",
+   "regime": "LOW_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -5.02% of risk <"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2026-04-13",
+   "regime": "LOW_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -3.83% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2026-04-13",
+   "regime": "LOW_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -0.67% of risk <"
+  },
+  {
+   "und": "SPY",
+   "entry": "2026-04-20",
+   "regime": "LOW_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -3.18% of risk <"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2026-04-20",
+   "regime": "LOW_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -1.93% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2026-04-20",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +0.50% of risk <"
+  },
+  {
+   "und": "SPY",
+   "entry": "2026-04-27",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +0.64% of risk <"
+  },
+  {
+   "und": "SPY",
+   "entry": "2026-05-04",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +1.98% of risk <"
+  },
+  {
+   "und": "SPY",
+   "entry": "2026-06-01",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +1.38% of risk <"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2026-06-01",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +1.40% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2026-06-01",
+   "regime": "HIGH_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +1.55% of risk <"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2026-06-08",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -1.44% of risk <"
+  },
+  {
+   "und": "SPY",
+   "entry": "2026-06-22",
+   "regime": "LOW_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -0.87% of risk <"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2026-06-22",
+   "regime": "LOW_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -4.39% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2026-06-22",
+   "regime": "LOW_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +1.74% of risk <"
+  },
+  {
+   "und": "SPY",
+   "entry": "2026-07-06",
+   "regime": "LOW_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -11.77% of risk "
+  },
+  {
+   "und": "QQQ",
+   "entry": "2026-07-06",
+   "regime": "LOW_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -11.01% of risk "
+  },
+  {
+   "und": "IWM",
+   "entry": "2026-07-06",
+   "regime": "LOW_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -3.48% of risk <"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2026-07-13",
+   "regime": "LOW_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -3.13% of risk <"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2026-07-20",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "SPY",
+   "entry": "2026-07-27",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2026-07-27",
+   "regime": "HIGH_IV_TREND",
+   "why": "HIGH_IV_TREND: no feasible structure fits the risk budget"
+  },
+  {
+   "und": "SPY",
+   "entry": "2026-08-03",
+   "regime": "LOW_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -1.75% of risk <"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2026-08-03",
+   "regime": "LOW_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -2.29% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2026-08-03",
+   "regime": "HIGH_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value +1.89% of risk <"
+  },
+  {
+   "und": "SPY",
+   "entry": "2026-08-10",
+   "regime": "LOW_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -3.33% of risk <"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2026-08-10",
+   "regime": "LOW_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -7.01% of risk <"
+  },
+  {
+   "und": "SPY",
+   "entry": "2026-08-17",
+   "regime": "LOW_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -4.46% of risk <"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2026-08-17",
+   "regime": "LOW_IV_TREND",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -9.10% of risk <"
+  },
+  {
+   "und": "IWM",
+   "entry": "2026-08-17",
+   "regime": "LOW_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: credit $0.13 is only 3% of $4 w"
+  },
+  {
+   "und": "SPY",
+   "entry": "2026-08-24",
+   "regime": "LOW_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -0.74% of risk <"
+  },
+  {
+   "und": "QQQ",
+   "entry": "2026-08-24",
+   "regime": "LOW_IV_RANGE",
+   "why": "all 12 candidates rejected; best-EV one because: expected value -3.43% of risk <"
+  }
+ ],
+ "trend_ab": [
+  {
+   "und": "SPY",
+   "entry": "2024-08-05",
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": -1,
+   "on": null,
+   "off": {
+    "und": "SPY",
+    "expiry": "2024-08-09",
+    "entry": "2024-08-05",
+    "year": "2024",
+    "kind": "bull_put",
+    "credit": true,
+    "regime": "HIGH_IV_TREND",
+    "trend_dir": -1,
+    "iv": 0.5558,
+    "rv": 0.1863,
+    "qty": 1,
+    "max_loss": 343.0,
+    "gross": 49.0,
+    "cost": 26.64,
+    "net": 22.36,
+    "exit": "take profit: $45 >= 35% of $57 max gain",
+    "describe": "bull_put SPY 2024-08-09 x1 [-489P / +485P] CREDIT $0.57 | maxloss $343 | delta +0.05 theta +9.87"
+   }
+  },
+  {
+   "und": "QQQ",
+   "entry": "2024-08-05",
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": -1,
+   "on": null,
+   "off": {
+    "und": "QQQ",
+    "expiry": "2024-08-09",
+    "entry": "2024-08-05",
+    "year": "2024",
+    "kind": "bull_put",
+    "credit": true,
+    "regime": "HIGH_IV_TREND",
+    "trend_dir": -1,
+    "iv": 0.5682,
+    "rv": 0.2671,
+    "qty": 1,
+    "max_loss": 328.0,
+    "gross": 60.0,
+    "cost": 32.32,
+    "net": 27.68,
+    "exit": "take profit: $56 >= 35% of $72 max gain",
+    "describe": "bull_put QQQ 2024-08-09 x1 [-413P / +409P] CREDIT $0.72 | maxloss $328 | delta +0.05 theta +12.66"
+   }
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-02-24",
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": -1,
+   "on": null,
+   "off": {
+    "und": "QQQ",
+    "expiry": "2025-02-28",
+    "entry": "2025-02-24",
+    "year": "2025",
+    "kind": "bull_put",
+    "credit": true,
+    "regime": "HIGH_IV_TREND",
+    "trend_dir": -1,
+    "iv": 0.2873,
+    "rv": 0.1782,
+    "qty": 1,
+    "max_loss": 171.0,
+    "gross": -72.0,
+    "cost": 11.92,
+    "net": -83.92,
+    "exit": "stop: P&L $-76 <= -150% of $29 credit",
+    "describe": "bull_put QQQ 2025-02-28 x1 [-502P / +500P] CREDIT $0.29 | maxloss $171 | delta +0.04 theta +7.43"
+   }
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-03-03",
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": -1,
+   "on": null,
+   "off": {
+    "und": "QQQ",
+    "expiry": "2025-03-07",
+    "entry": "2025-03-03",
+    "year": "2025",
+    "kind": "bull_put",
+    "credit": true,
+    "regime": "HIGH_IV_TREND",
+    "trend_dir": -1,
+    "iv": 0.3546,
+    "rv": 0.1915,
+    "qty": 1,
+    "max_loss": 170.0,
+    "gross": 21.0,
+    "cost": 9.92,
+    "net": 11.08,
+    "exit": "take profit: $17 >= 35% of $30 max gain",
+    "describe": "bull_put QQQ 2025-03-07 x1 [-471P / +469P] CREDIT $0.30 | maxloss $170 | delta +0.03 theta +10.41"
+   }
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-03-03",
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": -1,
+   "on": null,
+   "off": {
+    "und": "IWM",
+    "expiry": "2025-03-07",
+    "entry": "2025-03-03",
+    "year": "2025",
+    "kind": "bull_put",
+    "credit": true,
+    "regime": "HIGH_IV_TREND",
+    "trend_dir": -1,
+    "iv": 0.375,
+    "rv": 0.1867,
+    "qty": 1,
+    "max_loss": 188.0,
+    "gross": 1.0,
+    "cost": 3.84,
+    "net": -2.84,
+    "exit": "time stop at DTE 1",
+    "describe": "bull_put IWM 2025-03-07 x1 [-197P / +195P] CREDIT $0.12 | maxloss $188 | delta +0.04 theta +3.80"
+   }
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-03-10",
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": -1,
+   "on": null,
+   "off": {
+    "und": "QQQ",
+    "expiry": "2025-03-14",
+    "entry": "2025-03-10",
+    "year": "2025",
+    "kind": "bull_put",
+    "credit": true,
+    "regime": "HIGH_IV_TREND",
+    "trend_dir": -1,
+    "iv": 0.4263,
+    "rv": 0.2399,
+    "qty": 1,
+    "max_loss": 357.0,
+    "gross": 38.0,
+    "cost": 19.44,
+    "net": 18.56,
+    "exit": "take profit: $34 >= 35% of $43 max gain",
+    "describe": "bull_put QQQ 2025-03-14 x1 [-450P / +446P] CREDIT $0.43 | maxloss $357 | delta +0.04 theta +9.62"
+   }
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-03-10",
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": -1,
+   "on": null,
+   "off": {
+    "und": "IWM",
+    "expiry": "2025-03-14",
+    "entry": "2025-03-10",
+    "year": "2025",
+    "kind": "bull_put",
+    "credit": true,
+    "regime": "HIGH_IV_TREND",
+    "trend_dir": -1,
+    "iv": 0.4597,
+    "rv": 0.1923,
+    "qty": 1,
+    "max_loss": 345.0,
+    "gross": 45.0,
+    "cost": 10.48,
+    "net": 34.52,
+    "exit": "take profit: $41 >= 35% of $55 max gain",
+    "describe": "bull_put IWM 2025-03-14 x1 [-193P / +189P] CREDIT $0.55 | maxloss $345 | delta +0.13 theta +8.85"
+   }
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-03-31",
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": -1,
+   "on": null,
+   "off": {
+    "und": "QQQ",
+    "expiry": "2025-04-04",
+    "entry": "2025-03-31",
+    "year": "2025",
+    "kind": "bull_put",
+    "credit": true,
+    "regime": "HIGH_IV_TREND",
+    "trend_dir": -1,
+    "iv": 0.3496,
+    "rv": 0.2612,
+    "qty": 1,
+    "max_loss": 221.0,
+    "gross": 46.0,
+    "cost": 29.84,
+    "net": 16.16,
+    "exit": "take profit: $42 >= 35% of $79 max gain",
+    "describe": "bull_put QQQ 2025-04-04 x1 [-454P / +451P] CREDIT $0.79 | maxloss $221 | delta +0.06 theta +12.71"
+   }
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-03-31",
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": -1,
+   "on": null,
+   "off": {
+    "und": "IWM",
+    "expiry": "2025-04-04",
+    "entry": "2025-03-31",
+    "year": "2025",
+    "kind": "bull_put",
+    "credit": true,
+    "regime": "HIGH_IV_TREND",
+    "trend_dir": -1,
+    "iv": 0.4389,
+    "rv": 0.2144,
+    "qty": 1,
+    "max_loss": 173.0,
+    "gross": 23.0,
+    "cost": 5.68,
+    "net": 17.32,
+    "exit": "take profit: $19 >= 35% of $27 max gain",
+    "describe": "bull_put IWM 2025-04-04 x1 [-190P / +188P] CREDIT $0.27 | maxloss $173 | delta +0.07 theta +7.30"
+   }
+  },
+  {
+   "und": "SPY",
+   "entry": "2025-11-17",
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": -1,
+   "on": null,
+   "off": {
+    "und": "SPY",
+    "expiry": "2025-11-21",
+    "entry": "2025-11-17",
+    "year": "2025",
+    "kind": "bull_put",
+    "credit": true,
+    "regime": "HIGH_IV_TREND",
+    "trend_dir": -1,
+    "iv": 0.2751,
+    "rv": 0.1263,
+    "qty": 1,
+    "max_loss": 376.0,
+    "gross": -2.0,
+    "cost": 12.0,
+    "net": -14.0,
+    "exit": "time stop at DTE 1",
+    "describe": "bull_put SPY 2025-11-21 x1 [-637P / +633P] CREDIT $0.24 | maxloss $376 | delta +0.03 theta +6.89"
+   }
+  },
+  {
+   "und": "QQQ",
+   "entry": "2025-11-17",
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": -1,
+   "on": null,
+   "off": {
+    "und": "QQQ",
+    "expiry": "2025-11-21",
+    "entry": "2025-11-17",
+    "year": "2025",
+    "kind": "bull_put",
+    "credit": true,
+    "regime": "HIGH_IV_TREND",
+    "trend_dir": -1,
+    "iv": 0.3471,
+    "rv": 0.1874,
+    "qty": 1,
+    "max_loss": 345.0,
+    "gross": -60.0,
+    "cost": 30.8,
+    "net": -90.8,
+    "exit": "time stop at DTE 1",
+    "describe": "bull_put QQQ 2025-11-21 x1 [-582P / +578P] CREDIT $0.55 | maxloss $345 | delta +0.04 theta +9.41"
+   }
+  },
+  {
+   "und": "IWM",
+   "entry": "2025-11-17",
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": -1,
+   "on": null,
+   "off": {
+    "und": "IWM",
+    "expiry": "2025-11-21",
+    "entry": "2025-11-17",
+    "year": "2025",
+    "kind": "bull_put",
+    "credit": true,
+    "regime": "HIGH_IV_TREND",
+    "trend_dir": -1,
+    "iv": 0.3452,
+    "rv": 0.1858,
+    "qty": 1,
+    "max_loss": 362.0,
+    "gross": 22.0,
+    "cost": 9.92,
+    "net": 12.08,
+    "exit": "take profit: $18 >= 35% of $38 max gain",
+    "describe": "bull_put IWM 2025-11-21 x1 [-224P / +220P] CREDIT $0.38 | maxloss $362 | delta +0.08 theta +6.95"
+   }
+  },
+  {
+   "und": "SPY",
+   "entry": "2026-02-23",
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": -1,
+   "on": null,
+   "off": {
+    "und": "SPY",
+    "expiry": "2026-02-27",
+    "entry": "2026-02-23",
+    "year": "2026",
+    "kind": "bull_put",
+    "credit": true,
+    "regime": "HIGH_IV_TREND",
+    "trend_dir": -1,
+    "iv": 0.2315,
+    "rv": 0.1217,
+    "qty": 1,
+    "max_loss": 359.0,
+    "gross": 30.0,
+    "cost": 16.24,
+    "net": 13.76,
+    "exit": "take profit: $26 >= 35% of $41 max gain",
+    "describe": "bull_put SPY 2026-02-27 x1 [-662P / +658P] CREDIT $0.41 | maxloss $359 | delta +0.04 theta +9.23"
+   }
+  },
+  {
+   "und": "QQQ",
+   "entry": "2026-02-23",
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": -1,
+   "on": null,
+   "off": {
+    "und": "QQQ",
+    "expiry": "2026-02-27",
+    "entry": "2026-02-23",
+    "year": "2026",
+    "kind": "bull_put",
+    "credit": true,
+    "regime": "HIGH_IV_TREND",
+    "trend_dir": -1,
+    "iv": 0.2931,
+    "rv": 0.1697,
+    "qty": 1,
+    "max_loss": 261.0,
+    "gross": 34.0,
+    "cost": 13.68,
+    "net": 20.32,
+    "exit": "take profit: $30 >= 35% of $39 max gain",
+    "describe": "bull_put QQQ 2026-02-27 x1 [-572P / +569P] CREDIT $0.39 | maxloss $261 | delta +0.03 theta +12.81"
+   }
+  },
+  {
+   "und": "SPY",
+   "entry": "2026-03-09",
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": -1,
+   "on": null,
+   "off": {
+    "und": "SPY",
+    "expiry": "2026-03-13",
+    "entry": "2026-03-09",
+    "year": "2026",
+    "kind": "bull_put",
+    "credit": true,
+    "regime": "HIGH_IV_TREND",
+    "trend_dir": -1,
+    "iv": 0.2719,
+    "rv": 0.1137,
+    "qty": 1,
+    "max_loss": 351.0,
+    "gross": 29.0,
+    "cost": 29.68,
+    "net": -0.68,
+    "exit": "take profit: $25 >= 35% of $49 max gain",
+    "describe": "bull_put SPY 2026-03-13 x1 [-656P / +652P] CREDIT $0.49 | maxloss $351 | delta +0.04 theta +7.97"
+   }
+  },
+  {
+   "und": "IWM",
+   "entry": "2026-03-09",
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": -1,
+   "on": null,
+   "off": {
+    "und": "IWM",
+    "expiry": "2026-03-13",
+    "entry": "2026-03-09",
+    "year": "2026",
+    "kind": "bull_put",
+    "credit": true,
+    "regime": "HIGH_IV_TREND",
+    "trend_dir": -1,
+    "iv": 0.3867,
+    "rv": 0.188,
+    "qty": 1,
+    "max_loss": 76.0,
+    "gross": 18.0,
+    "cost": 9.44,
+    "net": 8.56,
+    "exit": "take profit: $14 >= 35% of $24 max gain",
+    "describe": "bull_put IWM 2026-03-13 x1 [-238P / +237P] CREDIT $0.24 | maxloss $76 | delta +0.03 theta +7.29"
+   }
+  },
+  {
+   "und": "SPY",
+   "entry": "2026-03-16",
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": -1,
+   "on": null,
+   "off": {
+    "und": "SPY",
+    "expiry": "2026-03-20",
+    "entry": "2026-03-16",
+    "year": "2026",
+    "kind": "bull_put",
+    "credit": true,
+    "regime": "HIGH_IV_TREND",
+    "trend_dir": -1,
+    "iv": 0.2532,
+    "rv": 0.1192,
+    "qty": 1,
+    "max_loss": 362.0,
+    "gross": 21.0,
+    "cost": 18.08,
+    "net": 2.92,
+    "exit": "take profit: $17 >= 35% of $38 max gain",
+    "describe": "bull_put SPY 2026-03-20 x1 [-646P / +642P] CREDIT $0.38 | maxloss $362 | delta +0.04 theta +8.50"
+   }
+  },
+  {
+   "und": "IWM",
+   "entry": "2026-03-16",
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": -1,
+   "on": null,
+   "off": {
+    "und": "IWM",
+    "expiry": "2026-03-20",
+    "entry": "2026-03-16",
+    "year": "2026",
+    "kind": "bull_put",
+    "credit": true,
+    "regime": "HIGH_IV_TREND",
+    "trend_dir": -1,
+    "iv": 0.3505,
+    "rv": 0.1835,
+    "qty": 1,
+    "max_loss": 337.0,
+    "gross": 28.0,
+    "cost": 16.88,
+    "net": 11.12,
+    "exit": "take profit: $24 >= 35% of $63 max gain",
+    "describe": "bull_put IWM 2026-03-20 x1 [-241P / +237P] CREDIT $0.63 | maxloss $337 | delta +0.10 theta +9.16"
+   }
+  },
+  {
+   "und": "SPY",
+   "entry": "2026-03-23",
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": -1,
+   "on": null,
+   "off": {
+    "und": "SPY",
+    "expiry": "2026-03-27",
+    "entry": "2026-03-23",
+    "year": "2026",
+    "kind": "bull_put",
+    "credit": true,
+    "regime": "HIGH_IV_TREND",
+    "trend_dir": -1,
+    "iv": 0.277,
+    "rv": 0.1335,
+    "qty": 1,
+    "max_loss": 339.0,
+    "gross": 50.0,
+    "cost": 28.24,
+    "net": 21.76,
+    "exit": "take profit: $46 >= 35% of $61 max gain",
+    "describe": "bull_put SPY 2026-03-27 x1 [-636P / +632P] CREDIT $0.61 | maxloss $339 | delta +0.05 theta +10.92"
+   }
+  },
+  {
+   "und": "QQQ",
+   "entry": "2026-03-23",
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": -1,
+   "on": null,
+   "off": {
+    "und": "QQQ",
+    "expiry": "2026-03-27",
+    "entry": "2026-03-23",
+    "year": "2026",
+    "kind": "bull_put",
+    "credit": true,
+    "regime": "HIGH_IV_TREND",
+    "trend_dir": -1,
+    "iv": 0.2902,
+    "rv": 0.1732,
+    "qty": 1,
+    "max_loss": 263.0,
+    "gross": 30.0,
+    "cost": 20.72,
+    "net": 9.28,
+    "exit": "take profit: $26 >= 35% of $37 max gain",
+    "describe": "bull_put QQQ 2026-03-27 x1 [-566P / +563P] CREDIT $0.37 | maxloss $263 | delta +0.03 theta +8.54"
+   }
+  },
+  {
+   "und": "IWM",
+   "entry": "2026-03-23",
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": -1,
+   "on": null,
+   "off": {
+    "und": "IWM",
+    "expiry": "2026-03-27",
+    "entry": "2026-03-23",
+    "year": "2026",
+    "kind": "bull_put",
+    "credit": true,
+    "regime": "HIGH_IV_TREND",
+    "trend_dir": -1,
+    "iv": 0.3932,
+    "rv": 0.215,
+    "qty": 1,
+    "max_loss": 345.0,
+    "gross": 50.0,
+    "cost": 13.84,
+    "net": 36.16,
+    "exit": "take profit: $46 >= 35% of $55 max gain",
+    "describe": "bull_put IWM 2026-03-27 x1 [-238P / +234P] CREDIT $0.55 | maxloss $345 | delta +0.08 theta +10.40"
+   }
+  },
+  {
+   "und": "SPY",
+   "entry": "2026-07-27",
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": -1,
+   "on": null,
+   "off": {
+    "und": "SPY",
+    "expiry": "2026-07-31",
+    "entry": "2026-07-27",
+    "year": "2026",
+    "kind": "bull_put",
+    "credit": true,
+    "regime": "HIGH_IV_TREND",
+    "trend_dir": -1,
+    "iv": 0.1894,
+    "rv": 0.1091,
+    "qty": 1,
+    "max_loss": 340.0,
+    "gross": 29.0,
+    "cost": 23.52,
+    "net": 5.48,
+    "exit": "take profit: $25 >= 35% of $60 max gain",
+    "describe": "bull_put SPY 2026-07-31 x1 [-724P / +720P] CREDIT $0.60 | maxloss $340 | delta +0.05 theta +10.90"
+   }
+  },
+  {
+   "und": "QQQ",
+   "entry": "2026-07-27",
+   "regime": "HIGH_IV_TREND",
+   "trend_dir": -1,
+   "on": null,
+   "off": {
+    "und": "QQQ",
+    "expiry": "2026-07-31",
+    "entry": "2026-07-27",
+    "year": "2026",
+    "kind": "bull_put",
+    "credit": true,
+    "regime": "HIGH_IV_TREND",
+    "trend_dir": -1,
+    "iv": 0.3316,
+    "rv": 0.2269,
+    "qty": 1,
+    "max_loss": 344.0,
+    "gross": -127.0,
+    "cost": 26.72,
+    "net": -153.72,
+    "exit": "stop: P&L $-131 <= -150% of $56 credit",
+    "describe": "bull_put QQQ 2026-07-31 x1 [-654P / +650P] CREDIT $0.56 | maxloss $344 | delta +0.03 theta +13.40"
+   }
+  }
+ ]
+}

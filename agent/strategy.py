@@ -289,7 +289,8 @@ def candidates(reg: Regime, views: List[O.ContractView], expiry: date,
     # badly above it, so above the ceiling we simply do not offer them.
     rv = (reg.detail or {}).get("realized_vol") or 0.0
     condors_allowed = rv <= config.MAX_VOL_FOR_CONDOR
-    neutral_ok = reg.name in (HIGH_IV_RANGE, LOW_IV_RANGE) and condors_allowed
+    neutral_ok = (reg.name in (HIGH_IV_RANGE, LOW_IV_RANGE) and condors_allowed
+                  and config.CONDORS_ENABLED)
     trend_ok = reg.name in (HIGH_IV_TREND, LOW_IV_TREND)
     bias = reg.trend_dir or view.bias
 
@@ -313,6 +314,8 @@ def candidates(reg: Regime, views: List[O.ContractView], expiry: date,
 
     # --- credit verticals on both sides ----------------------------------
     for kind in ("P", "C"):
+        if kind not in config.CREDIT_SIDES:
+            continue
         if trend_ok and bias and config.TREND_SIDE_FILTER:
             # only sell the side the trend moves away from
             if (bias > 0 and kind == "C") or (bias < 0 and kind == "P"):
@@ -335,7 +338,7 @@ def candidates(reg: Regime, views: List[O.ContractView], expiry: date,
                 keep(sp)
 
     # --- debit verticals when the view is directional --------------------
-    if bias and reg.name in (LOW_IV_TREND, HIGH_IV_TREND):
+    if bias and reg.name in (LOW_IV_TREND, HIGH_IV_TREND) and config.DEBIT_VERTICALS_ENABLED:
         kind = "C" if bias > 0 else "P"
         for dl in config.DEBIT_LONG_DELTAS:
             long_ = O.by_delta(views, dl, kind, expiry)

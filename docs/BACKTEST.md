@@ -1038,3 +1038,195 @@ python scripts/predict_direction.py
 python scripts/predict_direction.py --horizon 1 --symbols SPY
 python scripts/train_structure.py --features ma      # the MA-only result
 ```
+
+---
+
+# Part 10 — The full pipeline over two years: what survives contact with costs
+
+Run 4 Sep 2026 · `scripts/backtest_full.py` · raw data
+[`backtest_full.json`](backtest_full.json) (as shipped) ·
+[`backtest_full_enhanced.json`](backtest_full_enhanced.json) (after)
+
+Every result in Parts 1–9 rests on 19 entry dates, or on fixed-offset structures
+the live agent never actually builds. The competition added 14 trades. This is
+the harness that stops all of that being provisional.
+
+## Method
+
+For **every Friday expiry from Aug 2024 to Aug 2026** — 109 of them — on SPY, QQQ
+and IWM, run the real pipeline the live agent runs:
+
+```
+regime.classify()  →  strategy.propose()  →  Replayer.replay()
+```
+
+Greeks are recovered by inverting Black-Scholes on each contract's historical
+close (Part 7's method), so `propose()` selects strikes **by delta, exactly as it
+does live**. Bars are strictly up to the entry date. The real exit logic runs.
+And for the first time, **`expectancy.round_trip_cost()` is charged on every
+trade** — every leg crossed twice at the full synthetic spread, the finding the
+competition made live (`9e0990b`) applied to the history.
+
+## Result — the strategy as shipped
+
+| | n | win% | net | PF | per trade | worst |
+|---|---:|---:|---:|---:|---:|---:|
+| gross, no costs | 157 | 64% | +$109 | 1.02 | +$0.69 | −$364 |
+| **net of round-trip spread** | 157 | 62% | 🔴 **−$3,940** | **0.51** | **−$25.10** | −$467 |
+
+**Break-even before costs. Costs were $26 a trade against $0.69 of gross edge.**
+Negative in all three years. Negative on all three underlyings.
+
+| Year | n | win% | net | PF |
+|---|---:|---:|---:|---:|
+| 2024 | 39 | 46% | −$2,354 | 0.27 |
+| 2025 | 66 | 62% | −$1,215 | 0.60 |
+| 2026 | 52 | 75% | −$371 | 0.79 |
+
+This is the load-bearing number in this document now. It is the real agent, over
+109 expiries, net of what it actually pays to trade — and it loses.
+
+## Where the money went
+
+Three structure families, each with a mechanism and an independent corroboration:
+
+| Structure | n | win% | net | PF | mechanism |
+|---|---:|---:|---:|---:|---|
+| **iron_condor** | 42 | 55% | **−$1,843** | 0.47 | 4 legs pay 2× the spread ($48 vs ~$15) for a credit that is not 2× as large; avg gross P&L **+$5** against **$48** of cost |
+| **bear_put / bull_call** (debits) | 24 | 17% | **−$1,970** | 0.14 | the strategy sells variance premium; a debit *buys* it |
+| **bear_call** | 66 | 74% | −$323 | 0.85 | see below |
+| bull_put | 25 | 88% | **+$196** | **2.91** | — |
+
+**Condors**: Part 2 found they collapse above 18% realised vol on 277 fixed-offset
+trades. Part 10 finds they lose net in the calm regime too. Two samples, one
+structural mechanism.
+
+**Debits**: the competition's only two losers were debit spreads (−$628 of 14
+trades). The harvest experiment was an attempt to rescue them that failed its own
+A/B. `LOW_IV_TREND`, the regime that produces them, went **0 for 5**.
+
+## 🔴 The trend filter: Part 5 was wrong, and this reverses it
+
+Part 5 found, on 19 entry dates, that the side filter "blocks the better bucket on
+both sides" and called its premise unsupported. `TREND_SIDE_FILTER` was added so
+the same question could be asked on 112 entries where the knob changes the pick:
+
+| | n | win% | net | PF |
+|---|---:|---:|---:|---:|
+| filter ON (shipped) | 23 | 87% | **+$220** | 3.14 |
+| filter OFF | 112 | 72% | −$415 | 0.87 |
+
+**Net contribution of the filter: +$635.** Blocking calls in an uptrend: +$415.
+Blocking puts in a downtrend: +$220. With the filter on, the agent stood aside 89
+of those 112 times, and the 23 trades it took were the good ones.
+
+Part 5 stands corrected. Nineteen entry dates said one thing; a hundred and
+twelve say the opposite, with the mechanism on the side of the larger sample.
+The filter stays.
+
+## The optimiser was choosing the wrong side, 69 to 1
+
+With condors and debits off, 151 credit verticals remain:
+
+| | n | win% | net | PF | years profitable |
+|---|---:|---:|---:|---:|---|
+| **bear_call** | 126 | 69% | **−$2,209** | 0.59 | 2026 only |
+| **bull_put** | 25 | 88% | **+$196** | 2.91 | every year traded |
+
+In `HIGH_IV_RANGE` — no trend, both sides eligible — **the EV optimiser picked a
+bear call 69 times and a bull put once.** That is not the market; it is the
+model. At the same delta a call sits closer to spot in sigma terms and shows
+about 3× the credit per dollar of width (0.28 vs 0.10). N(d₂) under realised vol
+at zero drift prices that as safe, and the index then drifts up through it.
+
+The mechanism is textbook: **equity-index variance risk premium is asymmetric.**
+It lives in puts — the crash-insurance side. OTM calls carry little or none;
+covered-call supply keeps them cheap. "IV above realised" at the money does not
+mean the *call* wing is rich. Part 2's independent sample said the same:
+put credit profitable in all four regimes; call credit PF 0.8–1.1, positive only
+in the selloff.
+
+## What changed
+
+```python
+CONDORS_ENABLED          = False    # was on
+DEBIT_VERTICALS_ENABLED  = False    # was on
+CREDIT_SIDES             = ["P"]    # was P and C
+TREND_SIDE_FILTER        = True     # unchanged; now measured rather than doubted
+```
+
+Each is a knob with the measurement in `config.py` beside it, and each default is
+pinned by a test so reversing it requires a new measurement.
+
+## Result — after
+
+Same 109 expiries, same costs, new defaults:
+
+| | n | win% | net | PF | per trade | worst |
+|---|---:|---:|---:|---:|---:|---:|
+| gross | 49 | 90% | +$947 | 6.92 | +$19.33 | −$70 |
+| **net of round-trip spread** | **49** | **90%** | **+$424** | **3.14** | **+$8.65** | **−$86** |
+
+| Year | n | win% | net | PF |
+|---|---:|---:|---:|---:|
+| 2024 | 4 | 100% | +$71 | — |
+| 2025 | 13 | 85% | +$89 | 3.04 |
+| 2026 | 32 | 91% | +$264 | 2.71 |
+
+Positive in every year. Positive in both regimes it trades. Costs fell from $26 a
+trade to $11 — two legs instead of four, and further-out strikes. It stood aside
+**239 of 288** opportunities.
+
+What remains is a recognisable strategy: **a defined-risk put-write on index ETFs,
+taken only when implied vol exceeds realised, never into a downtrend, exited at
+35% of max gain.** It is not novel. It is what the data says the agent was
+actually good at.
+
+## 🔴 Read this before believing the "after" number
+
+**It is in-sample by construction.** Condors, debits and calls were switched off
+because they lost *on this data*. Part 4's lesson — filters fitted to a window
+improve only that window — applies. Three things make this different from Part 4,
+and none of them dissolves the caveat:
+
+- Each cut is the removal of a **whole structure family**, not a fitted threshold.
+  There is no parameter that was tuned.
+- Each has a **structural mechanism** that predicts the direction of the result.
+- Each is **corroborated by Part 2's independent 277-trade sample** and by the
+  competition's 14 live trades.
+
+**49 trades in two years is small.** About two a month. $424 over two years on a
+$100k account is 0.2% a year — a per-trade edge of $8.65 that a wider-than-modelled
+spread would erase. SPY alone was −$9; QQQ and IWM carry it.
+
+**The out-of-sample test is live trading from here.** Every fill on the account
+from this commit forward is the first evidence that has not been looked at.
+
+## Two other things this session found, both live-affecting
+
+**The classifier's primary path had never run, and fought the thesis.** Every
+regime line ever logged reads `rank n/a`: `iv_rank()` needs 20 readings, the agent
+records one a day, and it has never been up a month. `scripts/backfill_iv.py`
+supplied the history — and the rank path disagreed with the IV/RV path on 8 of 10
+names, in the direction that fights the strategy (AAPL: 1.45× premium, rank 0.15
+→ *buy* debit spreads). Rank measures IV's level against its own past; the edge
+is IV's gap over realised. `classify()` now uses the gap whenever realised vol is
+available and rank as the fallback. With no history — the state every prior
+measurement was made in — its output is unchanged, and a test pins that.
+
+**`EVENT_RISK` had never fired.** `classify()` takes `has_catalyst`; nothing passed
+it. With AAPL, MSFT, META, AMZN, GOOGL in the universe the agent would sell a
+4-DTE condor the day before earnings. Alpaca has no earnings calendar, but the
+options market prices events as a kink in the IV term structure. `_event_check()`
+reads near/far ATM IV; ≥ 1.35× is an event. Today, with none in window, all ten
+names read 0.82–1.27. Unmeasured on history; the ratio is logged on every regime
+so it can be.
+
+## Reproduce
+
+```bash
+python scripts/backtest_full.py                                    # current defaults
+CONDORS_ENABLED=true DEBIT_VERTICALS_ENABLED=true CREDIT_SIDES=P,C \
+  python scripts/backtest_full.py --out docs/backtest_full.json    # as shipped before
+python scripts/backfill_iv.py --dry-run
+```
