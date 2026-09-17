@@ -1,12 +1,12 @@
 {
-  "updated_at": "2026-09-17T15:00:34+00:00",
+  "updated_at": "2026-09-17T15:06:39+00:00",
   "account": {
     "account_id": "PA3BAT1OOEFE",
     "environment": "comp",
-    "equity": 100000.0,
+    "equity": 99797.69,
     "starting_equity": 100000.0,
-    "total_pnl": 0.0,
-    "total_pnl_pct": 0.0,
+    "total_pnl": -202.31,
+    "total_pnl_pct": -0.00202,
     "max_drawdown_pct": -0.00594,
     "open_positions": 0,
     "closed_trades": 14,
@@ -6953,61 +6953,100 @@
     {
       "ts": "2026-09-17T13:56:53+00:00",
       "equity": 99797.69
+    },
+    {
+      "ts": "2026-09-17T15:04:28+00:00",
+      "equity": 99797.69
     }
   ],
   "market": [
     {
       "underlying": "SPY",
-      "error": "[0] /v2/stocks/snapshots network: [Errno 8] nodename nor servname provided, or not known"
+      "spot": 760.53,
+      "implied_vol": 0.1169,
+      "realized_vol": 0.0899,
+      "premium_edge": 0.027,
+      "verdict": "trade",
+      "reason": "market charges more than the real risk"
     },
     {
       "underlying": "QQQ",
-      "error": "[0] /v2/stocks/snapshots network: [Errno 8] nodename nor servname provided, or not known"
+      "spot": 714.97,
+      "implied_vol": 0.1535,
+      "realized_vol": 0.126,
+      "premium_edge": 0.0275,
+      "verdict": "trade",
+      "reason": "market charges more than the real risk"
     },
     {
       "underlying": "IWM",
-      "error": "[0] /v2/stocks/snapshots network: [Errno 8] nodename nor servname provided, or not known"
+      "spot": 286.73,
+      "implied_vol": 0.1576,
+      "realized_vol": 0.1234,
+      "premium_edge": 0.0342,
+      "verdict": "trade",
+      "reason": "market charges more than the real risk"
     },
     {
       "underlying": "DIA",
-      "error": "[0] /v2/stocks/snapshots network: [Errno 8] nodename nor servname provided, or not known"
+      "spot": 517.32,
+      "implied_vol": 0.1336,
+      "realized_vol": 0.1136,
+      "premium_edge": 0.02,
+      "verdict": "trade",
+      "reason": "market charges more than the real risk"
     },
     {
       "underlying": "SMH",
-      "error": "[0] /v2/stocks/snapshots network: [Errno 8] nodename nor servname provided, or not known"
+      "spot": 559.25,
+      "implied_vol": 0.2874,
+      "realized_vol": 0.3256,
+      "premium_edge": -0.0381,
+      "verdict": "stand aside",
+      "reason": "market charges LESS than the real risk"
     },
     {
       "underlying": "AAPL",
-      "error": "[0] /v2/stocks/snapshots network: [Errno 8] nodename nor servname provided, or not known"
+      "spot": 332.59,
+      "implied_vol": 0.2334,
+      "realized_vol": 0.2186,
+      "premium_edge": 0.0148,
+      "verdict": "trade",
+      "reason": "market charges more than the real risk"
     },
     {
       "underlying": "MSFT",
-      "error": "[0] /v2/stocks/snapshots network: [Errno 8] nodename nor servname provided, or not known"
+      "spot": 494.96,
+      "implied_vol": 0.2383,
+      "realized_vol": 0.2112,
+      "premium_edge": 0.0272,
+      "verdict": "trade",
+      "reason": "market charges more than the real risk"
     },
     {
       "underlying": "META",
-      "spot": 673.08,
-      "implied_vol": 0.3696,
-      "realized_vol": 0.2678,
-      "premium_edge": 0.1018,
+      "spot": 671.87,
+      "implied_vol": 0.3693,
+      "realized_vol": 0.2691,
+      "premium_edge": 0.1002,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     },
     {
       "underlying": "AMZN",
-      "spot": 251.54,
-      "implied_vol": 0.2819,
-      "realized_vol": 0.2623,
-      "premium_edge": 0.0196,
+      "spot": 251.34,
+      "implied_vol": 0.2795,
+      "realized_vol": 0.2619,
+      "premium_edge": 0.0177,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     },
     {
       "underlying": "GOOGL",
-      "spot": 346.25,
-      "implied_vol": 0.2787,
-      "realized_vol": 0.2286,
-      "premium_edge": 0.05,
+      "spot": 345.36,
+      "implied_vol": 0.2803,
+      "realized_vol": 0.2274,
+      "premium_edge": 0.0529,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     }
