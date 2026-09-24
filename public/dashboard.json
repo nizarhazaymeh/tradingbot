@@ -1,12 +1,12 @@
 {
-  "updated_at": "2026-09-24T13:24:44+00:00",
+  "updated_at": "2026-09-24T16:03:09+00:00",
   "account": {
     "account_id": "PA3BAT1OOEFE",
     "environment": "comp",
-    "equity": 100000.0,
+    "equity": 99797.69,
     "starting_equity": 100000.0,
-    "total_pnl": 0.0,
-    "total_pnl_pct": 0.0,
+    "total_pnl": -202.31,
+    "total_pnl_pct": -0.00202,
     "max_drawdown_pct": -0.00594,
     "open_positions": 0,
     "closed_trades": 14,
@@ -11298,56 +11298,81 @@
   "market": [
     {
       "underlying": "SPY",
-      "error": "[0] /v2/stocks/snapshots network: [Errno 8] nodename nor servname provided, or not known"
+      "spot": 764.12,
+      "implied_vol": 0.1187,
+      "realized_vol": 0.1072,
+      "premium_edge": 0.0116,
+      "verdict": "trade",
+      "reason": "market charges more than the real risk"
     },
     {
       "underlying": "QQQ",
-      "error": "[0] /v2/stocks/snapshots network: [Errno 8] nodename nor servname provided, or not known"
+      "error": "The read operation timed out"
     },
     {
       "underlying": "IWM",
-      "error": "[0] /v2/stocks/snapshots network: [Errno 8] nodename nor servname provided, or not known"
+      "spot": 279.79,
+      "implied_vol": 0.1678,
+      "realized_vol": 0.124,
+      "premium_edge": 0.0439,
+      "verdict": "trade",
+      "reason": "market charges more than the real risk"
     },
     {
       "underlying": "DIA",
-      "error": "[0] /v2/stocks/snapshots network: [Errno 8] nodename nor servname provided, or not known"
+      "spot": 511.43,
+      "implied_vol": 0.1292,
+      "realized_vol": 0.106,
+      "premium_edge": 0.0232,
+      "verdict": "trade",
+      "reason": "market charges more than the real risk"
     },
     {
       "underlying": "SMH",
-      "error": "[0] /v2/stocks/snapshots network: [Errno 8] nodename nor servname provided, or not known"
+      "spot": 590.97,
+      "implied_vol": 0.3062,
+      "realized_vol": 0.3587,
+      "premium_edge": -0.0525,
+      "verdict": "stand aside",
+      "reason": "market charges LESS than the real risk"
     },
     {
       "underlying": "AAPL",
-      "error": "[0] /v2/stocks/snapshots network: [Errno 8] nodename nor servname provided, or not known"
+      "spot": 336.4,
+      "implied_vol": 0.2181,
+      "realized_vol": 0.2112,
+      "premium_edge": 0.0069,
+      "verdict": "stand aside",
+      "reason": "market charges LESS than the real risk"
     },
     {
       "underlying": "MSFT",
-      "error": "[0] /v2/stocks/snapshots network: [Errno 8] nodename nor servname provided, or not known"
+      "error": "The read operation timed out"
     },
     {
       "underlying": "META",
-      "spot": 746.68,
-      "implied_vol": 0.5512,
-      "realized_vol": 0.4542,
-      "premium_edge": 0.097,
+      "spot": 766.14,
+      "implied_vol": 0.4719,
+      "realized_vol": 0.4579,
+      "premium_edge": 0.0139,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     },
     {
       "underlying": "AMZN",
-      "spot": 246.67,
-      "implied_vol": 0.3141,
-      "realized_vol": 0.2718,
-      "premium_edge": 0.0423,
-      "verdict": "trade",
-      "reason": "market charges more than the real risk"
+      "spot": 246.54,
+      "implied_vol": 0.2654,
+      "realized_vol": 0.2737,
+      "premium_edge": -0.0083,
+      "verdict": "stand aside",
+      "reason": "market charges LESS than the real risk"
     },
     {
       "underlying": "GOOGL",
-      "spot": 336.96,
-      "implied_vol": 0.3381,
-      "realized_vol": 0.2679,
-      "premium_edge": 0.0702,
+      "spot": 339.17,
+      "implied_vol": 0.2946,
+      "realized_vol": 0.2643,
+      "premium_edge": 0.0303,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     }
