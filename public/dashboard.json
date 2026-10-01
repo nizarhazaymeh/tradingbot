@@ -1,12 +1,12 @@
 {
-  "updated_at": "2026-10-01T07:31:37+00:00",
+  "updated_at": "2026-10-01T07:47:24+00:00",
   "account": {
     "account_id": "PA3BAT1OOEFE",
     "environment": "comp",
-    "equity": 100000.0,
+    "equity": 99797.69,
     "starting_equity": 100000.0,
-    "total_pnl": 0.0,
-    "total_pnl_pct": 0.0,
+    "total_pnl": -202.31,
+    "total_pnl_pct": -0.00202,
     "max_drawdown_pct": -0.00594,
     "open_positions": 0,
     "closed_trades": 14,
@@ -14492,6 +14492,22 @@
     },
     {
       "ts": "2026-10-01T07:23:48+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-01T07:30:38+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-01T07:35:40+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-01T07:40:41+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-01T07:45:43+00:00",
       "equity": 99797.69
     }
   ],
