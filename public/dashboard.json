@@ -1,12 +1,12 @@
 {
-  "updated_at": "2026-10-03T07:28:30+00:00",
+  "updated_at": "2026-10-03T08:00:39+00:00",
   "account": {
     "account_id": "PA3BAT1OOEFE",
     "environment": "comp",
-    "equity": 99797.69,
+    "equity": 100000.0,
     "starting_equity": 100000.0,
-    "total_pnl": -202.31,
-    "total_pnl_pct": -0.00202,
+    "total_pnl": 0.0,
+    "total_pnl_pct": 0.0,
     "max_drawdown_pct": -0.00594,
     "open_positions": 0,
     "closed_trades": 14,
@@ -15005,98 +15005,64 @@
     {
       "ts": "2026-10-03T07:23:44+00:00",
       "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-03T07:28:46+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-03T07:33:47+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-03T07:38:49+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-03T07:43:51+00:00",
+      "equity": 99797.69
     }
   ],
   "market": [
     {
       "underlying": "SPY",
-      "spot": 769.72,
-      "implied_vol": 0.1055,
-      "realized_vol": 0.1006,
-      "premium_edge": 0.0049,
-      "verdict": "stand aside",
-      "reason": "market charges LESS than the real risk"
+      "error": "[0] /v2/stocks/snapshots network: [Errno 8] nodename nor servname provided, or not known"
     },
     {
       "underlying": "QQQ",
-      "spot": 749.2,
-      "implied_vol": 0.1582,
-      "realized_vol": 0.1482,
-      "premium_edge": 0.01,
-      "verdict": "stand aside",
-      "reason": "market charges LESS than the real risk"
+      "error": "[0] /v2/stocks/snapshots network: [Errno 8] nodename nor servname provided, or not known"
     },
     {
       "underlying": "IWM",
-      "spot": 281.58,
-      "implied_vol": 0.1548,
-      "realized_vol": 0.1071,
-      "premium_edge": 0.0477,
-      "verdict": "trade",
-      "reason": "market charges more than the real risk"
+      "error": "[0] /v2/stocks/snapshots network: [Errno 8] nodename nor servname provided, or not known"
     },
     {
       "underlying": "DIA",
-      "spot": 510.92,
-      "implied_vol": 0.1245,
-      "realized_vol": 0.1009,
-      "premium_edge": 0.0236,
-      "verdict": "trade",
-      "reason": "market charges more than the real risk"
+      "error": "[0] /v2/stocks/snapshots network: [Errno 8] nodename nor servname provided, or not known"
     },
     {
       "underlying": "SMH",
-      "spot": 630.62,
-      "implied_vol": 0.2582,
-      "realized_vol": 0.307,
-      "premium_edge": -0.0488,
-      "verdict": "stand aside",
-      "reason": "market charges LESS than the real risk"
+      "error": "[0] /v2/stocks/snapshots network: [Errno 8] nodename nor servname provided, or not known"
     },
     {
       "underlying": "AAPL",
-      "spot": 333.75,
-      "implied_vol": 0.2211,
-      "realized_vol": 0.2244,
-      "premium_edge": -0.0034,
-      "verdict": "stand aside",
-      "reason": "market charges LESS than the real risk"
+      "error": "[0] /v2/stocks/snapshots network: [Errno 8] nodename nor servname provided, or not known"
     },
     {
       "underlying": "MSFT",
-      "spot": 517.32,
-      "implied_vol": 0.2468,
-      "realized_vol": 0.2211,
-      "premium_edge": 0.0256,
-      "verdict": "trade",
-      "reason": "market charges more than the real risk"
+      "error": "[0] /v2/stocks/snapshots network: [Errno 8] nodename nor servname provided, or not known"
     },
     {
       "underlying": "META",
-      "spot": 728.09,
-      "implied_vol": 0.3321,
-      "realized_vol": 0.5419,
-      "premium_edge": -0.2098,
-      "verdict": "stand aside",
-      "reason": "market charges LESS than the real risk"
+      "error": "[0] /v2/stocks/snapshots network: [Errno 8] nodename nor servname provided, or not known"
     },
     {
       "underlying": "AMZN",
-      "spot": 251.42,
-      "implied_vol": 0.2657,
-      "realized_vol": 0.2054,
-      "premium_edge": 0.0603,
-      "verdict": "trade",
-      "reason": "market charges more than the real risk"
+      "error": "[0] /v2/stocks/snapshots network: [Errno 8] nodename nor servname provided, or not known"
     },
     {
       "underlying": "GOOGL",
-      "spot": 343.47,
-      "implied_vol": 0.2806,
-      "realized_vol": 0.254,
-      "premium_edge": 0.0266,
-      "verdict": "trade",
-      "reason": "market charges more than the real risk"
+      "error": "[0] /v2/stocks/snapshots network: [Errno 8] nodename nor servname provided, or not known"
     }
   ],
   "positions": [],
