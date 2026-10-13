@@ -1,12 +1,12 @@
 {
-  "updated_at": "2026-10-12T16:34:30+00:00",
+  "updated_at": "2026-10-13T14:30:06+00:00",
   "account": {
     "account_id": "PA3BAT1OOEFE",
     "environment": "comp",
-    "equity": 99797.69,
+    "equity": 100000.0,
     "starting_equity": 100000.0,
-    "total_pnl": -202.31,
-    "total_pnl_pct": -0.00202,
+    "total_pnl": 0.0,
+    "total_pnl_pct": 0.0,
     "max_drawdown_pct": -0.00594,
     "open_positions": 0,
     "closed_trades": 14,
@@ -18905,88 +18905,416 @@
     {
       "ts": "2026-10-12T15:01:29+00:00",
       "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-12T16:51:28+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-12T16:56:30+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-12T17:01:31+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-12T17:06:33+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-12T17:11:35+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-12T17:16:36+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-12T17:21:38+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-12T17:26:39+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-12T17:31:41+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-12T18:21:43+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-12T18:26:45+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-12T18:41:37+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-12T19:42:55+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-12T20:27:46+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-12T21:49:16+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-12T23:13:42+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T01:09:47+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T02:40:32+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T04:03:21+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T05:35:28+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T06:43:04+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T06:48:05+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T06:53:07+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T06:58:09+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T07:03:10+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T07:08:12+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T07:13:13+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T07:18:15+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T07:23:16+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T07:28:18+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T07:33:19+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T07:38:21+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T07:43:23+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T07:48:24+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T07:53:26+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T07:58:27+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T08:03:29+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T08:08:30+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T08:13:32+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T08:18:34+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T08:23:35+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T08:28:37+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T08:33:38+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T08:38:40+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T08:43:41+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T08:48:43+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T08:53:44+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T08:58:46+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T09:03:48+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T09:08:49+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T09:13:51+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T09:18:52+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T09:23:54+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T09:28:57+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T09:46:18+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T09:51:20+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T09:56:22+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T10:01:23+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T10:06:25+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T10:11:26+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T10:16:28+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T10:21:29+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T10:33:32+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T10:56:33+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T11:01:35+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T11:06:36+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T11:11:38+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T11:16:39+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T11:21:41+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T11:26:43+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T11:31:44+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T11:36:46+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T11:41:47+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T11:46:49+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T11:51:50+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T11:56:52+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T12:01:53+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T12:06:55+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T12:11:57+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T12:16:58+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T12:22:00+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T12:27:01+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T12:32:03+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T12:37:04+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T12:42:06+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T12:47:08+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T12:59:59+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T13:05:01+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T13:10:02+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T13:15:04+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T13:20:06+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-13T13:25:07+00:00",
+      "equity": 99797.69
     }
   ],
   "market": [
     {
       "underlying": "SPY",
-      "spot": 778.87,
-      "implied_vol": 0.0997,
-      "realized_vol": 0.095,
-      "premium_edge": 0.0047,
-      "verdict": "stand aside",
-      "reason": "market charges LESS than the real risk"
+      "error": "[0] /v2/options/contracts network: [Errno 8] nodename nor servname provided, or not known"
     },
     {
       "underlying": "QQQ",
-      "error": "The read operation timed out"
+      "error": "[0] /v2/options/contracts network: [Errno 8] nodename nor servname provided, or not known"
     },
     {
       "underlying": "IWM",
-      "spot": 278.56,
-      "implied_vol": 0.1625,
-      "realized_vol": 0.1076,
-      "premium_edge": 0.0549,
-      "verdict": "trade",
-      "reason": "market charges more than the real risk"
+      "error": "The read operation timed out"
     },
     {
       "underlying": "DIA",
-      "spot": 518.13,
-      "implied_vol": 0.1365,
-      "realized_vol": 0.0967,
-      "premium_edge": 0.0398,
-      "verdict": "trade",
-      "reason": "market charges more than the real risk"
+      "error": "[0] /v2/stocks/snapshots network: [Errno 51] Network is unreachable"
     },
     {
       "underlying": "SMH",
-      "spot": 593.44,
-      "implied_vol": 0.3464,
-      "realized_vol": 0.2566,
-      "premium_edge": 0.0898,
-      "verdict": "trade",
-      "reason": "market charges more than the real risk"
+      "error": "[0] /v2/stocks/snapshots network: [Errno 51] Network is unreachable"
     },
     {
       "underlying": "AAPL",
-      "error": "Remote end closed connection without response"
+      "error": "[0] /v2/stocks/snapshots network: [Errno 51] Network is unreachable"
     },
     {
       "underlying": "MSFT",
-      "spot": 540.9,
-      "implied_vol": 0.2414,
-      "realized_vol": 0.2175,
-      "premium_edge": 0.0239,
-      "verdict": "trade",
-      "reason": "market charges more than the real risk"
+      "error": "[0] /v2/stocks/snapshots network: [Errno 8] nodename nor servname provided, or not known"
     },
     {
       "underlying": "META",
-      "spot": 745.71,
-      "implied_vol": 0.385,
-      "realized_vol": 0.5205,
-      "premium_edge": -0.1355,
-      "verdict": "stand aside",
-      "reason": "market charges LESS than the real risk"
+      "error": "[0] /v2/stocks/snapshots network: [Errno 8] nodename nor servname provided, or not known"
     },
     {
       "underlying": "AMZN",
-      "spot": 260.25,
-      "implied_vol": 0.2852,
-      "realized_vol": 0.2427,
-      "premium_edge": 0.0424,
-      "verdict": "trade",
-      "reason": "market charges more than the real risk"
+      "error": "[0] /v2/stocks/snapshots network: [Errno 8] nodename nor servname provided, or not known"
     },
     {
       "underlying": "GOOGL",
-      "spot": 354.32,
-      "implied_vol": 0.2987,
-      "realized_vol": 0.2079,
-      "premium_edge": 0.0907,
-      "verdict": "trade",
-      "reason": "market charges more than the real risk"
+      "error": "[0] /v2/stocks/snapshots network: [Errno 8] nodename nor servname provided, or not known"
     }
   ],
   "positions": [],
