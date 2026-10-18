@@ -1,12 +1,12 @@
 {
-  "updated_at": "2026-10-18T07:45:33+00:00",
+  "updated_at": "2026-10-18T08:01:20+00:00",
   "account": {
     "account_id": "PA3BAT1OOEFE",
     "environment": "comp",
-    "equity": 100000.0,
+    "equity": 99797.69,
     "starting_equity": 100000.0,
-    "total_pnl": 0.0,
-    "total_pnl_pct": 0.0,
+    "total_pnl": -202.31,
+    "total_pnl_pct": -0.00202,
     "max_drawdown_pct": -0.00594,
     "open_positions": 0,
     "closed_trades": 14,
@@ -20077,48 +20077,110 @@
     {
       "ts": "2026-10-18T07:37:27+00:00",
       "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-18T07:47:47+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-18T07:52:48+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-10-18T07:57:50+00:00",
+      "equity": 99797.69
     }
   ],
   "market": [
     {
       "underlying": "SPY",
-      "error": "[0] /v2/stocks/snapshots network: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate (_"
+      "spot": 763.31,
+      "implied_vol": 0.1592,
+      "realized_vol": 0.102,
+      "premium_edge": 0.0571,
+      "verdict": "trade",
+      "reason": "market charges more than the real risk"
     },
     {
       "underlying": "QQQ",
-      "error": "[0] /v2/stocks/snapshots network: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate (_"
+      "spot": 710.2,
+      "implied_vol": 0.2692,
+      "realized_vol": 0.1814,
+      "premium_edge": 0.0877,
+      "verdict": "trade",
+      "reason": "market charges more than the real risk"
     },
     {
       "underlying": "IWM",
-      "error": "[0] /v2/stocks/snapshots network: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate (_"
+      "spot": 270.41,
+      "implied_vol": 0.2139,
+      "realized_vol": 0.1415,
+      "premium_edge": 0.0724,
+      "verdict": "trade",
+      "reason": "market charges more than the real risk"
     },
     {
       "underlying": "DIA",
-      "error": "[0] /v2/stocks/snapshots network: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate (_"
+      "spot": 519.1,
+      "implied_vol": 0.1655,
+      "realized_vol": 0.0917,
+      "premium_edge": 0.0738,
+      "verdict": "trade",
+      "reason": "market charges more than the real risk"
     },
     {
       "underlying": "SMH",
-      "error": "[0] /v2/stocks/snapshots network: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate (_"
+      "spot": 539.84,
+      "implied_vol": 0.4395,
+      "realized_vol": 0.3048,
+      "premium_edge": 0.1346,
+      "verdict": "trade",
+      "reason": "market charges more than the real risk"
     },
     {
       "underlying": "AAPL",
-      "error": "[0] /v2/stocks/snapshots network: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate (_"
+      "spot": 343.39,
+      "implied_vol": 0.3029,
+      "realized_vol": 0.1595,
+      "premium_edge": 0.1434,
+      "verdict": "trade",
+      "reason": "market charges more than the real risk"
     },
     {
       "underlying": "MSFT",
-      "error": "[0] /v2/stocks/snapshots network: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate (_"
+      "spot": 528.99,
+      "implied_vol": 0.2837,
+      "realized_vol": 0.218,
+      "premium_edge": 0.0657,
+      "verdict": "trade",
+      "reason": "market charges more than the real risk"
     },
     {
       "underlying": "META",
-      "error": "[0] /v2/stocks/snapshots network: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate (_"
+      "spot": 709.42,
+      "implied_vol": 0.7436,
+      "realized_vol": 0.5494,
+      "premium_edge": 0.1942,
+      "verdict": "trade",
+      "reason": "market charges more than the real risk"
     },
     {
       "underlying": "AMZN",
-      "error": "[0] /v2/stocks/snapshots network: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate (_"
+      "spot": 250.25,
+      "implied_vol": 0.3743,
+      "realized_vol": 0.2353,
+      "premium_edge": 0.1391,
+      "verdict": "trade",
+      "reason": "market charges more than the real risk"
     },
     {
       "underlying": "GOOGL",
-      "error": "[0] /v2/stocks/snapshots network: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate (_"
+      "spot": 340.62,
+      "implied_vol": 0.3666,
+      "realized_vol": 0.2216,
+      "premium_edge": 0.145,
+      "verdict": "trade",
+      "reason": "market charges more than the real risk"
     }
   ],
   "positions": [],
