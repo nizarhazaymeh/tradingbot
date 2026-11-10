@@ -1,12 +1,12 @@
 {
-  "updated_at": "2026-11-10T09:14:15+00:00",
+  "updated_at": "2026-11-10T09:30:06+00:00",
   "account": {
     "account_id": "PA3BAT1OOEFE",
     "environment": "comp",
-    "equity": 100000.0,
+    "equity": 99797.69,
     "starting_equity": 100000.0,
-    "total_pnl": 0.0,
-    "total_pnl_pct": 0.0,
+    "total_pnl": -202.31,
+    "total_pnl_pct": -0.00202,
     "max_drawdown_pct": -0.00594,
     "open_positions": 0,
     "closed_trades": 14,
@@ -31293,81 +31293,108 @@
     {
       "ts": "2026-11-10T09:07:27+00:00",
       "equity": 99797.69
+    },
+    {
+      "ts": "2026-11-10T09:17:44+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-11-10T09:22:46+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-11-10T09:27:48+00:00",
+      "equity": 99797.69
     }
   ],
   "market": [
     {
       "underlying": "SPY",
-      "error": "[0] /v2/options/contracts network: [Errno 8] nodename nor servname provided, or not known"
+      "spot": 752.72,
+      "implied_vol": 0.1788,
+      "realized_vol": 0.215,
+      "premium_edge": -0.0362,
+      "verdict": "stand aside",
+      "reason": "market charges LESS than the real risk"
     },
     {
       "underlying": "QQQ",
-      "error": "[0] /v2/options/contracts network: [Errno 8] nodename nor servname provided, or not known"
+      "spot": 679.76,
+      "implied_vol": 0.2939,
+      "realized_vol": 0.343,
+      "premium_edge": -0.0491,
+      "verdict": "stand aside",
+      "reason": "market charges LESS than the real risk"
     },
     {
       "underlying": "IWM",
-      "error": "[0] /v2/options/contracts network: [Errno 8] nodename nor servname provided, or not known"
+      "spot": 282.3,
+      "implied_vol": 0.249,
+      "realized_vol": 0.2552,
+      "premium_edge": -0.0062,
+      "verdict": "stand aside",
+      "reason": "market charges LESS than the real risk"
     },
     {
       "underlying": "DIA",
       "spot": 523.3,
-      "implied_vol": 0.1801,
+      "implied_vol": 0.1788,
       "realized_vol": 0.2034,
-      "premium_edge": -0.0233,
+      "premium_edge": -0.0245,
       "verdict": "stand aside",
       "reason": "market charges LESS than the real risk"
     },
     {
       "underlying": "SMH",
       "spot": 487.3,
-      "implied_vol": 0.6594,
+      "implied_vol": 0.7288,
       "realized_vol": 0.6511,
-      "premium_edge": 0.0083,
-      "verdict": "stand aside",
-      "reason": "market charges LESS than the real risk"
+      "premium_edge": 0.0777,
+      "verdict": "trade",
+      "reason": "market charges more than the real risk"
     },
     {
       "underlying": "AAPL",
       "spot": 350.87,
-      "implied_vol": 0.2723,
+      "implied_vol": 0.2698,
       "realized_vol": 0.2598,
-      "premium_edge": 0.0125,
-      "verdict": "trade",
-      "reason": "market charges more than the real risk"
+      "premium_edge": 0.01,
+      "verdict": "stand aside",
+      "reason": "market charges LESS than the real risk"
     },
     {
       "underlying": "MSFT",
       "spot": 544.59,
       "implied_vol": 0.308,
       "realized_vol": 0.3533,
-      "premium_edge": -0.0452,
+      "premium_edge": -0.0453,
       "verdict": "stand aside",
       "reason": "market charges LESS than the real risk"
     },
     {
       "underlying": "META",
       "spot": 640.09,
-      "implied_vol": 0.4699,
+      "implied_vol": 0.4673,
       "realized_vol": 0.4257,
-      "premium_edge": 0.0442,
+      "premium_edge": 0.0416,
       "verdict": "trade",
       "reason": "market charges more than the real risk"
     },
     {
       "underlying": "AMZN",
       "spot": 267.32,
-      "implied_vol": 0.4148,
+      "implied_vol": 0.4154,
       "realized_vol": 0.4124,
-      "premium_edge": 0.0024,
+      "premium_edge": 0.003,
       "verdict": "stand aside",
       "reason": "market charges LESS than the real risk"
     },
     {
       "underlying": "GOOGL",
       "spot": 288.15,
-      "implied_vol": 0.3863,
+      "implied_vol": 0.3803,
       "realized_vol": 0.5245,
-      "premium_edge": -0.1381,
+      "premium_edge": -0.1441,
       "verdict": "stand aside",
       "reason": "market charges LESS than the real risk"
     }
