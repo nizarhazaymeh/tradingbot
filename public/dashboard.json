@@ -1,12 +1,12 @@
 {
-  "updated_at": "2026-11-15T06:55:16+00:00",
+  "updated_at": "2026-11-15T07:01:22+00:00",
   "account": {
     "account_id": "PA3BAT1OOEFE",
     "environment": "comp",
-    "equity": 100000.0,
+    "equity": 99797.69,
     "starting_equity": 100000.0,
-    "total_pnl": 0.0,
-    "total_pnl_pct": 0.0,
+    "total_pnl": -202.31,
+    "total_pnl_pct": -0.00202,
     "max_drawdown_pct": -0.00594,
     "open_positions": 0,
     "closed_trades": 14,
@@ -33169,20 +33169,43 @@
     {
       "ts": "2026-11-15T05:58:04+00:00",
       "equity": 99797.69
+    },
+    {
+      "ts": "2026-11-15T06:55:00+00:00",
+      "equity": 99797.69
+    },
+    {
+      "ts": "2026-11-15T07:00:24+00:00",
+      "equity": 99797.69
     }
   ],
   "market": [
     {
       "underlying": "SPY",
-      "error": "[0] /v2/stocks/snapshots network: [Errno 8] nodename nor servname provided, or not known"
+      "spot": 752.09,
+      "implied_vol": 0.1806,
+      "realized_vol": 0.2154,
+      "premium_edge": -0.0349,
+      "verdict": "stand aside",
+      "reason": "market charges LESS than the real risk"
     },
     {
       "underlying": "QQQ",
-      "error": "[0] /v2/stocks/snapshots network: [Errno 8] nodename nor servname provided, or not known"
+      "spot": 676.95,
+      "implied_vol": 0.3289,
+      "realized_vol": 0.3431,
+      "premium_edge": -0.0142,
+      "verdict": "stand aside",
+      "reason": "market charges LESS than the real risk"
     },
     {
       "underlying": "IWM",
-      "error": "[0] /v2/stocks/snapshots network: [Errno 8] nodename nor servname provided, or not known"
+      "spot": 277.55,
+      "implied_vol": 0.2071,
+      "realized_vol": 0.2437,
+      "premium_edge": -0.0366,
+      "verdict": "stand aside",
+      "reason": "market charges LESS than the real risk"
     },
     {
       "underlying": "DIA",
