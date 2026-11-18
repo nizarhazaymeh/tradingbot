@@ -1,12 +1,12 @@
 {
-  "updated_at": "2026-11-18T06:37:14+00:00",
+  "updated_at": "2026-11-18T06:44:11+00:00",
   "account": {
     "account_id": "PA3BAT1OOEFE",
     "environment": "comp",
-    "equity": 100000.0,
+    "equity": 99797.69,
     "starting_equity": 100000.0,
-    "total_pnl": 0.0,
-    "total_pnl_pct": 0.0,
+    "total_pnl": -202.31,
+    "total_pnl_pct": -0.00202,
     "max_drawdown_pct": -0.00594,
     "open_positions": 0,
     "closed_trades": 14,
@@ -35389,16 +35389,30 @@
     {
       "ts": "2026-11-18T05:37:18+00:00",
       "equity": 99797.69
+    },
+    {
+      "ts": "2026-11-18T06:38:58+00:00",
+      "equity": 99797.69
     }
   ],
   "market": [
     {
       "underlying": "SPY",
-      "error": "[0] /v2/stocks/snapshots network: [Errno 8] nodename nor servname provided, or not known"
+      "spot": 733.26,
+      "implied_vol": 0.2465,
+      "realized_vol": 0.2249,
+      "premium_edge": 0.0216,
+      "verdict": "trade",
+      "reason": "market charges more than the real risk"
     },
     {
       "underlying": "QQQ",
-      "error": "[0] /v2/stocks/snapshots network: [Errno 8] nodename nor servname provided, or not known"
+      "spot": 657.82,
+      "implied_vol": 0.3697,
+      "realized_vol": 0.3495,
+      "premium_edge": 0.0202,
+      "verdict": "trade",
+      "reason": "market charges more than the real risk"
     },
     {
       "underlying": "IWM",
@@ -35457,7 +35471,7 @@
     {
       "underlying": "AMZN",
       "spot": 257.58,
-      "implied_vol": 0.4378,
+      "implied_vol": 0.4377,
       "realized_vol": 0.3903,
       "premium_edge": 0.0474,
       "verdict": "trade",
